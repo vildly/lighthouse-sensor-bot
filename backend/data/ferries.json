@@ -1,0 +1,310 @@
+{
+  "fragancia": {
+    "pontos_vessel_id": "mmsi_265558290",
+    "length_over_all_m": 74.2,
+    "length_between_perpendiculars_m": 54.0,
+    "breadth_m": 11.7,
+    "draft_m": 3.5,
+    "max_speed_kn": 9,
+    "installed_power_kw": 882,
+    "capacity_passenger_car_equivalent": 34,
+    "gross_tonnage": 374,
+    "net_tonnage": 167,
+    "number_of_engines": 4,
+    "machinery": {
+      "engines": [
+        {
+          "type": "Volvo Penta D9 A2J MH300",
+          "power_kw": 221,
+          "rpm": 1800,
+          "location": "forward/starboard",
+          "year_manufactured": 2014
+        },
+        {
+          "type": "Volvo Penta D9 A2J MH300",
+          "power_kw": 221,
+          "rpm": 1800,
+          "location": "forward/portside",
+          "year_manufactured": 2014
+        },
+        {
+          "type": "Volvo Penta D9 A2J MH300",
+          "power_kw": 221,
+          "rpm": 1800,
+          "location": "aft/starboard",
+          "year_manufactured": 2014
+        },
+        {
+          "type": "Volvo Penta D9 A2J MH300",
+          "power_kw": 221,
+          "rpm": 1800,
+          "location": "aft/portside",
+          "year_manufactured": 2014
+        }
+      ],
+      "propulsion": [
+        {
+          "type": "Schottel SRP 350",
+          "location": "forward",
+          "propeller_diameter_mm": 1700,
+          "year_manufactured": 1990
+        },
+        {
+          "type": "Schottel SRP 350",
+          "location": "aft",
+          "propeller_diameter_mm": 1700,
+          "year_manufactured": 1986
+        }
+      ]
+    }
+  },
+  "jupiter": {
+    "pontos_vessel_id": "mmsi_265585310",
+    "length_over_all_m": 86.2,
+    "length_between_perpendiculars_m": 75.0,
+    "breadth_m": 14.0,
+    "draft_m": 3.3,
+    "max_speed_kn": 12,
+    "installed_power_kw": 1324,
+    "capacity_passenger_car_equivalent": 58,
+    "gross_tonnage": 737,
+    "machinery": {
+      "engines": [
+        {
+          "type": "Volvo Penta D13C3-B MH450",
+          "power_kw": 331,
+          "location": "aft/starboard",
+          "year_manufactured": 2023
+        },
+        {
+          "type": "Volvo Penta D13C3-B MH450",
+          "power_kw": 331,
+          "location": "forward/starboard",
+          "year_manufactured": 2023
+        },
+        {
+          "type": "Volvo Penta D13C3-B MH450",
+          "power_kw": 331,
+          "location": "aft/portside",
+          "year_manufactured": 2023
+        },
+        {
+          "type": "Volvo Penta D13C3-B MH450",
+          "power_kw": 331,
+          "location": "forward/portside",
+          "year_manufactured": 2023
+        }
+      ],
+      "propulsion": [
+        {
+          "type": "Schottel STP 550D Twin propeller",
+          "location": "forward",
+          "year_manufactured": 2007
+        },
+        {
+          "type": "Schottel STP 550D Twin propeller",
+          "location": "aft",
+          "year_manufactured": 2003
+        }
+      ]
+    }
+  },
+  "merkurius": {
+    "pontos_vessel_id": "mmsi_265546940",
+    "length_over_all_m": 83.0,
+    "length_between_perpendiculars_m": 72.0,
+    "breadth_m": 13.8,
+    "draft_m": 3.6,
+    "max_speed_kn": 11,
+    "installed_power_kw": 1470,
+    "capacity_passenger_car_equivalent": 56,
+    "gross_tonnage": 618,
+    "machinery": {
+      "engines": [
+        {
+          "type": "Scania DI16 P96",
+          "location": "aft/starboard",
+          "year_manufactured": 2011
+        },
+        {
+          "type": "Scania DI16 P96",
+          "location": "forward/starboard",
+          "year_manufactured": 2011
+        },
+        {
+          "type": "Scania DI16 P96",
+          "location": "aft/portside",
+          "year_manufactured": 2011
+        },
+        {
+          "type": "Scania DI16 P96",
+          "location": "forward/portside",
+          "year_manufactured": 2011
+        }
+      ],
+      "propulsion": [
+        {
+          "type": "Schottel STP 1010 Twin propeller",
+          "location": "forward",
+          "year_manufactured": 2000
+        },
+        {
+          "type": "Schottel STP 1010 Twin propeller",
+          "location": "aft",
+          "year_manufactured": 1998
+        }
+      ]
+    }
+  },
+  "nina": {
+    "pontos_vessel_id": "mmsi_265589970",
+    "length_over_all_m": 76.0,
+    "length_between_perpendiculars_m": 64.0,
+    "breadth_m": 13.9,
+    "draft_m": 3.5,
+    "max_speed_kn": 10,
+    "installed_power_kw": 958,
+    "capacity_passenger_car_equivalent": 48,
+    "gross_tonnage": 412,
+    "machinery": {
+      "engines": [
+        {
+          "type": "Scania DI16 P96",
+          "location": "aft/starboard",
+          "year_manufactured": 2011
+        },
+        {
+          "type": "Scania DI16 P96",
+          "location": "forward/starboard",
+          "year_manufactured": 2011
+        },
+        {
+          "type": "Scania DI16 P96",
+          "location": "aft/portside",
+          "year_manufactured": 2011
+        },
+        {
+          "type": "Scania DI16 P96",
+          "location": "forward/portside",
+          "year_manufactured": 2011
+        }
+      ],
+      "propulsion": [
+        {
+          "type": "Rolls-Royce Aquamaster US 105",
+          "location": "forward",
+          "year_manufactured": 2022
+        },
+        {
+          "type": "Rolls-Royce Aquamaster US 105",
+          "location": "aft",
+          "year_manufactured": 2011
+        }
+      ]
+    }
+  },
+  "yxlan": {
+    "pontos_vessel_id": "imo_8804440",
+    "length_over_all_m": 76.5,
+    "length_between_perpendiculars_m": 64.86,
+    "breadth_m": 12.4,
+    "draft_m": 3.6,
+    "max_speed_kn": 11,
+    "installed_power_kw": 1324,
+    "capacity_passenger_car_equivalent": 32,
+    "gross_tonnage": 449,
+    "machinery": {
+      "engines": [
+        {
+          "type": "Scania DI12 59 M09P",
+          "power_kw": 331,
+          "rpm": 1800,
+          "location": "aft/starboard",
+          "year_manufactured": 2004
+        },
+        {
+          "type": "Scania DI12 59 M09P",
+          "power_kw": 331,
+          "rpm": 1800,
+          "location": "forward/starboard",
+          "year_manufactured": 2008
+        },
+        {
+          "type": "Scania DI12 59 M09P",
+          "power_kw": 331,
+          "rpm": 1800,
+          "location": "aft/portside",
+          "year_manufactured": 2004
+        },
+        {
+          "type": "Scania DI12 59 M09P",
+          "power_kw": 331,
+          "rpm": 1800,
+          "location": "forward/portside",
+          "year_manufactured": 2008
+        }
+      ],
+      "propulsion": [
+        {
+          "type": "Schottel SRP 350",
+          "location": "forward",
+          "propeller_diameter_mm": 1700,
+          "year_manufactured": 1988
+        },
+        {
+          "type": "Schottel SRP 350",
+          "location": "aft",
+          "propeller_diameter_mm": 1700,
+          "year_manufactured": 1990
+        }
+      ]
+    }
+  },
+  "skidbladner": {
+    "pontos_vessel_id": "name_skidbladner",
+    "length_over_all_m": 48.0,
+    "breadth_m": 11.7,
+    "draft_m": 3.0,
+    "max_speed_kn": 9
+  },
+  "marie": {
+    "pontos_vessel_id": "imo_8612055",
+    "length_over_all_m": 78.0,
+    "breadth_m": 15.0,
+    "draft_m": 3.2,
+    "max_speed_kn": 11,
+    "installed_power_kw": 1456
+  },
+  "capella": {
+    "pontos_vessel_id": "imo_7943354",
+    "length_over_all_m": 33.3,
+    "breadth_m": 6.66,
+    "draft_m": 2.45,
+    "max_speed_kn": 9,
+    "installed_power_kw": 690
+  },
+  "linda": {
+    "pontos_vessel_id": "imo_7522148",
+    "length_over_all_m": 40.7,
+    "breadth_m": 9.15,
+    "draft_m": 3.15,
+    "max_speed_kn": 8,
+    "installed_power_kw": 1100
+  },
+  "sedna": {
+    "pontos_vessel_id": "name_sedna",
+    "length_over_all_m": 44.3,
+    "breadth_m": 7.2,
+    "draft_m": 2.5,
+    "max_speed_kn": 10,
+    "installed_power_kw": 662
+  },
+  "ebba_brahe": {
+    "pontos_vessel_id": "imo_8816900",
+    "length_over_all_m": 41.0,
+    "breadth_m": 11.2,
+    "draft_m": 3.25,
+    "max_speed_kn": 10,
+    "installed_power_kw": 1176
+  }
+}
