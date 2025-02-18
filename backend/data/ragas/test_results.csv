@@ -1,0 +1,31 @@
+query,ground_truth,agent_response,percentage_error,pass_fail,api_call_success
+What is the total fuel cost for route A in January 2024?,12345.67,"To find the total fuel cost for route A in January 2024, we need to:
+
+1. Identify the tables and columns that contain information about fuel costs, routes, and the dates of those costs.
+2. Filter the data for route A and for the month of January 2024.
+3. Aggregate the fuel costs to compute the total for that specific timeframe and route.
+
+Let's examine the `semantic_model` to find the relevant tables and columns.",,False,True
+What is the average speed of ferry X on route B?,25.3,"To determine the average speed of ferry X on route B, we will need to perform the following steps:
+
+1. Identify the table(s) that contain information about ferry speeds and routes.
+2. Filter the data to focus on ferry X and route B.
+3. Calculate the average speed for the given ferry and route.
+
+Firstly, let's check the semantic model to identify the relevant tables and columns. Let's assume we have a table that records ferry speeds and another for routes.
+
+### Semantic Model Analysis
+Assuming these possible tables from the semantic model:
+
+- **FerryTrips**: Contains columns such as `ferry_id`, `route_id`, `speed`, and possibly other trip details.
+- **Ferries**: Contains ferry details like `ferry_id`, `ferry_name`.
+- **Routes**: Provides route details including `route_id`, `route_name`.
+
+Based on these assumptions, we'll proceed to determine how to get the journey details for ferry X on route B.
+
+### Steps to Generate Query
+1. Join the `FerryTrips` table with `Ferries` to filter trips involving ferry X.
+2. Join with `Routes` to select only those trips on route B.
+3. Calculate the average speed.
+
+Let's begin by making sure that the necessary tables are available. We will start by checking the tables.",,False,True
