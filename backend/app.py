@@ -71,10 +71,10 @@ def hello_world():
 @app.route("/query", methods=["POST"])
 def query_endpoint():
     data = request.get_json()
-    prompt_filepath = data.get("prompt_file", None) # Changed back to prompt_file
+    prompt_filepath = data.get("prompt_file", None)
 
     if prompt_filepath:
-        question = load_prompt_from_file(data_dir.joinpath(prompt_filepath)) # Path relative to data_dir
+        question = load_prompt_from_file(data_dir.joinpath(prompt_filepath))
         if question is None:
             return jsonify({"error": "Prompt file not found or error reading"}), 400
     else:
@@ -85,12 +85,13 @@ def query_endpoint():
 
     try:
         response: RunResponse = data_analyst.run(question)
-        txt = response.json()  # Assuming you want the JSON response
+        txt = response.content  
+        print(txt)  
+        return jsonify({"content": txt})
 
     except Exception as e:
+        print(f"Error processing question: {str(e)}") 
         return jsonify({"error": str(e)}), 500
-
-    return txt
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

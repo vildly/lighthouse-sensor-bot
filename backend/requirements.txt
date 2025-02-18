@@ -9,3 +9,4 @@ pgvector
 pypdf
 Flask
 psycopg
+duckdb

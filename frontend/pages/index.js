@@ -15,6 +15,8 @@ export default function QuestionForm() {
         body: JSON.stringify({ question }),
       });
 
+      console.log(response)
+
       if (!response.ok) throw new Error("Failed to get response");
 
       const data = await response.json();

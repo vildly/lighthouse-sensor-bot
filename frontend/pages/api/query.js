@@ -11,6 +11,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({ question }),
       });
 
+      console.log(response)
+
       if (!response.ok) throw new Error("Error in Flask endpoint response");
 
       const data = await response.json();
