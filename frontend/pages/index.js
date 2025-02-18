@@ -27,6 +27,28 @@ export default function QuestionForm() {
     }
   };
 
+  const analyzeFile = async () => {
+    try {
+      const response = await fetch("/api/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          prompt_file: "ferry_analysis.txt" 
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get response");
+
+      const data = await response.json();
+      setContent(data.content || "No content available.");
+    } catch (error) {
+      console.error("Error fetching response:", error);
+      setContent("Failed to fetch response.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -40,12 +62,20 @@ export default function QuestionForm() {
           onChange={(e) => setQuestion(e.target.value)}
         ></textarea>
 
-        <button
-          onClick={askQuestion}
-          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
-        >
-          Send
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={askQuestion}
+            className="flex-1 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+          >
+            Ask Question
+          </button>
+          <button
+            onClick={analyzeFile}
+            className="flex-1 bg-green-500 text-white py-2 rounded-md hover:bg-green-600"
+          >
+            Analyze File
+          </button>
+        </div>
 
         {content && (
           <div className="bg-gray-50 p-4 mt-4 rounded-md">

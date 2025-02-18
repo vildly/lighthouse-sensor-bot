@@ -2,13 +2,16 @@
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      const { question } = req.body;
+      const { question, prompt_file } = req.body;
       const response = await fetch("http://127.0.0.1:5000/query", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ 
+          question,
+          prompt_file 
+        }),
       });
 
       console.log(response)
