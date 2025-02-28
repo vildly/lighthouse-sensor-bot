@@ -5,6 +5,9 @@ from flask import Flask, request, jsonify
 import utils.duck 
 from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
+import io
+import logging
+from contextlib import redirect_stdout
 
 load_dotenv()  # Load environment variables (for OpenAI API key, etc.)
 
@@ -221,20 +224,44 @@ def query_endpoint():
         # Set up to capture SQL queries
         sql_queries = []
         
-        # Create a function to capture SQL queries
-        def query_callback(query):
-            sql_queries.append(query)
-            return query
-        
-        # Set the callback on the DuckDbTools instance
-        original_run_query = duck_tools.run_query
-        duck_tools.run_query = lambda query: original_run_query(query_callback(query))
+        # Set up to capture logger output
+        log_capture = io.StringIO()
+        log_handler = logging.StreamHandler(log_capture)
+        log_handler.setLevel(logging.INFO)
+        logger.addHandler(log_handler)
         
         # Run the agent
         response: RunResponse = data_analyst.run(question)
         
-        # Restore original run_query method
-        duck_tools.run_query = original_run_query
+        # Remove the log handler
+        logger.removeHandler(log_handler)
+        
+        # Extract SQL queries from log output
+        log_output = log_capture.getvalue()
+        current_query = ""
+        for line in log_output.splitlines():
+            if "Running:" in line:
+                # If we have a query in progress, save it before starting a new one
+                if current_query:
+                    sql_queries.append(current_query.strip())
+                    current_query = ""
+                
+                # Start a new query
+                current_query = line.split("Running:", 1)[1].strip()
+            elif current_query and line.strip() and not line.strip().startswith("INFO"):
+                # Continue the current query with this line
+                current_query += " " + line.strip()
+        
+        # Add the last query if there is one
+        if current_query:
+            sql_queries.append(current_query.strip())
+        
+        # Remove duplicates while preserving order
+        unique_queries = []
+        for query in sql_queries:
+            if query not in unique_queries:
+                unique_queries.append(query)
+        sql_queries = unique_queries
         
         txt = response.content   
         print(txt)
