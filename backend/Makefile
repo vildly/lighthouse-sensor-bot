@@ -1,6 +1,6 @@
 # Start the application (Development only)
 dev:
-	python app.py
+	python -m app.app
 
 # Freeze dependencies
 freeze:
