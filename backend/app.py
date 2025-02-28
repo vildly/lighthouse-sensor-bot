@@ -57,20 +57,20 @@ def load_prompt_from_file(filepath):
 
 # --- Agent Initialization ---
 
-
-
 semantic_model_data = load_json_from_file(data_dir.joinpath("semantic_model.json"))
 if semantic_model_data is None:
     print("Error: Could not load semantic model. Exiting.")
     exit()
 semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
 
+
 data_analyst = Agent(  
     instructions=semantic_instructions,
+    tools=[DuckDbTools()],  # Initialize with DuckDbTools
+    show_tool_calls=True,
     model=OpenAIChat(id="gpt-4o"), # or gpt-3.5-turbo if you prefer
     markdown=True
 )
-
 
 # --- Flask Routes ---
 @app.route("/")

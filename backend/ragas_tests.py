@@ -26,6 +26,7 @@ def evaluate_numerical_answer(ground_truth, rag_output, threshold=0.05):
     except ValueError:
         return None, False
 
+
 def run_test_case(query, ground_truth):
     # --- 2. Call your Flask API ---
     api_url = "http://127.0.0.1:5000/query"  # Replace with your API endpoint
@@ -66,6 +67,7 @@ for index, row in test_cases.iterrows():
         "pass_fail": pass_fail,
         "api_call_success": api_call_success
     })
+
 
 # --- 5. Output Results (Example: CSV) ---
 results_df = pd.DataFrame(results)
