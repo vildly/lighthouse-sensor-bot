@@ -1,0 +1,5 @@
+QUERY:
+which ferry is the most powerful? based on ferries-info
+
+RESPONSE:
+The most powerful ferry is **Merkurius** with an installed power of 1470 kW.

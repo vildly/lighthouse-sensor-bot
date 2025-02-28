@@ -32,12 +32,12 @@ def get_default_instructions(semantic_model) -> List[str]:
         instructions += [
             "Inspect the query using `inspect_query` to confirm it is correct.",
             "If the query is valid, RUN the query using the `run_query` function",
-            "Analyse the results and return the answer to the user.",
+            "After running the query, analyze the results and provide ONLY a clear, direct answer to the user's question based on the data.",
+            "Your response should be extremely concise - just the direct answer to the question without showing SQL queries or explaining your process.",
+            "Do not include the SQL query in your response unless specifically asked to do so.",
             "If the user wants to save the query, use the `save_contents_to_file` function.",
             "Remember to give a relevant name to the file with `.sql` extension and make sure you add a `;` at the end of the query."
             + " Tell the user the file name.",
-            "Continue till you have accomplished the task.",
-            "Show the user the SQL you ran",
         ]
 
     
