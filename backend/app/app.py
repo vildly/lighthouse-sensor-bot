@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import io
 import logging
 from contextlib import redirect_stdout
+from flask_cors import CORS
 
 load_dotenv()  # Load environment variables (for OpenAI API key, etc.)
 from pathlib import Path
@@ -22,6 +23,7 @@ from app.services.agent import initialize_agent
 
 app = Flask(__name__)
 
+CORS(app) 
 # --- Configuration ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key
 if not OPENAI_API_KEY:

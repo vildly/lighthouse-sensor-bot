@@ -18,12 +18,12 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None):
     if prompt_filepath:
         question = load_prompt_from_file(data_dir.joinpath(prompt_filepath))
         if question is None:
-            return {"error": "Prompt file not found or error reading"}, 400
+            return {"error": "Prompt file not found or error reading", "content": "Error: Prompt file not found"}, 400
     else:
         question = data.get("question", "")
 
     if not question:
-        return {"error": "No question or prompt file provided"}, 400
+        return {"error": "No question or prompt file provided", "content": "Error: No question provided"}, 400
 
     try:
         # Set up to capture SQL queries
@@ -75,12 +75,12 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None):
         saved_filepath = save_response_to_file(question, txt, output_dir, sql_queries)
         if saved_filepath:
             print(f"Query and response saved to: {saved_filepath}")
-            return {"response": txt, "saved_to": str(saved_filepath)}
+            return {"response": txt, "content": txt, "saved_to": str(saved_filepath)}
         else:
             print("Failed to save query and response to file")
-            return {"response": txt, "saved_to": None}
+            return {"response": txt, "content": txt, "saved_to": None}
 
     except Exception as e:
         error_message = f"Error processing query: {str(e)}"
         print(error_message)
-        return {"error": error_message}, 500
+        return {"error": error_message, "content": f"Error: {str(e)}"}, 500
