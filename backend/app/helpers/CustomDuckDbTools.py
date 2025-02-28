@@ -44,6 +44,8 @@ class CustomDuckDbTools(DuckDbTools):
                         logger.info(f"Using path from semantic model for table {table} (matched to {t.get('name')}): {path}")
                         break
         
+        # FIX THIS!!!!!!!!
+        
         # Special case for ferries_info -> ferries.json
         if table == 'ferries_info' and path == 'ferries-info':
             path = 'ferries.json'
