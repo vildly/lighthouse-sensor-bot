@@ -12,7 +12,7 @@ export default function QuestionForm() {
     if (!question.trim()) return;
     
     setIsLoading(true);
-    setContent(null); // Clear previous content
+    setContent(null); // Clear previous content.
     
     try {
       console.log("Sending question to API:", question);
@@ -130,7 +130,7 @@ export default function QuestionForm() {
             <textarea
               rows="4"
               className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
-              placeholder="Examples: • Analyze vessel stability • Calculate fuel consumption • Optimize route between ports"
+              placeholder="Examples: Which ferry is the most powerful? Based on ferries-info!"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
             ></textarea>

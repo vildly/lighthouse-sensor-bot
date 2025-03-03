@@ -24,12 +24,12 @@ export default async function handler(req, res) {
       const data = await response.json();
       console.log("Received from backend:", data);
       
-      // Normalize the response format
+      // Normalize the response format.
       if (data.response) {
-        // If backend returns 'response' key, convert it to 'content'
+        // If backend returns 'response' key, convert it to 'content'.
         res.status(200).json({ content: data.response });
       } else if (data.content) {
-        // If backend already returns 'content' key, use it directly
+        // If backend already returns 'content' key, use it directly.
         res.status(200).json({ content: data.content });
       } else {
         res.status(200).json({ content: "Response received but no content found" });
