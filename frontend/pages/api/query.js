@@ -1,9 +1,8 @@
-
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      const { question, prompt_file } = req.body;
-      console.log("Sending to backend:", { question, prompt_file });
+      const { question, source_file, prompt_file } = req.body;
+      console.log("Sending to backend:", { question, source_file, prompt_file });
       
       const response = await fetch("http://127.0.0.1:5000/api/query", {
         method: "POST",
@@ -12,6 +11,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({ 
           question,
+          source_file,
           prompt_file 
         }),
       });

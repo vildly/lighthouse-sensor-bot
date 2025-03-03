@@ -1,4 +1,3 @@
-// pages/index.js
 import { useState, useEffect } from "react";
 
 export default function QuestionForm() {
@@ -6,8 +5,8 @@ export default function QuestionForm() {
   const [content, setContent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState("offline");
+  const [sourceFile, setSourceFile] = useState("ferries.json"); // Default source file
 
-  // Keep all existing functions
   const askQuestion = async () => {
     if (!question.trim()) return;
     
@@ -20,7 +19,10 @@ export default function QuestionForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ 
+          question,
+          source_file: sourceFile // Include the selected source file
+        }),
       });
       
       if (!response.ok) {
@@ -96,18 +98,45 @@ export default function QuestionForm() {
               <textarea
                 rows="3"
                 className="w-full p-3 bg-[#333333] border border-gray-600 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-200"
-                placeholder="Examples: Which ferry is the most powerful? Based on ferries-info!"
+                placeholder="Examples: Which ferry is the most powerful ?"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
               ></textarea>
             </div>
             
-            <div className="flex space-x-2">
+            {/* Source File Selection */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Select Data Source:</h4>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setSourceFile("ferries.json")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium ${
+                    sourceFile === "ferries.json" 
+                      ? "bg-blue-600 text-white" 
+                      : "bg-[#333333] text-gray-300 hover:bg-[#3a3a3a]"
+                  }`}
+                >
+                  ferries.json
+                </button>
+                <button
+                  onClick={() => setSourceFile("ferry_trips_data.csv")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium ${
+                    sourceFile === "ferry_trips_data.csv" 
+                      ? "bg-blue-600 text-white" 
+                      : "bg-[#333333] text-gray-300 hover:bg-[#3a3a3a]"
+                  }`}
+                >
+                  ferry_trips_data.csv
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
               <button 
                 onClick={askQuestion}
                 disabled={isLoading || !question.trim()}
                 className={`px-4 py-2 rounded-md text-sm font-medium text-white ${
-                  isLoading || !question.trim() ? 'bg-blue-700 opacity-50' : 'bg-blue-600 hover:bg-blue-700'
+                  isLoading || !question.trim() ? 'bg-green-700 opacity-50' : 'bg-green-600 hover:bg-green-700'
                 }`}
               >
                 {isLoading ? 'Processing...' : 'Send'}
@@ -125,6 +154,7 @@ export default function QuestionForm() {
           <div className="p-5">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-medium text-gray-300">Response</h3>
+              <div className="text-xs text-gray-400">Source: {sourceFile}</div>
             </div>
             <div className="bg-[#333333] rounded-md p-4 min-h-[200px] border border-gray-600">
               {isLoading ? (
