@@ -1,8 +1,29 @@
+import fs from 'fs';
+import path from 'path';
+
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const { question, source_file, prompt_file } = req.body;
-      console.log("Sending to backend:", { question, source_file, prompt_file });
+      
+      let questionText = question;
+      
+      // If prompt_file is provided, read the content from the file.
+      if (prompt_file) {
+        const promptPath = path.join(process.cwd(), 'public', 'prompts', prompt_file);
+        
+        if (fs.existsSync(promptPath)) {
+          questionText = fs.readFileSync(promptPath, 'utf8');
+        } else {
+          return res.status(400).json({ content: `Error: Prompt file '${prompt_file}' not found` });
+        }
+      }
+      
+      if (!questionText) {
+        return res.status(400).json({ content: "Error: No question provided" });
+      }
+      
+      console.log("Sending to backend:", { question: questionText, source_file });
       
       const response = await fetch("http://127.0.0.1:5000/api/query", {
         method: "POST",
@@ -10,9 +31,8 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          question,
-          source_file,
-          prompt_file 
+          question: questionText,
+          source_file
         }),
       });
 
