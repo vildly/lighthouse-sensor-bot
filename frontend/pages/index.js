@@ -5,7 +5,7 @@ export default function QuestionForm() {
   const [content, setContent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState("offline");
-  const [sourceFile, setSourceFile] = useState("ferries.json"); // Default source file
+  const [sourceFile, setSourceFile] = useState("ferries.json"); // Default source file.
 
   const askQuestion = async () => {
     if (!question.trim()) return;
@@ -21,7 +21,7 @@ export default function QuestionForm() {
         },
         body: JSON.stringify({ 
           question,
-          source_file: sourceFile // Include the selected source file
+          source_file: sourceFile // Include the selected source file.
         }),
       });
       
@@ -51,6 +51,20 @@ export default function QuestionForm() {
       alert(`Backend connection test: ${data.content || "Failed"}`);
     } catch (error) {
       alert(`Backend connection test failed: ${error.message}`);
+    }
+  };
+  
+  const loadPrompt = async () => {
+    try {
+      const response = await fetch("/api/load-prompt");
+      const data = await response.json();
+      if (data.content) {
+        setQuestion(data.content);
+      } else {
+        alert("Failed to load prompt");
+      }
+    } catch (error) {
+      alert(`Failed to load prompt: ${error.message}`);
     }
   };
 
@@ -106,8 +120,16 @@ export default function QuestionForm() {
             
             {/* Source File Selection */}
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Select Data Source:</h4>
-              <div className="flex space-x-2">
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-medium text-gray-300">Select Data Source:</h4>
+                <button
+                  onClick={loadPrompt}
+                  className="px-3 py-1 rounded-md text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Prompt
+                </button>
+              </div>
+              <div className="flex space-x-2 mt-2">
                 <button
                   onClick={() => setSourceFile("ferries.json")}
                   className={`px-3 py-1 rounded-md text-xs font-medium ${
