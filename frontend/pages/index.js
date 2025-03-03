@@ -1,21 +1,20 @@
+// pages/index.js
 import { useState, useEffect } from "react";
 
-// This is a simple form that allows the user to ask a question and receive a response.
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
   const [content, setContent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [backendStatus, setBackendStatus] = useState("unknown"); // "unknown", "online", "offline"
+  const [backendStatus, setBackendStatus] = useState("offline");
 
+  // Keep all existing functions
   const askQuestion = async () => {
     if (!question.trim()) return;
     
     setIsLoading(true);
-    setContent(null); // Clear previous content.
+    setContent(null);
     
     try {
-      console.log("Sending question to API:", question);
       const response = await fetch("/api/query", {
         method: "POST",
         headers: {
@@ -23,53 +22,21 @@ export default function QuestionForm() {
         },
         body: JSON.stringify({ question }),
       });
-  
-      console.log("API response status:", response.status);
       
       if (!response.ok) {
-        console.error("API response not OK:", response.status, response.statusText);
         throw new Error(`Failed to get response: ${response.status} ${response.statusText}`);
       }
   
       const data = await response.json();
-      console.log("Received data from API:", data);
       
       if (data.content) {
-        console.log("Setting content to:", data.content);
         setContent(data.content);
       } else {
-        console.log("No content found in response data:", data);
         setContent("No content available. Response format may be incorrect.");
       }
     } catch (error) {
-      console.error("Error fetching response:", error);
       setContent(`Failed to fetch response: ${error.message}`);
-      setBackendStatus("offline"); // Update backend status on error
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const analyzeFile = async (filename) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          prompt_file: filename 
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to get response");
-
-      const data = await response.json();
-      setContent(data.content || "No content available.");
-    } catch (error) {
-      console.error("Error fetching response:", error);
-      setContent("Failed to fetch response.");
+      setBackendStatus("offline");
     } finally {
       setIsLoading(false);
     }
@@ -79,10 +46,8 @@ export default function QuestionForm() {
     try {
       const response = await fetch("/api/test");
       const data = await response.json();
-      console.log("Test connection result:", data);
       alert(`Backend connection test: ${data.content || "Failed"}`);
     } catch (error) {
-      console.error("Test connection failed:", error);
       alert(`Backend connection test failed: ${error.message}`);
     }
   };
@@ -97,100 +62,85 @@ export default function QuestionForm() {
         setBackendStatus("offline");
       }
     } catch (error) {
-      console.error("Backend status check failed:", error);
       setBackendStatus("offline");
     }
   };
 
   useEffect(() => {
     checkBackendStatus();
-    // Check status every 30 seconds
     const interval = setInterval(checkBackendStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Maritime AI Analysis</h1>
+    <div className="min-h-screen bg-[#1c1c1e] text-gray-200">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <header className="mb-8 flex justify-between items-center">
+          <h1 className="text-xl font-medium text-gray-100">Maritime AI Analysis</h1>
+          <div className="flex items-center">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+              backendStatus === "online" ? "bg-green-900 text-green-300" : 
+              "bg-red-900 text-red-300"
+            }`}>
+              Backend: {backendStatus}
+            </div>
+          </div>
+        </header>
         
-        <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-6 shadow-lg">
-          <div className="mb-6">
-            <label className="block text-lg mb-2">Select AI Model:</label>
-            <select 
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-              defaultValue="default-model"
-            >
-              <option value="default-model">🇺🇸 GPT-3.5 Turbo (Technical & Maritime Analysis)</option>
-            </select>
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-lg mb-2">Your Maritime Question:</label>
-            <textarea
-              rows="4"
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
-              placeholder="Examples: Which ferry is the most powerful? Based on ferries-info!"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            ></textarea>
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-lg mb-2">Analysis Files:</label>
-            <div className="grid grid-cols-2 gap-3">
+        <div className="bg-[#262626] rounded-md shadow-lg overflow-hidden border border-gray-700">
+          {/* Query Section */}
+          <div className="p-5 border-b border-gray-700">
+            <h3 className="text-sm font-medium text-gray-300 mb-3">Maritime Query</h3>
+            
+            <div className="mb-4">
+              <textarea
+                rows="3"
+                className="w-full p-3 bg-[#333333] border border-gray-600 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-200"
+                placeholder="Examples: Which ferry is the most powerful? Based on ferries-info!"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+              ></textarea>
+            </div>
+            
+            <div className="flex space-x-2">
               <button 
-                onClick={() => analyzeFile("ferry_analysis.txt")}
-                className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-center"
+                onClick={askQuestion}
+                disabled={isLoading || !question.trim()}
+                className={`px-4 py-2 rounded-md text-sm font-medium text-white ${
+                  isLoading || !question.trim() ? 'bg-blue-700 opacity-50' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
-                Ferry Analysis
+                {isLoading ? 'Processing...' : 'Send'}
               </button>
               <button 
-                onClick={() => analyzeFile("my_analysis.txt")}
-                className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-center"
+                onClick={testConnection}
+                className="px-4 py-2 bg-[#333333] hover:bg-[#3a3a3a] rounded-md text-sm font-medium text-gray-300"
               >
-                Trip Data Analysis
+                Test Connection
               </button>
             </div>
           </div>
           
-          <button
-            onClick={askQuestion}
-            disabled={isLoading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-          >
-            {isLoading ? "Analyzing..." : "Analyze"}
-          </button>
-          
-          {content && (
-            <div className="mt-8 bg-gray-700 p-5 rounded-lg">
-              <h2 className="font-semibold text-xl mb-3">Analysis Results:</h2>
-              <div className="prose prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap text-sm">{content}</pre>
-              </div>
+          {/* Response Section */}
+          <div className="p-5">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-medium text-gray-300">Response</h3>
             </div>
-          )}
-          
-          <button 
-            onClick={testConnection}
-            className="text-xs text-gray-400 hover:text-white mt-2"
-          >
-            Test Connection
-          </button>
-          
-          <div className="text-xs mt-2 flex items-center">
-            <span className="mr-2">Backend:</span>
-            <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-              backendStatus === "online" ? "bg-green-500" : 
-              backendStatus === "offline" ? "bg-red-500" : "bg-yellow-500"
-            }`}></span>
-            <span className={
-              backendStatus === "online" ? "text-green-500" : 
-              backendStatus === "offline" ? "text-red-500" : "text-yellow-500"
-            }>
-              {backendStatus === "online" ? "Online" : 
-               backendStatus === "offline" ? "Offline" : "Checking..."}
-            </span>
+            <div className="bg-[#333333] rounded-md p-4 min-h-[200px] border border-gray-600">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : content ? (
+                <div className="prose prose-sm max-w-none text-gray-300">
+                  {content}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-sm flex justify-center items-center h-full">
+                  Enter your question and click Send to get a response
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
