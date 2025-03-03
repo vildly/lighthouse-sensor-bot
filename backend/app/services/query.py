@@ -4,7 +4,7 @@ import io
 import logging
 from agno.utils.log import logger
 
-def query(data, data_dir=None, output_dir=None, data_analyst=None):
+def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
     
     Args:
@@ -72,7 +72,13 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None):
         print(txt)
         
         # Save the query and response to a file, including SQL queries
-        saved_filepath = save_response_to_file(question, txt, output_dir, sql_queries)
+        saved_filepath = save_response_to_file(
+            question, 
+            txt, 
+            output_dir, 
+            sql_queries=sql_queries,
+        )
+        
         if saved_filepath:
             print(f"Query and response saved to: {saved_filepath}")
             return {"response": txt, "content": txt, "saved_to": str(saved_filepath)}
