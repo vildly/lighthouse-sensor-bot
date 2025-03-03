@@ -51,4 +51,12 @@ def query_endpoint():
     # Otherwise, just return the result
     return jsonify(result)
 
+@api_bp.route("/test", methods=["GET"])
+def test_connection():
+    """Test endpoint to verify the connection between frontend and backend"""
+    return jsonify({
+        "content": "Backend connection test successful",
+        "status": "online"
+    })
+
  
