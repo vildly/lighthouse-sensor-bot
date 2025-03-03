@@ -14,6 +14,7 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
         data_analyst: The agent that will process the query
     """
     prompt_filepath = data.get("prompt_file", None)
+    source_file = data.get("source_file", None)
 
     if prompt_filepath:
         question = load_prompt_from_file(data_dir.joinpath(prompt_filepath))
@@ -24,6 +25,10 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
 
     if not question:
         return {"error": "No question or prompt file provided", "content": "Error: No question provided"}, 400
+
+    # If source_file is provided, add it to the question
+    if source_file:
+        question = f"{question} (Use data from {source_file})"
 
     try:
         # Set up to capture SQL queries
