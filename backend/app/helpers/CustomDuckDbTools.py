@@ -4,10 +4,11 @@ import os
 from agno.utils.log import logger
 
 class CustomDuckDbTools(DuckDbTools):
-    def __init__(self, data_dir, semantic_model=None, **kwargs):
+    def __init__(self, data_dir, semantic_model=None, source_file=None, **kwargs):
         super().__init__(**kwargs)
         self.data_dir = data_dir
         self.semantic_model = semantic_model
+        self.source_file = source_file
         
     def create_table_from_path(self, path: str, table: Optional[str] = None, replace: bool = False) -> str:
         """Creates a table from a path, using the local data directory
@@ -20,8 +21,17 @@ class CustomDuckDbTools(DuckDbTools):
         original_path = path
         original_table = table
         
-        # If we have a semantic model, try to find the correct path for the table
-        if self.semantic_model and table:
+        # If source_file is specified and table is 'data', use the source_file
+        if self.source_file and (table == 'data' or table == 'main_data' or table == 'ferry_data'):
+            path = self.source_file
+            logger.info(f"Using specified source file: {path}")
+            
+            # If the table is 'ferry_data', keep that name, otherwise use 'data'
+            if table != 'ferry_data':
+                table = 'data'
+                
+        # Otherwise, if we have a semantic model, try to find the correct path for the table
+        elif self.semantic_model and table:
             # Look for the table in the semantic model
             table_found = False
             for t in self.semantic_model.get('tables', []):
