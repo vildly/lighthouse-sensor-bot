@@ -20,11 +20,11 @@ if not openai_api_key:
 
 # RAGAS imports
 from ragas.metrics import (
-    Faithfulness,
-    ResponseRelevancy,
+    Faithfulness as faithfulness,
+    ResponseRelevancy as answer_relevancy,
     # context_relevancy,
-    LLMContextRecall,
-    LLMContextPrecisionWithoutReference,
+    LLMContextRecall as context_recall,
+    LLMContextPrecisionWithoutReference as context_precision,
 )
 from ragas.metrics import AspectCritic
 from datasets import Dataset
@@ -82,128 +82,145 @@ def query_agent(question: str, api_url="http://127.0.0.1:5000/api/query"):
         return None, []
 
 
+def custom_evaluate(dataset, metrics):
+    """Custom evaluation function to bypass RAGAS validation issues."""
+    from ragas.evaluation import score_dataset
+    
+    # Skip the validation step and directly call the scoring function
+    results = {}
+    for metric in metrics:
+        try:
+            metric_results = score_dataset(dataset, metric)
+            results.update(metric_results)
+        except Exception as e:
+            print(f"Error evaluating {metric.__class__.__name__}: {e}")
+    
+    return results
+
+
 def run_ragas_evaluation(test_cases_df):
     """Run RAGAS evaluation on the test cases."""
-    questions = []
-    answers = []
-    contexts = []
-    ground_truths = []
+    # Initialize the LLM for evaluation
+    llm = ChatOpenAI(
+        model="gpt-3.5-turbo",
+        temperature=0,
+        api_key=openai_api_key
+    )
     
-    # Process each test case
+    # Create a LangchainLLMWrapper
+    from ragas.llms import LangchainLLMWrapper
+    evaluator_llm = LangchainLLMWrapper(llm)
+    
+    # Prepare dataset in the format expected by RAGAS
+    dataset_items = []
+    
     for _, row in test_cases_df.iterrows():
         question = str(row['query'])
         ground_truth = str(row['ground_truth'])
         
         # Query the agent
-        answer, context_list = query_agent(question)
+        answer, context = query_agent(question)
         if answer is None:
             continue
-            
-        # Format context properly for RAGAS
-        # RAGAS expects a list of strings for the context
-        formatted_context = [str(c) for c in (context_list if context_list else ["No context provided"])]
         
-        # Append to lists
-        questions.append(question)
-        answers.append(str(answer))
-        contexts.append(formatted_context)
-        ground_truths.append(ground_truth)
+        # Format context properly
+        formatted_context = [str(c) for c in (context if context else ["No context provided"])]
+        
+        # Add to dataset
+        dataset_items.append({
+            "user_input": question,
+            "retrieved_contexts": formatted_context,
+            "response": answer,
+            "reference": ground_truth
+        })
     
-    # Create dataset for RAGAS
-    data = {
-        "question": questions,
-        "answer": answers,
-        "contexts": contexts,
-        "ground_truth": ground_truths
-    }
+    # Create EvaluationDataset
+    from ragas import EvaluationDataset
+    evaluation_dataset = EvaluationDataset.from_list(dataset_items)
     
-    # Convert to RAGAS dataset format
-    dataset = Dataset.from_dict(data)
+    # Import the metrics
+    from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness
     
-    # Define metrics to evaluate individually to handle potential errors
-    try:
-        faithfulness_result = evaluate(dataset, [Faithfulness])
-    except Exception as e:
-        print(f"Error evaluating faithfulness: {e}")
-        faithfulness_result = {"faithfulness": [0.0] * len(questions)}
+    # Run evaluation
+    results = evaluate(
+        dataset=evaluation_dataset,
+        metrics=[LLMContextRecall(), Faithfulness(), FactualCorrectness()],
+        llm=evaluator_llm
+    )
     
-    try:
-        answer_relevancy_result = evaluate(dataset, [ResponseRelevancy])
-    except Exception as e:
-        print(f"Error evaluating answer_relevancy: {e}")
-        answer_relevancy_result = {"answer_relevancy": [0.0] * len(questions)}
-    
-    try:
-        context_relevancy_result = evaluate(dataset, [LLMContextRecall])
-    except Exception as e:
-        print(f"Error evaluating context_relevancy: {e}")
-        context_relevancy_result = {"context_relevancy": [0.0] * len(questions)}
-    
-    try:
-        context_recall_result = evaluate(dataset, [LLMContextRecall])
-    except Exception as e:
-        print(f"Error evaluating context_recall: {e}")
-        context_recall_result = {"context_recall": [0.0] * len(questions)}
-    
-    try:
-        context_precision_result = evaluate(dataset, [LLMContextPrecisionWithoutReference])
-    except Exception as e:
-        print(f"Error evaluating context_precision: {e}")
-        context_precision_result = {"context_precision": [0.0] * len(questions)}
-    
-    try:
-        harmfulness_result = evaluate(dataset, [AspectCritic])
-    except Exception as e:
-        print(f"Error evaluating harmfulness: {e}")
-        harmfulness_result = {"harmfulness": [0.0] * len(questions)}
-    
-    # Combine all results
-    results = {
-        **faithfulness_result,
-        **answer_relevancy_result,
-        **context_relevancy_result,
-        **context_recall_result,
-        **context_precision_result,
-        **harmfulness_result
-    }
-    
-    return results, data
+    return results, dataset_items
 
 
 def save_results(results, data, output_dir="output"):
     """Save RAGAS evaluation results to a timestamped folder within the output directory."""
     # Create a timestamp for the folder name
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-
+    
     # Create the timestamped folder path
     timestamped_dir = os.path.join(output_dir, timestamp)
-
+    
     # Create the directory if it doesn't exist
     os.makedirs(timestamped_dir, exist_ok=True)
-
+    
+    # Save metrics summary
+    metrics_path = os.path.join(timestamped_dir, "metrics_summary.csv")
+    
+    # Convert results to DataFrame
+    metrics_df = results.to_pandas()
+    
+    # Save the metrics DataFrame
+    metrics_df.to_csv(metrics_path, index=False)
+    
     # Save detailed results with questions, answers, and scores
     detailed_path = os.path.join(timestamped_dir, "detailed_results.csv")
-    detailed_df = pd.DataFrame(
+    
+    # Create a DataFrame with the detailed results
+    detailed_df = pd.DataFrame([
         {
-            "question": data["question"],
-            "ground_truth": data["ground_truth"],
-            "answer": data["answer"],
+            "question": item["user_input"],
+            "ground_truth": item["reference"],
+            "answer": item["response"]
         }
-    )
-
-    # Add metrics
-    for metric, scores in results.items():
-        if isinstance(scores, list) and all(
-            isinstance(x, (int, float)) for x in scores
-        ):
-            detailed_df[metric] = scores
-
+        for item in data
+    ])
+    
+    # Save detailed results
     detailed_df.to_csv(detailed_path, index=False)
-
+    
+    # Save a text summary file with the same timestamp
+    text_summary_path = os.path.join(timestamped_dir, f"{timestamp}.txt")
+    with open(text_summary_path, 'w') as f:
+        f.write(f"RAGAS Evaluation Results\n")
+        f.write(f"======================\n\n")
+        f.write(f"Timestamp: {timestamp}\n\n")
+        f.write(f"Summary Metrics:\n")
+        
+        # Get the metrics from the results object directly
+        # This assumes results has a get_scores() method or similar
+        try:
+            # Try to access scores directly from the results object
+            if hasattr(results, 'scores'):
+                for metric, score in results.scores.items():
+                    f.write(f"{metric}: {score:.4f}\n")
+            elif hasattr(results, 'get_scores'):
+                scores = results.get_scores()
+                for metric, score in scores.items():
+                    f.write(f"{metric}: {score:.4f}\n")
+            else:
+                # Fallback: just write the DataFrame as is
+                f.write(f"Metrics DataFrame:\n{metrics_df.to_string()}\n")
+        except Exception as e:
+            f.write(f"Error getting scores: {e}\n")
+            f.write(f"Metrics DataFrame:\n{metrics_df.to_string()}\n")
+        
+        f.write(f"\nEvaluated {len(data)} questions\n")
+    
     print(f"Results saved to {timestamped_dir}")
-    print(f"- Summary metrics: {detailed_path}")
-
-    return detailed_df
+    print(f"- Summary metrics: {metrics_path}")
+    print(f"- Detailed results: {detailed_path}")
+    print(f"- Text summary: {text_summary_path}")
+    
+    return metrics_df, detailed_df
 
 
 def main():
@@ -211,20 +228,22 @@ def main():
     test_cases_df = load_test_cases()
     if test_cases_df is None:
         return
-
+    
     # Run RAGAS evaluation
     results, data = run_ragas_evaluation(test_cases_df)
-
+    
     # Save results
-    detailed_df = save_results(results, data)
-
+    metrics_df, detailed_df = save_results(results, data)
+    
     # Print summary
     print("\nRAGAS Evaluation Summary:")
-    for metric, scores in results.items():
-        if isinstance(scores, list) and all(
-            isinstance(x, (int, float)) for x in scores
-        ):
-            print(f"{metric}: {np.mean(scores):.4f}")
+    
+    metrics_df = results.to_pandas()
+    for column in metrics_df.columns:
+        if pd.api.types.is_numeric_dtype(metrics_df[column]):
+            print(f"{column}: {metrics_df[column].mean():.4f}")
+        else:
+            print(f"{column}: (non-numeric)")
 
 
 if __name__ == "__main__":
