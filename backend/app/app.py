@@ -55,5 +55,11 @@ app.config['DUCK_TOOLS'] = duck_tools
 app.config['DATA_DIR'] = data_dir
 app.config['OUTPUT_DIR'] = output_dir
 
+print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
+print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
+print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
+print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
+print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
