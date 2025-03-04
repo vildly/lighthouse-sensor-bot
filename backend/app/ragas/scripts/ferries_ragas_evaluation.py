@@ -13,6 +13,7 @@ load_dotenv()
 
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
+api_url = os.getenv("API_URL")
 if not openai_api_key:
     raise ValueError(
         "OPENAI_API_KEY environment variable not set. Please set it before running this script."
@@ -35,6 +36,8 @@ import langchain
 # Configure langchain to use the OpenAI API key
 langchain.openai_api_key = openai_api_key
 
+BASE_API_URL = os.getenv("API_URL")
+
 
 def load_test_cases(file_path="app/ragas/test_cases/ferries_test_cases.csv"):
     """Load test cases from CSV file."""
@@ -45,7 +48,7 @@ def load_test_cases(file_path="app/ragas/test_cases/ferries_test_cases.csv"):
         return None
 
 
-def query_agent(question: str, api_url="http://127.0.0.1:5000/api/query"):
+def query_agent(question: str, api_url=f"{BASE_API_URL}/api/query"):
     """Send a query to the agent API and get the response."""
     try:
         print(f"Querying agent with question: {question}")
