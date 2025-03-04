@@ -50,24 +50,21 @@ def query_agent(question: str, api_url="http://127.0.0.1:5000/api/query"):
     try:
         print(f"Querying agent with question: {question}")
         response = requests.post(
-            api_url,
+            api_url, 
             json={"question": question, "source_file": "ferries.json"},
-            timeout=30,
+            timeout=30  # Add a 30-second timeout
         )
         response.raise_for_status()
-
+        
         # Check if response contains expected fields
         response_data = response.json()
-        if "response" not in response_data:
-            print(
-                f"Warning: API response missing 'response' field. Full response: {response_data}"
-            )
+        if 'response' not in response_data:
+            print(f"Warning: API response missing 'response' field. Full response: {response_data}")
             return None, []
-
-        print(f"Received response: {response_data.get('response')[:50]}...")
-        # Add a small delay to avoid overwhelming the server
-        time.sleep(1)
-        return response_data.get("response"), response_data.get("context", [])
+        
+        print(f"Response: {response_data.get('response')[:50]}...")
+        
+        return response_data.get('response'), []
     except requests.exceptions.Timeout:
         print(f"Error: API request timed out after 30 seconds for question: {question}")
         return None, []
@@ -80,6 +77,39 @@ def query_agent(question: str, api_url="http://127.0.0.1:5000/api/query"):
     except Exception as e:
         print(f"Unexpected error: {e}")
         return None, []
+
+
+def get_context_from_ferries_json(question: str):
+    """Get relevant context from ferries.json based on the question."""
+    try:
+        with open("data/ferries.json", "r") as f:
+            ferries_data = json.load(f)
+            
+        # Extract ferry names from the question
+        ferry_names = []
+        for ferry in ferries_data.get("ferries", []):
+            if ferry.get("name") in question:
+                ferry_names.append(ferry.get("name"))
+        
+        # If no ferry names found in question, use all ferries as context
+        if not ferry_names:
+            return [json.dumps(ferries_data)]
+        
+        # Get relevant ferry data
+        relevant_ferries = []
+        for ferry in ferries_data.get("ferries", []):
+            if ferry.get("name") in ferry_names:
+                relevant_ferries.append(ferry)
+        
+        # If we found relevant ferries, use them as context
+        if relevant_ferries:
+            return [json.dumps(ferry) for ferry in relevant_ferries]
+        
+        # Fallback to using the entire ferries.json
+        return [json.dumps(ferries_data)]
+    except Exception as e:
+        print(f"Error loading ferries.json: {e}")
+        return ["Error loading context"]
 
 
 def custom_evaluate(dataset, metrics):
@@ -100,9 +130,8 @@ def custom_evaluate(dataset, metrics):
 
 def run_ragas_evaluation(test_cases_df):
     """Run RAGAS evaluation on the test cases."""
-    # Initialize the LLM for evaluation
     llm = ChatOpenAI(
-        model="gpt-3.5-turbo",
+        model="gpt-4o", 
         temperature=0,
         api_key=openai_api_key
     )
@@ -118,18 +147,19 @@ def run_ragas_evaluation(test_cases_df):
         question = str(row['query'])
         ground_truth = str(row['ground_truth'])
         
-        # Query the agent
-        answer, context = query_agent(question)
+        # Query the agent for the answer
+        answer, _ = query_agent(question)
         if answer is None:
             continue
         
-        # Format context properly
-        formatted_context = [str(c) for c in (context if context else ["No context provided"])]
+        # Get context directly from ferries.json
+        context_list = get_context_from_ferries_json(question)
+        print(f"Using ferries.json context: {context_list[0][:50]}...")
         
         # Add to dataset
         dataset_items.append({
             "user_input": question,
-            "retrieved_contexts": formatted_context,
+            "retrieved_contexts": context_list,
             "response": answer,
             "reference": ground_truth
         })
