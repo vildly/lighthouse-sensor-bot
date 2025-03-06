@@ -66,9 +66,10 @@ semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
 
 data_analyst = Agent(  
     instructions=semantic_instructions,
+    system_message=utils.duck.get_system_message(semantic_instructions, semantic_model_data),
     tools=[DuckDbTools()],  # Initialize with DuckDbTools
     show_tool_calls=True,
-    model=OpenAIChat(id="gpt-4o"), # or gpt-3.5-turbo if you prefer
+    model=OpenAIChat(id="gpt-3.5-turbo"), # or gpt-3.5-turbo if you prefer
     markdown=True
 )
 

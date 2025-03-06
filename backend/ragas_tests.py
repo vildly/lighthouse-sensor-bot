@@ -1,75 +1,85 @@
 import pandas as pd
 import json
-from flask import Flask, request, jsonify  # Assuming you're using Flask
-# ... (ragas imports if needed, but likely not directly for this part)
-import requests # to send requests to your API
-
-app = Flask(__name__)  # If you're running this in the same file as your Flask app
-
-# --- 1. Load Test Cases ---
-try:
-    test_cases = pd.read_csv("data/ragas/test_cases.csv")  # Make sure the path is correct
-except FileNotFoundError:
-    print("Error: test_cases.csv not found. Please create the file.")
-    exit() # or handle the error appropriately
+import requests
+from ragas import evaluate, EvaluationDataset
+from ragas.metrics import AspectCritic
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 
 
-def evaluate_numerical_answer(ground_truth, rag_output, threshold=0.05):
+### Define ragas metrics
+from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness, SemanticSimilarity
+
+# Initialize LLM and Embeddings wrappers
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
+
+def run_test_case(query, ground_truth=None):
+    api_url = "http://127.0.0.1:5000/query"
     try:
-        gt_value = float(ground_truth)
-        rag_value = float(rag_output)
-        if gt_value == 0:  # Avoid division by zero
-            percentage_error = float('inf') if rag_value != 0 else 0.0
-        else:
-            percentage_error = abs(gt_value - rag_value) / gt_value
-        return percentage_error, percentage_error <= threshold
-    except ValueError:
-        return None, False
-
-
-def run_test_case(query, ground_truth):
-    # --- 2. Call your Flask API ---
-    api_url = "http://127.0.0.1:5000/query"  # Replace with your API endpoint
-    try:
-        response = requests.post(api_url, json={"question": query}) # send json payload to your API
-        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-        agent_response = response.json().get('response') # assumes your API returns {"response": "the response"}
+        response = requests.post(api_url, json={"question": query})
+        response.raise_for_status()
+        agent_response = response.json().get('response')
         if agent_response is None:
-             print(f"Error: No 'response' key found in the API response for query: {query}")
-             return None, None, None, False
-
+            print(f"Error: No 'response' key found in the API response for query: {query}")
+            return None, True
     except requests.exceptions.RequestException as e:
         print(f"Error calling API for query: {query}: {e}")
-        return None, None, None, False
+        return None, False
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON response for query: {query}: {e}")
-        return None, None, None, False
+        return None, False
+    return agent_response, True
 
-    # --- 3. Evaluate ---
-    percentage_error, pass_fail = evaluate_numerical_answer(ground_truth, agent_response)
+# Load test cases from JSON file
+try:
+    with open("data/ragas/test_cases.json", "r") as f:
+        test_cases_list = json.load(f)
+except FileNotFoundError:
+    print("Error: test_cases.json not found.")
+    exit()
+except json.JSONDecodeError:
+    print("Error: Invalid JSON format in test_cases.json.")
+    exit()
 
-    return agent_response, percentage_error, pass_fail, True
-
-
-# --- 4. Run Tests and Store Results ---
 results = []
-for index, row in test_cases.iterrows():
-    query = row['query']
-    ground_truth = row['ground_truth']
 
-    agent_response, percentage_error, pass_fail, api_call_success = run_test_case(query, ground_truth)
-
+for test_case in test_cases_list:
+    query = test_case['user_input']
+    ground_truth = test_case.get('reference')
+    agent_response, api_call_success = run_test_case(query, ground_truth)
     results.append({
-        "query": query,
-        "ground_truth": ground_truth,
+        "user_input": query,
+        "reference": ground_truth,
         "agent_response": agent_response,
-        "percentage_error": percentage_error,
-        "pass_fail": pass_fail,
         "api_call_success": api_call_success
     })
 
-
-# --- 5. Output Results (Example: CSV) ---
 results_df = pd.DataFrame(results)
+
+# RAGAS Evaluation
+ragas_data = pd.DataFrame(test_cases_list)
+ragas_data['response'] = results_df['agent_response']
+
+# Ensure 'reference' column exists for RAGAS evaluation
+if 'reference' not in ragas_data.columns:
+    ragas_data['reference'] = None
+
+# Create EvaluationDataset
+eval_dataset = EvaluationDataset.from_pandas(ragas_data)
+
+metrics=[FactualCorrectness(), SemanticSimilarity(embeddings=evaluator_embeddings)]
+
+ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
+
+# Add RAGAS metrics to results_df
+for metric_name, scores in ragas_results.to_pandas().items():
+    if metric_name != 'hash':
+        results_df[metric_name] = scores
+
+
 results_df.to_csv("data/ragas/test_results.csv", index=False)
 print("Test results saved to test_results.csv")
+print(ragas_results)
