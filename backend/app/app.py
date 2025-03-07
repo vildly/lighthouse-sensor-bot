@@ -56,6 +56,7 @@ app.config['SEMANTIC_MODEL'] = load_json_from_file(data_dir.joinpath("semantic_m
 app.config['DATA_DIR'] = data_dir
 app.config['OUTPUT_DIR'] = output_dir
 
+# reminder for melker since he has the bad habit of always running wsl as root
 print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
 print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
 print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
