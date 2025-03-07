@@ -1,4 +1,8 @@
-"Perform a cost-benefit analysis for maintaining current trip frequencies versus potential savings from reduced fuel consumption during low demand. Columns fuelcons_outbound/inbound_l contains fuel consumption value. passenger_car_equivalent_outbound/inbound is how busy the trip was. \
-By looking in the schedule table for this route, suggest which adjustment to the timetable should be made based on the demand patterns, propose a more efficient schedule for the Ljusteröleden route to minimize fuel consumption while maintaining service quality. \
+"Perform a cost-benefit analysis for maintaining current trip frequencies versus potential savings from reduced fuel consumption during low demand.
+ Columns fuelcons_outbound/inbound_l contains fuel consumption value. 
+ passenger_car_equivalent_outbound/inbound is how busy the trip was. \
+By looking in the schedule table for this route, suggest which adjustment to the timetable 
+should be made based on the demand patterns, propose a more efficient schedule for the 
+Ljusteröleden route to minimize fuel consumption while maintaining service quality. \
 Provide recommendations for adjusting the number of trips during low-demand periods to save fuel. \
 Estimate potential cost savings over a year if low-demand trips are reduced by 20%."
