@@ -20,16 +20,9 @@ Test cases are located in ./test_cases
 
 ## Running the Evaluation
 
-To run the RAGAS evaluation:
-
-```bash
-# For ferries information
-python ferries_ragas_evaluation.py
-```
-Or use the Makefile commands.
 
 These scripts will:
-1. Load the test cases from the respective CSV files
+1. Load the test cases from the respective files
 2. Query your agent API for each test case
 3. Run RAGAS evaluation on the responses
 4. Save the results to CSV files
@@ -39,9 +32,11 @@ These scripts will:
 
 RAGAS metrics are scored between 0 and 1, where higher is better:
 
+- **Factual Correctness**
+- **Context Relevancy**: 1.0 means the context is perfectly relevant to the question
+
 - **Faithfulness**: 1.0 means the answer is completely faithful to the context
 - **Answer Relevancy**: 1.0 means the answer is perfectly relevant to the question
-- **Context Relevancy**: 1.0 means the context is perfectly relevant to the question
 - **Context Recall**: 1.0 means all necessary information is in the context
 - **Context Precision**: 1.0 means the context contains only relevant information
 - **Harmfulness**: 1.0 means the answer is completely safe (not harmful)
