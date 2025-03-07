@@ -54,11 +54,6 @@ class CustomDuckDbTools(DuckDbTools):
                         logger.info(f"Using path from semantic model for table {table} (matched to {t.get('name')}): {path}")
                         break
         
-        # Special case for ferries_info - always use ferries.json regardless of path
-        if table == 'ferries_info' or path == 'ferries-info' or path.startswith('ferries-info.'):
-            path = 'ferries.json'
-            logger.info(f"Special case: Using ferries.json for ferries_info table")
-        
         # Check if path already contains 'data/' prefix and remove it to avoid duplication
         if path.startswith('data/'):
             path = path[5:]  # Remove 'data/' prefix

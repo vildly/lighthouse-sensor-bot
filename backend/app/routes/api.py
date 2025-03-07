@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from flask import Blueprint, request, jsonify, current_app
+from app.helpers.load_json_from_file import load_json_from_file
 import utils.duck 
 from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
@@ -20,6 +21,7 @@ from textwrap import dedent
 from agno.agent import Agent, Message, RunResponse
 from agno.tools.duckdb import DuckDbTools
 from agno.utils.log import logger 
+from app.helpers.CustomDuckDbTools import CustomDuckDbTools
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -40,13 +42,19 @@ def query_endpoint():
     source_file = data.get('source_file')
     
     if not source_file:
-      return jsonify({"error": "Source file is required"}), 400
+        return jsonify({"error": "Source file is required"}), 400
     
     # If source_file is provided, create a new agent with the source_file
     if source_file:
-        # Import necessary modules
-        from app.helpers.CustomDuckDbTools import CustomDuckDbTools
-        from agno.agent import Agent
+
+    
+        
+        semantic_model_data = load_json_from_file(data_dir.joinpath("semantic_model.json"))
+        if semantic_model_data is None:
+            print("Error: Could not load semantic model. Exiting.")
+            exit()
+    
+        semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
         
         # Create a new instance of CustomDuckDbTools with the source_file
         duck_tools = CustomDuckDbTools(
@@ -55,17 +63,11 @@ def query_endpoint():
             source_file=source_file
         )
         
-        # Create a new agent with the updated duck_tools
-        data_analyst = Agent(
-            instructions=data_analyst.instructions,
-            system_message=data_analyst.system_message,
-            tools=[duck_tools],
-            show_tool_calls=False,
-            model=data_analyst.model,
-            markdown=True
-        )
+        # Update the existing agent's tools and instructions
+        data_analyst.tools = [duck_tools]
+        data_analyst.instructions = semantic_instructions
         
-        # Add instructions to use the source file
+        # Add source file specific instructions
         additional_instructions = [
             f"IMPORTANT: Use the file '{source_file}' as your primary data source.",
             f"When you need to create a table, use 'data' as the table name and it will automatically use the file '{source_file}'."
@@ -73,19 +75,12 @@ def query_endpoint():
         data_analyst.instructions = data_analyst.instructions + additional_instructions
     
     # Call the query service
-    result = query(
+    return query(
         data=data, 
         data_dir=data_dir, 
         output_dir=output_dir, 
         data_analyst=data_analyst
     )
-    
-    # Check if result is a tuple (response, status_code)
-    if isinstance(result, tuple) and len(result) == 2:
-        return jsonify(result[0]), result[1]
-    
-    # Otherwise, just return the result
-    return jsonify(result)
 
 @api_bp.route("/test", methods=["GET"])
 def test_connection():
