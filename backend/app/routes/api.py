@@ -51,13 +51,14 @@ def query_endpoint():
         # Create a new instance of CustomDuckDbTools with the source_file
         duck_tools = CustomDuckDbTools(
             data_dir=str(data_dir),
-            semantic_model=current_app.config['DUCK_TOOLS'].semantic_model,
+            semantic_model=current_app.config['SEMANTIC_MODEL'],
             source_file=source_file
         )
         
         # Create a new agent with the updated duck_tools
         data_analyst = Agent(
             instructions=data_analyst.instructions,
+            system_message=data_analyst.system_message,
             tools=[duck_tools],
             show_tool_calls=False,
             model=data_analyst.model,

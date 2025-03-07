@@ -15,4 +15,4 @@ clean:
 	rm -rf __pycache__ .pytest_cache .mypy_cache
 
 eval:
-	python -m app.ragas.scripts.ferries_ragas_evaluation
+	python -m app.ragas.scripts.ragas_tests
