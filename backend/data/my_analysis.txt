@@ -1,0 +1,5 @@
+Analyze the ferry trip data and provide insights on:
+1. Peak usage times
+2. Fuel consumption patterns
+3. Recommendations for optimization
+Please provide specific data points and statistics to support your analysis. 

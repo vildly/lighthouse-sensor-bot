@@ -47,10 +47,10 @@ def get_default_instructions(semantic_model) -> List[str]:
         return instructions
 
 def get_system_message(instructions, semantic_model) -> List[str]:
-        print(semantic_model)
+        # print(semantic_model)
         """Return the system message for the DuckDbAgent"""
 
-        print("Building the system message for the DuckDbAgent.")
+        # print("Building the system message for the DuckDbAgent.")
 
         # First add the Agent description
         system_message = "You are a Data Engineering expert designed to perform tasks using DuckDb."
@@ -90,5 +90,5 @@ def get_system_message(instructions, semantic_model) -> List[str]:
             system_message += json.dumps(semantic_model['tables'][0]) #"".join(semantic_model['tables'][0])
             
             system_message += "\n"
-        print(system_message)
+        # print(system_message)
         return system_message.strip()
