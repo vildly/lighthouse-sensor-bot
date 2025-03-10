@@ -1,0 +1,10 @@
+[
+  {
+    "user_input": "What is the total fuel cost for ferry Jupiter in January 2024?",
+    "reference": "€17895.27"
+  },
+  {
+    "user_input": "What is the average speed of ferry Jupiter?",
+    "reference": "6.17 knots"
+  }
+]

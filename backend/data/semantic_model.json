@@ -8,17 +8,17 @@
     {
       "name": "ferries-info",
       "description": "A JSON file containing information of the ferries owned by Färjerederiet that share their data to PONTOS-HUB. The `pontos_vessel_id` key-value pair can be use for querying the REST-API of PONTOS-HUB.",
-      "path": "ferries.json"
+      "path": "data/ferries.json"
     },
     {
       "name": "ljusteroleden_oktober_april_schedule",
       "description": " Schedules for the ferry route Ljusteroleden",
-      "path": "schedules/ljusteroleden_oktober_april_utg22_2020_w.csv"
+      "path": "data/schedules/ljusteroleden_oktober_april_utg22_2020_w.csv"
     },
     {
       "name": "furusundsleden-blidoleden-schedule",
       "description": " Schedules for the ferry route Furusundsleden, Yxlan ferry",
-      "path": "schedules/furusundsleden-blidoleden_utg9_200623_w.csv"
+      "path": "data/schedules/furusundsleden-blidoleden_utg9_200623_w.csv"
     }
   ]
 }
