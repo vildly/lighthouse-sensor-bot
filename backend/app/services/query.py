@@ -3,7 +3,6 @@ from app.helpers.save_query_to_file import save_response_to_file
 import io
 import logging
 from agno.utils.log import logger
-import pandas as pd
 
 def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
@@ -32,13 +31,6 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
         question = f"{question} (Use data from {source_file})"
 
     try:
-        # Load the actual data as context
-        context_data = []
-        if source_file:
-            df = pd.read_csv(data_dir.joinpath(source_file))
-            # Convert each row to a string representation
-            context_data = [row.to_string() for _, row in df.iterrows()]
-
         # Set up to capture SQL queries
         sql_queries = []
         
@@ -94,20 +86,10 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
         
         if saved_filepath:
             print(f"Query and response saved to: {saved_filepath}")
-            return {
-                "response": txt, 
-                "content": txt, 
-                "context": context_data,
-                "saved_to": str(saved_filepath)
-            }
+            return {"response": txt, "content": txt, "saved_to": str(saved_filepath)}
         else:
             print("Failed to save query and response to file")
-            return {
-                "response": txt, 
-                "content": txt, 
-                "context": context_data,
-                "saved_to": None
-            }
+            return {"response": txt, "content": txt, "saved_to": None}
 
     except Exception as e:
         error_message = f"Error processing query: {str(e)}"

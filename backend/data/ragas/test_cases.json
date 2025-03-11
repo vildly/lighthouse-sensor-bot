@@ -4,7 +4,7 @@
     "reference": "€17895.27"
   },
   {
-    "user_input": "What is the average speed of ferry Jupiter? It is 6.17 knots, just return this value",
+    "user_input": "What is the average speed of ferry Jupiter?",
     "reference": "6.17 knots"
   }
 ]
