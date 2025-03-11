@@ -31,7 +31,8 @@ def run_test_case(query, ground_truth=None):
         response.raise_for_status()
         
         response_data = response.json()
-        agent_response = response_data.get('content')
+        agent_response = response_data.get('content')  # This is already the clean response
+        full_response = response_data.get('full_response')  # This contains the full context
         sql_queries = response_data.get('sql_queries', [])
         
         if agent_response is None:
@@ -44,7 +45,7 @@ def run_test_case(query, ground_truth=None):
             contexts.append(f"SQL Query: {sql}")
         
         # Add the complete agent response as context
-        contexts.append(f"Agent Reasoning and Response: {agent_response}")
+        contexts.append(f"Agent Reasoning and Response: {full_response}")
         
         return agent_response, contexts, True
         
