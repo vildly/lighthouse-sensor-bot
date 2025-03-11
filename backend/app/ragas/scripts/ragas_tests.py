@@ -16,6 +16,7 @@ load_dotenv()
 
 
 API_URL = os.getenv('API_URL')
+RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 
 ### Define ragas metrics
 from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness, SemanticSimilarity
@@ -82,9 +83,12 @@ if 'reference' not in ragas_data.columns:
 # Create EvaluationDataset
 eval_dataset = EvaluationDataset.from_pandas(ragas_data)
 
-metrics=[FactualCorrectness(), SemanticSimilarity(embeddings=evaluator_embeddings)]
+metrics=[FactualCorrectness(llm = evaluator_llm), SemanticSimilarity(embeddings=evaluator_embeddings)]
 
 ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
+
+ragas_results.upload()
+
 
 # Add RAGAS metrics to results_df
 for metric_name, scores in ragas_results.to_pandas().items():
