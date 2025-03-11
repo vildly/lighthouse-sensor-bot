@@ -1,0 +1,13 @@
+Analyze the ferries.json file and provide insights on:
+1. Compare the installed power and capacity of different ferries
+2. Analyze the age and specifications of propulsion systems
+3. Identify patterns in engine configurations
+4. Compare vessel sizes and their passenger car equivalent capacities
+
+Focus particularly on:
+- Power to capacity ratios
+- Age of equipment (especially engines and propulsion systems)
+- Differences in propulsion types
+- Size efficiency (comparing length/breadth to capacity)
+
+Please provide specific data points and statistics to support your analysis. 

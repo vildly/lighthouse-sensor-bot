@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: lighthouse-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: lighthouse
+      MYSQL_USER: lighthouse_user
+      MYSQL_PASSWORD: lighthouse_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./utils/sql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - lighthouse-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  lighthouse-network:
+    driver: bridge
