@@ -17,8 +17,8 @@ class LenientFactualCorrectness(SingleTurnMetric):
         }
     )
 
-
     def init(self, run_config=None) -> None:
+        """No-op init required by SingleTurnMetric in RAGAS 0.2.14."""
         pass
 
     def supports_sample_type(self, sample_type) -> bool:
@@ -28,16 +28,23 @@ class LenientFactualCorrectness(SingleTurnMetric):
         response_val = self.extract_number(sample.response)
         reference_val = self.extract_number(sample.reference)
 
+        # If either has no numeric content, score 0.0
         if response_val is None or reference_val is None:
             return 0.0
 
         diff = abs(response_val - reference_val)
-        if diff < 0.01:
+        
+        # Award a perfect 1.0 only if they match exactly
+        if diff == 0:
             return 1.0
-        elif diff < 0.1:
-            return 1.0 - (diff / 0.1)
-        else:
-            return 0.0
+        # Slight partial credit if difference < 0.01
+        elif diff < 0.01:
+            return 0.75
+        # Minimal partial credit if difference < 0.05
+        elif diff < 0.05:
+            return 0.4
+        # Otherwise 0.0
+        return 0.0
 
     def extract_number(self, text: str) -> float:
         match = re.search(r"([\d\.]+)", text)
