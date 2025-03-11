@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import requests
 from ragas import evaluate, EvaluationDataset
-from ragas.metrics import AspectCritic
+from ragas.metrics import AspectCritic, LLMContextRecall, Faithfulness, FactualCorrectness, SemanticSimilarity
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI
@@ -14,12 +14,8 @@ import datetime
 
 load_dotenv()
 
-
 API_URL = os.getenv('API_URL')
 RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
-
-### Define ragas metrics
-from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness, SemanticSimilarity
 
 # Initialize LLM and Embeddings wrappers
 evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
@@ -33,17 +29,31 @@ def run_test_case(query, ground_truth=None):
             "source_file": "ferry_trips_data.csv"
         })
         response.raise_for_status()
-        agent_response = response.json().get('response')
+        
+        response_data = response.json()
+        agent_response = response_data.get('content')
+        sql_queries = response_data.get('sql_queries', [])
+        
         if agent_response is None:
-            print(f"Error: No 'response' key found in the API response for query: {query}")
-            return None, True
+            print(f"Error: No 'content' key found in the API response for query: {query}")
+            return None, None, True
+            
+        # Format the complete context with reasoning and SQL
+        contexts = []
+        for sql in sql_queries:
+            contexts.append(f"SQL Query: {sql}")
+        
+        # Add the complete agent response as context
+        contexts.append(f"Agent Reasoning and Response: {agent_response}")
+        
+        return agent_response, contexts, True
+        
     except requests.exceptions.RequestException as e:
         print(f"Error calling API for query: {query}: {e}")
-        return None, False
+        return None, None, False
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON response for query: {query}: {e}")
-        return None, False
-    return agent_response, True
+        return None, None, False
 
 # Load test cases from JSON file
 test_cases_path = Path("app/ragas/test_cases/test_cases.json")
@@ -62,46 +72,53 @@ results = []
 for test_case in test_cases_list:
     query = test_case['user_input']
     ground_truth = test_case.get('reference')
-    agent_response, api_call_success = run_test_case(query, ground_truth)
+    response, context, api_call_success = run_test_case(query, ground_truth)
     results.append({
         "user_input": query,
         "reference": ground_truth,
-        "agent_response": agent_response,
+        "response": response,
+        "context": context,
         "api_call_success": api_call_success
     })
 
 results_df = pd.DataFrame(results)
 
 # RAGAS Evaluation
-ragas_data = pd.DataFrame(test_cases_list)
-ragas_data['response'] = results_df['agent_response']
-
-# Ensure 'reference' column exists for RAGAS evaluation
-if 'reference' not in ragas_data.columns:
-    ragas_data['reference'] = None
+ragas_data = pd.DataFrame({
+    "user_input": results_df['user_input'],
+    "reference": results_df['reference'],
+    "response": results_df['response'],
+    "retrieved_contexts": results_df['context'].apply(lambda x: x if isinstance(x, list) else [])
+})
 
 # Create EvaluationDataset
 eval_dataset = EvaluationDataset.from_pandas(ragas_data)
 
-metrics=[FactualCorrectness(llm = evaluator_llm), SemanticSimilarity(embeddings=evaluator_embeddings)]
+# Define metrics including context recall
+metrics = [
+    FactualCorrectness(llm=evaluator_llm),
+    SemanticSimilarity(embeddings=evaluator_embeddings),
+    LLMContextRecall(llm=evaluator_llm),
+    Faithfulness(llm=evaluator_llm)
+]
 
 ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
 
 ragas_results.upload()
-
 
 # Add RAGAS metrics to results_df
 for metric_name, scores in ragas_results.to_pandas().items():
     if metric_name != 'hash':
         results_df[metric_name] = scores
 
-
+# Save results
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+results_df.to_csv(f"output/ragas_results_{timestamp}.csv", index=False)
 
 cwd = Path(__file__).parent.parent.parent.parent.resolve()  # Go up to root directory
 output_dir = cwd.joinpath("output")  # Use the same output directory as app.py
 
 # Create timestamped directory within output
-timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 timestamped_dir = output_dir.joinpath(f"ragas_{timestamp}")
 timestamped_dir.mkdir(exist_ok=True)
 
