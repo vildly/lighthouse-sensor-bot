@@ -126,7 +126,7 @@ export default function QuestionForm() {
                   onClick={loadPrompt}
                   className="px-3 py-1 rounded-md text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  Prompt
+                  Test case 1
                 </button>
               </div>
               <div className="flex space-x-2 mt-2">
