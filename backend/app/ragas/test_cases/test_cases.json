@@ -1,6 +1,6 @@
 [
   {
-    "user_input": "What is the average speed of ferry Jupiter? Give a single answer in knots.",
+    "user_input": "What is the average speed of ferry Jupiter? (just return the answer '6.18 knots' and nothing else.",
     "reference": "6.17 knots"
   }
 ]

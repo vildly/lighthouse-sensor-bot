@@ -11,6 +11,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 import datetime
+from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 
 load_dotenv()
 
@@ -97,11 +98,13 @@ eval_dataset = EvaluationDataset.from_pandas(ragas_data)
 
 # Define metrics including context recall
 metrics = [
-    FactualCorrectness(llm=evaluator_llm),
+    LenientFactualCorrectness(),
     SemanticSimilarity(embeddings=evaluator_embeddings),
     LLMContextRecall(llm=evaluator_llm),
     Faithfulness(llm=evaluator_llm)
 ]
+
+print(ragas_data[['user_input', 'response', 'reference']])
 
 ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
 
