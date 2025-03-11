@@ -94,11 +94,21 @@ export default function QuestionForm() {
         <header className="mb-8 flex justify-between items-center">
           <h1 className="text-xl font-medium text-gray-100">Maritime AI Analysis</h1>
           <div className="flex items-center">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-              backendStatus === "online" ? "bg-green-900 text-green-300" : 
-              "bg-red-900 text-red-300"
-            }`}>
-              Backend: {backendStatus}
+            {/* Backend status and test connection button */}
+            <div className="flex items-center space-x-2 mb-4">
+              <div className={`px-2 py-1 rounded text-xs font-medium ${
+                backendStatus === "online" 
+                  ? "bg-green-600 text-white" 
+                  : "bg-red-600 text-white"
+              }`}>
+                Backend: {backendStatus}
+              </div>
+              <button
+                onClick={testConnection}
+                className="px-3 py-1 rounded-md text-xs font-medium bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                Test Connection
+              </button>
             </div>
           </div>
         </header>
@@ -106,9 +116,16 @@ export default function QuestionForm() {
         <div className="bg-[#262626] rounded-md shadow-lg overflow-hidden border border-gray-700">
           {/* Query Section */}
           <div className="p-5 border-b border-gray-700">
-            <h3 className="text-sm font-medium text-gray-300 mb-3">Maritime Query</h3>
-            
             <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold text-white">Maritime Query</h2>
+                <button
+                  onClick={() => setQuestion("")}
+                  className="px-3 py-1 rounded-md text-xs font-medium bg-gray-600 hover:bg-gray-700 text-white"
+                >
+                  Clear
+                </button>
+              </div>
               <textarea
                 rows="3"
                 className="w-full p-3 bg-[#333333] border border-gray-600 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-200"
@@ -120,16 +137,19 @@ export default function QuestionForm() {
             
             {/* Source File Selection */}
             <div className="mb-4">
-              <div className="flex justify-between items-center">
-                <h4 className="text-sm font-medium text-gray-300">Select Data Source:</h4>
+              <div className="flex flex-col space-y-2">
                 <button
                   onClick={loadPrompt}
-                  className="px-3 py-1 rounded-md text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white"
+                  className="px-3 py-1 rounded-md text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white self-start"
                 >
                   Test case 1
                 </button>
+                
+                <hr className="border-white" />
               </div>
-              <div className="flex space-x-2 mt-2">
+              
+              <h4 className="text-sm font-medium text-gray-300 mb-2 mt-4">Select Data Source:</h4>
+              <div className="flex space-x-2">
                 <button
                   onClick={() => setSourceFile("ferries.json")}
                   className={`px-3 py-1 rounded-md text-xs font-medium ${
@@ -151,6 +171,8 @@ export default function QuestionForm() {
                   ferry_trips_data.csv
                 </button>
               </div>
+              
+              <hr className="my-3 border-white" />
             </div>
             
             <div className="flex justify-between items-center">
@@ -162,12 +184,6 @@ export default function QuestionForm() {
                 }`}
               >
                 {isLoading ? 'Processing...' : 'Send'}
-              </button>
-              <button 
-                onClick={testConnection}
-                className="px-4 py-2 bg-[#333333] hover:bg-[#3a3a3a] rounded-md text-sm font-medium text-gray-300"
-              >
-                Test Connection
               </button>
             </div>
           </div>
