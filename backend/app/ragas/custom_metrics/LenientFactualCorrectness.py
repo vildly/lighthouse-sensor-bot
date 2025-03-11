@@ -29,6 +29,8 @@ class LenientFactualCorrectness(SingleTurnMetric):
         reference_val = self.extract_number(sample.reference)
 
         # If either has no numeric content, score 0.0
+        
+        # make this proportional, not just hard coded values!!!!!!
         if response_val is None or reference_val is None:
             return 0.0
 
