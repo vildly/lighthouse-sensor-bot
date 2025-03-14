@@ -16,3 +16,6 @@ clean:
 
 eval:
 	python -m app.ragas.scripts.ragas_tests
+
+eval-s:
+	python -m app.ragas.scripts.synthetic_ragas_tests  
