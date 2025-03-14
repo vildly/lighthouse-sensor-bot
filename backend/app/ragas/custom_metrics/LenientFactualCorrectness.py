@@ -1,8 +1,7 @@
 import re
 import typing as t
 from dataclasses import dataclass, field
-
-import pandas as pd
+import numpy as np
 from ragas import evaluate, EvaluationDataset
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import SingleTurnMetric, MetricType
@@ -25,48 +24,83 @@ class LenientFactualCorrectness(SingleTurnMetric):
         return sample_type is SingleTurnSample
 
     async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks=None) -> float:
-        # First try to extract numbers
-        response_val = self.extract_number(sample.response)
-        reference_val = self.extract_number(sample.reference)
-
-        # If both texts don't contain numbers, compare them as text
-        if response_val is None and reference_val is None:
-            # Simple text similarity for non-numeric responses
-            response_words = set(sample.response.lower().split())
-            reference_words = set(sample.reference.lower().split())
-            
-            if not response_words or not reference_words:
-                return 0.0
-                
-            # Calculate Jaccard similarity
-            intersection = len(response_words.intersection(reference_words))
-            union = len(response_words.union(reference_words))
-            return intersection / union if union > 0 else 0.0
-
-        # If one has numbers and the other doesn't, return 0
-        if response_val is None or reference_val is None:
+        # First try simple number extraction to handle simple cases directly
+        response_val = self.extract_first_number(sample.response)
+        reference_val = self.extract_first_number(sample.reference)
+        
+        # If we have clean numbers with less than 5% difference, give a good score directly
+        if response_val is not None and reference_val is not None:
+            relative_diff = abs(response_val - reference_val) / max(abs(reference_val), 1e-10)
+            if relative_diff < 0.05:  # Within 5% is good
+                return 1.0 - relative_diff * 10  # Scale down slightly for small differences
+        
+        # Fall back to full extraction and matching for complex cases
+        response_numbers = self.extract_all_numbers(sample.response)
+        reference_numbers = self.extract_all_numbers(sample.reference)
+        
+        if not response_numbers or not reference_numbers:
             return 0.0
 
-        # Compare numbers
-        diff = abs(response_val - reference_val)
-        relative_error = diff / reference_val if reference_val != 0 else float('inf')
+        # Match numbers without context restriction
+        # Look for the closest matching number in the response to any reference number
+        best_match = 0.0
+        for ref_num, _ in reference_numbers:
+            for resp_num, _ in response_numbers:
+                similarity = self.compare_numbers(resp_num, ref_num)
+                if similarity > best_match:
+                    best_match = similarity
         
-        # Award a perfect 1.0 only if they match exactly
-        if diff == 0:
-            return 1.0
-        else:    
-            return max(1.0 - (relative_error * 9.9), 0.0)
+        return float(best_match)
 
-    def extract_number(self, text: str) -> float:
+    def extract_first_number(self, text: str) -> float:
+        """Extract the first number in the text for simple cases."""
         if not text:
             return None
-            
-        try:
-            # Look for numbers in the text
-            matches = re.findall(r'(\d+\.?\d*)', text)
-            if not matches:
-                return None
-            # Return the first number found
-            return float(matches[0])
-        except (ValueError, AttributeError):
-            return None
+        
+        # Look for decimal numbers
+        match = re.search(r'(\d+\.\d+)', text)
+        if match:
+            try:
+                return float(match.group(1))
+            except (ValueError, AttributeError):
+                pass
+                
+        # Fall back to any number
+        match = re.search(r'(\d+)', text)
+        if match:
+            try:
+                return float(match.group(1))
+            except (ValueError, AttributeError):
+                pass
+                
+        return None
+
+    def extract_all_numbers(self, text: str) -> list[tuple[float, str]]:
+        if not text:
+            return []
+        
+        numbers_with_context = []
+        # Improved pattern to better match decimal numbers
+        pattern = r'(\b\d+\.\d+\b|\b\d+\b)'
+        
+        matches = re.finditer(pattern, text)
+        for match in matches:
+            try:
+                number = float(match.group(1))
+                # Get a window of text around the number (10 chars before and after)
+                start = max(0, match.start() - 10)
+                end = min(len(text), match.end() + 10)
+                context = text[start:end].strip()
+                numbers_with_context.append((number, context))
+            except (ValueError, AttributeError):
+                continue
+                
+        return numbers_with_context
+
+    def compare_numbers(self, num1: float, num2: float) -> float:
+        if num1 == num2:
+            return 1.0
+        
+        relative_error = abs(num1 - num2) / max(abs(num2), 1e-10)
+        
+        return max(1.0 - (relative_error * 9.9), 0.0)

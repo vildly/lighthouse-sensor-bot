@@ -103,8 +103,7 @@ def run_synthetic_evaluation():
         "user_input": results_df['user_input'],
         "reference": results_df['reference'],
         "response": results_df['response'],
-        "retrieved_contexts": results_df['reference_contexts'],
-        "reference_contexts": results_df['reference_contexts']
+        "retrieved_contexts": results_df['reference_contexts']
     })
     
     # Create EvaluationDataset
