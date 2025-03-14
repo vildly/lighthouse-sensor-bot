@@ -25,30 +25,48 @@ class LenientFactualCorrectness(SingleTurnMetric):
         return sample_type is SingleTurnSample
 
     async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks=None) -> float:
+        # First try to extract numbers
         response_val = self.extract_number(sample.response)
         reference_val = self.extract_number(sample.reference)
 
-        # If either has no numeric content, score 0.0
-        
+        # If both texts don't contain numbers, compare them as text
+        if response_val is None and reference_val is None:
+            # Simple text similarity for non-numeric responses
+            response_words = set(sample.response.lower().split())
+            reference_words = set(sample.reference.lower().split())
+            
+            if not response_words or not reference_words:
+                return 0.0
+                
+            # Calculate Jaccard similarity
+            intersection = len(response_words.intersection(reference_words))
+            union = len(response_words.union(reference_words))
+            return intersection / union if union > 0 else 0.0
+
+        # If one has numbers and the other doesn't, return 0
         if response_val is None or reference_val is None:
             return 0.0
 
+        # Compare numbers
         diff = abs(response_val - reference_val)
-        
-        score = 0
-        
-        relative_error = diff / reference_val
+        relative_error = diff / reference_val if reference_val != 0 else float('inf')
         
         # Award a perfect 1.0 only if they match exactly
         if diff == 0:
-            score = 1.0
+            return 1.0
         else:    
-          score = max(1.0 - (relative_error * 9.9), 0.0)
-
-        return score
+            return max(1.0 - (relative_error * 9.9), 0.0)
 
     def extract_number(self, text: str) -> float:
-        match = re.search(r"([\d\.]+)", text)
-        if match:
-            return float(match.group(1))
-        return None
+        if not text:
+            return None
+            
+        try:
+            # Look for numbers in the text
+            matches = re.findall(r'(\d+\.?\d*)', text)
+            if not matches:
+                return None
+            # Return the first number found
+            return float(matches[0])
+        except (ValueError, AttributeError):
+            return None
