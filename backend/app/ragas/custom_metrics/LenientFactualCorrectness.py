@@ -30,23 +30,22 @@ class LenientFactualCorrectness(SingleTurnMetric):
 
         # If either has no numeric content, score 0.0
         
-        # make this proportional, not just hard coded values!!!!!!
         if response_val is None or reference_val is None:
             return 0.0
 
         diff = abs(response_val - reference_val)
         
+        score = 0
+        
+        relative_error = diff / reference_val
+        
         # Award a perfect 1.0 only if they match exactly
         if diff == 0:
-            return 1.0
-        # Slight partial credit if difference < 0.01
-        elif diff < 0.01:
-            return 0.75
-        # Minimal partial credit if difference < 0.05
-        elif diff < 0.05:
-            return 0.4
-        # Otherwise 0.0
-        return 0.0
+            score = 1.0
+        else:    
+          score = max(1.0 - (relative_error * 9.9), 0.0)
+
+        return score
 
     def extract_number(self, text: str) -> float:
         match = re.search(r"([\d\.]+)", text)
