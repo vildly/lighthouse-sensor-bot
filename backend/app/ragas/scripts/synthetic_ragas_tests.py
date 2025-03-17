@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from ragas import evaluate, EvaluationDataset
-from ragas.metrics import AspectCritic, LLMContextRecall, Faithfulness, SemanticSimilarity
+from ragas.metrics import LLMContextRecall, Faithfulness, SemanticSimilarity
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI
@@ -12,6 +12,7 @@ from pathlib import Path
 import datetime
 import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
+from app.ragas.custom_metrics.bleu_score import BleuScore
 
 load_dotenv()
 
@@ -114,7 +115,8 @@ def run_synthetic_evaluation():
         LenientFactualCorrectness(),
         SemanticSimilarity(embeddings=evaluator_embeddings),
         LLMContextRecall(llm=evaluator_llm),
-        Faithfulness(llm=evaluator_llm)
+        Faithfulness(llm=evaluator_llm),
+        BleuScore()
     ]
     
     # Run evaluation
