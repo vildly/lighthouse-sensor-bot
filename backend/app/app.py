@@ -29,6 +29,8 @@ CORS(app)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable not set.")
+  
+print(OPENAI_API_KEY)
 
 # Set up directory paths
 cwd = Path(__file__).parent.resolve()  # Current working directory
