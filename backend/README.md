@@ -13,3 +13,6 @@ ai21/jamba-1-5-large
 nousresearch/hermes-3-llama-3.1-70b
 
 mistralai/ministral-8b
+
+mistralai/mistral-tiny <- funkar dåligt med mer avancerad sql
+

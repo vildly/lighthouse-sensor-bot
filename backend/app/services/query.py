@@ -83,16 +83,10 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
 
         fullResponse = response.content
 
-        # Split on the Analysis section header to get just the answer
-        parts = fullResponse.split("## Analysis")
-        clean_answer = parts[0].strip() if parts else fullResponse.strip()
-
-        # Further clean the answer by removing numbered planning steps
-        # In app/services/query.py, around line 83-110
-        # Extract the answer section using regex
-        answer_match = re.search(r'## Answer\s*(.*?)(?=\s*##|$)', fullResponse, re.DOTALL)
-        if answer_match:
-            clean_answer = answer_match.group(1).strip()
+        # Extract the answer section using regex - get the LAST answer section
+        answer_sections = re.findall(r'## Answer\s*(.*?)(?=\s*##|$)', fullResponse, re.DOTALL)
+        if answer_sections:
+            clean_answer = answer_sections[-1].strip()  # Use the last answer section
         else:
             # Fallback: Split on the Analysis section header to get just the answer
             parts = fullResponse.split("## Analysis")
