@@ -19,3 +19,6 @@ eval:
 
 eval-s:
 	python -m app.ragas.scripts.synthetic_ragas_tests  
+
+convert:
+	python -m app.ragas.utils.convert_synthetic_to_json
