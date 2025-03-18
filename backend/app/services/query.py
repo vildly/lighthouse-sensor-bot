@@ -3,6 +3,7 @@ from app.helpers.save_query_to_file import save_response_to_file
 import io
 import logging
 from agno.utils.log import logger
+import re
 
 
 def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=None):
@@ -86,36 +87,43 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
         parts = fullResponse.split("## Analysis")
         clean_answer = parts[0].strip() if parts else fullResponse.strip()
 
-        # Save the query and response to a file, including SQL queries
-        # saved_filepath = save_response_to_file(
-        #     question,
-        #     txt,
-        #     output_dir,
-        #     sql_queries=sql_queries,
-        # )
+        # Further clean the answer by removing numbered planning steps
+        # In app/services/query.py, around line 83-110
+        # Extract the answer section using regex
+        answer_match = re.search(r'## Answer\s*(.*?)(?=\s*##|$)', fullResponse, re.DOTALL)
+        if answer_match:
+            clean_answer = answer_match.group(1).strip()
+        else:
+            # Fallback: Split on the Analysis section header to get just the answer
+            parts = fullResponse.split("## Analysis")
+            clean_answer = parts[0].strip() if parts else fullResponse.strip()
+            
+            # If the answer still contains planning steps, try to extract just the actual answer
+            if clean_answer and re.match(r'^\d+\.', clean_answer):
+                # Look for sentences containing "average speed" or similar phrases
+                speed_match = re.search(r'[^.]*average speed[^.]*\.', clean_answer, re.IGNORECASE)
+                if speed_match:
+                    clean_answer = speed_match.group(0).strip()
+                else:
+                    # Remove numbered planning steps
+                    clean_answer = re.sub(r'^\d+\.\s+.*?(?=\n\d+\.\s+The|$)', '', clean_answer, flags=re.DOTALL)
+                    clean_answer = re.sub(r'^\d+\.\s+', '', clean_answer)
 
-        # if saved_filepath:
-        #     print(f"Query and response saved to: {saved_filepath}")
-        #     return {
-        #         "response": clean_answer,  # Just the clean answer
-        #         "content": txt,  # Full response with reasoning and SQL
-        #         "sql_queries": sql_queries,
-        #         "saved_to": str(saved_filepath)
-        #     }
-        # else:
-        #     print("Failed to save query and response to file")
-        #     return {
-        #         "response": clean_answer,
-        #         "content": txt,
-        #         "sql_queries": sql_queries,
-        #         "saved_to": None
-        #     }
+        # If we still don't have a clean answer, look for it in the full response
+        if not clean_answer or clean_answer.isspace():
+            # Look for sentences containing "average speed" in the full response
+            speed_match = re.search(r'[^.]*average speed[^.]*\.', fullResponse, re.IGNORECASE)
+            if speed_match:
+                clean_answer = speed_match.group(0).strip()
+            else:
+                # Generic fallback
+                clean_answer = "Unable to extract a clear answer from the response."
 
+        # Return statement should be outside the if-else block
         return {
-          "content": clean_answer,
-          "full_response": fullResponse,
-          "sql_queries": sql_queries,
-
+            "content": clean_answer,
+            "full_response": fullResponse,
+            "sql_queries": sql_queries,
         }
 
     except Exception as e:
