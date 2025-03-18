@@ -2,6 +2,10 @@ import pandas as pd
 import json
 from ragas import evaluate, EvaluationDataset
 from ragas.metrics import LLMContextRecall, Faithfulness, SemanticSimilarity
+# from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._string import NonLLMStringSimilarity
+from ragas.metrics import RougeScore
+from ragas.metrics import StringPresence
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 # from langchain_openai import ChatOpenAI
@@ -120,7 +124,10 @@ def run_synthetic_evaluation():
         SemanticSimilarity(embeddings=evaluator_embeddings),
         LLMContextRecall(llm=evaluator_llm),
         Faithfulness(llm=evaluator_llm),
-        BleuScore()
+        BleuScore(),
+        NonLLMStringSimilarity(),
+        RougeScore(),
+        StringPresence()
     ]
     
     # Run evaluation
