@@ -1,10 +1,15 @@
 import pandas as pd
 import json
 from ragas import evaluate, EvaluationDataset
-from ragas.metrics import AspectCritic, LLMContextRecall, Faithfulness, SemanticSimilarity
+from ragas.metrics import LLMContextRecall, Faithfulness, SemanticSimilarity
+# from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._string import NonLLMStringSimilarity
+from ragas.metrics import RougeScore
+from ragas.metrics import StringPresence
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
+from langchain_deepseek import ChatDeepSeek
 from langchain_openai import OpenAIEmbeddings
 import os
 from dotenv import load_dotenv
@@ -12,14 +17,18 @@ from pathlib import Path
 import datetime
 import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
+from app.ragas.custom_metrics.bleu_score import BleuScore
 
 load_dotenv()
 # this script is used to evaluate the performance of the agent on the synthetic dataset.
 API_URL = os.getenv('API_URL')
 RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+
 # Initialize LLM and Embeddings wrappers
-evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4"))
+# evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4"))
+evaluator_llm = LangchainLLMWrapper(ChatDeepSeek(model="deepseek-chat", temperature=0))
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 def run_test_case(query, ground_truth=None):
@@ -114,7 +123,11 @@ def run_synthetic_evaluation():
         LenientFactualCorrectness(),
         SemanticSimilarity(embeddings=evaluator_embeddings),
         LLMContextRecall(llm=evaluator_llm),
-        Faithfulness(llm=evaluator_llm)
+        Faithfulness(llm=evaluator_llm),
+        BleuScore(),
+        NonLLMStringSimilarity(),
+        RougeScore(),
+        StringPresence()
     ]
     
     # Run evaluation
