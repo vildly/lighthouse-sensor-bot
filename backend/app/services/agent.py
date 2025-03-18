@@ -2,12 +2,17 @@ import json
 from pathlib import Path
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
+from agno.models.openrouter import OpenRouter
 from agno.tools.duckdb import DuckDbTools
 from agno.utils.log import logger
 import utils.duck
 from typing import Optional
 from app.helpers.CustomDuckDbTools import CustomDuckDbTools
 from app.helpers.load_json_from_file import load_json_from_file
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 def initialize_agent(data_dir):
@@ -28,13 +33,21 @@ def initialize_agent(data_dir):
 
     # Create a custom DuckDbTools that uses local paths
     # duck_tools = CustomDuckDbTools(data_dir=str(data_dir), semantic_model=semantic_model_data)
+    
+    BASE_URL = os.getenv('OPENROUTER_BASE_URL')
+    API_KEY = os.getenv('OPENROUTER_API_KEY')
+    
+    # openrouter_model = OpenAILike(
+    #   base_url=BASE_URL,
+    #   api_key=API_KEY
+    # )
 
     data_analyst = Agent(  
         instructions=semantic_instructions,
         system_message=utils.duck.get_system_message(semantic_instructions, semantic_model_data),
         tools=DuckDbTools(),  # Initialize with DuckDbTools
         show_tool_calls=False,
-        model=OpenAIChat(id="gpt-4o"), # or gpt-3.5-turbo if you prefer
+        model=OpenRouter(base_url=BASE_URL, api_key=API_KEY, id='open-r1/olympiccoder-7b:free'),
         markdown=True
     )
     

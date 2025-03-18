@@ -27,7 +27,8 @@ RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 
 # Initialize LLM and Embeddings wrappers
-# evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4"))
+
+# evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
 evaluator_llm = LangchainLLMWrapper(ChatDeepSeek(model="deepseek-chat", temperature=0))
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
