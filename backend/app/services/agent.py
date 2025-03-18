@@ -6,21 +6,22 @@ from agno.models.openrouter import OpenRouter
 from agno.tools.duckdb import DuckDbTools
 from agno.utils.log import logger
 import utils.duck
-from typing import Optional
+from typing import Optional, List
 from app.helpers.CustomDuckDbTools import CustomDuckDbTools
 from app.helpers.load_json_from_file import load_json_from_file
 from dotenv import load_dotenv
 import os
+from textwrap import dedent
 
 load_dotenv()
 
 
 def initialize_agent(data_dir):
     """Initialize the agent with the necessary tools and configuration
-    
+
     Args:
         data_dir: Path to the data directory
-        
+
     Returns:
         The initialized agent and tools
     """
@@ -28,28 +29,77 @@ def initialize_agent(data_dir):
     if semantic_model_data is None:
         print("Error: Could not load semantic model. Exiting.")
         exit()
-    
+
     semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
 
-    # Create a custom DuckDbTools that uses local paths
-    # duck_tools = CustomDuckDbTools(data_dir=str(data_dir), semantic_model=semantic_model_data)
-    
-    BASE_URL = os.getenv('OPENROUTER_BASE_URL')
-    API_KEY = os.getenv('OPENROUTER_API_KEY')
-    
+    # Create a custom system message with stronger formatting instructions
+    custom_system_message = (
+        "You are a Data Engineering expert designed to perform tasks using DuckDb.\n\n"
+    )
+
+    # Add explicit formatting instructions at the beginning for emphasis
+    custom_system_message += dedent(
+        """\
+        ## CRITICAL OUTPUT FORMAT REQUIREMENT:
+        You MUST structure your response in exactly this format:
+        1. First section: Your reasoning and SQL queries (start with "## Analysis")
+        2. Second section: ONLY the direct answer with NO planning, NO SQL, and NO explanation (start with "## Answer")
+        
+        """
+    )
+
+    # Add the rest of the standard system message
+    standard_system_message = utils.duck.get_system_message(
+        semantic_instructions, semantic_model_data
+    )
+    # Remove the initial "You are a Data Engineering expert..." part to avoid duplication
+    if standard_system_message.startswith("You are a Data Engineering expert"):
+        standard_system_message = "\n\n".join(standard_system_message.split("\n\n")[1:])
+
+    custom_system_message += standard_system_message
+
+    BASE_URL = os.getenv("OPENROUTER_BASE_URL")
+    API_KEY = os.getenv("OPENROUTER_API_KEY")
+
     # openrouter_model = OpenAILike(
     #   base_url=BASE_URL,
     #   api_key=API_KEY
     # )
 
-    data_analyst = Agent(  
+    data_analyst = Agent(
         instructions=semantic_instructions,
-        system_message=utils.duck.get_system_message(semantic_instructions, semantic_model_data),
+        system_message=custom_system_message,
         tools=DuckDbTools(),  # Initialize with DuckDbTools
         show_tool_calls=False,
-        model=OpenRouter(base_url=BASE_URL, api_key=API_KEY, id='open-r1/olympiccoder-7b:free'),
-        markdown=True
+        model=OpenRouter(
+            base_url=BASE_URL, api_key=API_KEY, id="qwen/qwen-2.5-72b-instruct"
+        ),
+        tool_choice="required",
+        tool_call_limit=20,
+        markdown=True,
     )
-    
-    return data_analyst 
-  # duck_tools
+
+    return data_analyst
+
+
+# duck_tools
+
+
+def get_system_message(instructions, semantic_model) -> List[str]:
+    system_message = (
+        "You are a Data Engineering expert designed to perform tasks using DuckDb."
+    )
+    system_message += "\n\n"
+
+    # Add formatting instructions at the beginning for emphasis
+    system_message += dedent(
+        """\
+        ## CRITICAL OUTPUT FORMAT REQUIREMENT:
+        You MUST structure your response in exactly this format:
+        1. First section: ONLY the direct answer with NO planning, NO SQL, and NO explanation
+        2. Second section: Your reasoning and SQL queries (start with "## Analysis")
+        
+        """
+    )
+
+    # Continue with the rest of the system message...
