@@ -72,7 +72,7 @@ def initialize_agent(data_dir):
         tools=DuckDbTools(),  # Initialize with DuckDbTools
         show_tool_calls=False,
         model=OpenRouter(
-            base_url=BASE_URL, api_key=API_KEY, id="ai21/jamba-1.6-large"
+            base_url=BASE_URL, api_key=API_KEY, id="x-ai/grok-beta"
         ),
         tool_choice="required",
         tool_call_limit=20,

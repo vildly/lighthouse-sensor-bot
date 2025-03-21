@@ -24,6 +24,10 @@ qwen/qwen-max <- inga tool calls
 
 **meta-llama/llama-3.1-8b-instruct** <-- Tool calls funkar, dåligt svar
 
+x-ai/grok-2-1212 <--    "content": "Error: 'NoneType' object is not subscriptable"
+
+x-ai/grok-beta <-- "content": "Error: 'NoneType' object is not subscriptable"
+
 deepseek/deepseek-r1-distill-llama-70b <- 'NoneType' object is not subscriptable",
 
 nvidia/llama-3.1-nemotron-70b-instruct <-- Tool calls funkar, dåligt svar
