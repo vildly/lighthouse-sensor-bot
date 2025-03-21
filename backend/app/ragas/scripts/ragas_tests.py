@@ -6,11 +6,13 @@ from ragas.metrics import AspectCritic, LLMContextRecall, Faithfulness, FactualC
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI
+from langchain_deepseek import ChatDeepSeek
 from langchain_openai import OpenAIEmbeddings
 import os
 from dotenv import load_dotenv
 from pathlib import Path
 import datetime
+import argparse
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 
 load_dotenv()
@@ -19,15 +21,17 @@ API_URL = os.getenv('API_URL')
 RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 
 # Initialize LLM and Embeddings wrappers
-evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+# evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+evaluator_llm = LangchainLLMWrapper(ChatDeepSeek(model="deepseek-chat", temperature=0))
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
-def run_test_case(query, ground_truth=None):
+def run_test_case(query, ground_truth, llm_model_id):
     api_url = f"{API_URL}/api/query"
     try:
         response = requests.post(api_url, json={
             "question": query,
-            "source_file": "ferry_trips_data.csv"
+            "source_file": "ferry_trips_data.csv",
+            "llm_model_id": llm_model_id
         })
         response.raise_for_status()
         
@@ -57,83 +61,94 @@ def run_test_case(query, ground_truth=None):
         print(f"Error decoding JSON response for query: {query}: {e}")
         return None, None, False
 
-# Load test cases from JSON file
-test_cases_path = Path("app/ragas/test_cases/test_cases.json")
-try:
-    with open(test_cases_path, "r") as f:
-        test_cases_list = json.load(f)
-except FileNotFoundError:
-    print(f"Error: {test_cases_path} not found.")
-    exit()
-except json.JSONDecodeError:
-    print(f"Error: Invalid JSON format in {test_cases_path}.")
-    exit()
+def run_evaluation(llm_model_id):
+    # Load test cases from JSON file
+    test_cases_path = Path("app/ragas/test_cases/test_cases.json")
+    try:
+        with open(test_cases_path, "r") as f:
+            test_cases_list = json.load(f)
+    except FileNotFoundError:
+        print(f"Error: {test_cases_path} not found.")
+        return
+    except json.JSONDecodeError:
+        print(f"Error: Invalid JSON format in {test_cases_path}.")
+        return
 
-results = []
+    results = []
 
-for test_case in test_cases_list:
-    query = test_case['user_input']
-    ground_truth = test_case.get('reference')
-    response, context, api_call_success = run_test_case(query, ground_truth)
-    results.append({
-        "user_input": query,
-        "reference": ground_truth,
-        "response": response,
-        "context": context,
-        "api_call_success": api_call_success
+    for test_case in test_cases_list:
+        query = test_case['user_input']
+        ground_truth = test_case.get('reference')
+        response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
+        results.append({
+            "user_input": query,
+            "reference": ground_truth,
+            "response": response,
+            "context": context,
+            "api_call_success": api_call_success
+        })
+
+    results_df = pd.DataFrame(results)
+
+    # RAGAS Evaluation
+    ragas_data = pd.DataFrame({
+        "user_input": results_df['user_input'],
+        "reference": results_df['reference'],
+        "response": results_df['response'],
+        "retrieved_contexts": results_df['context'].apply(lambda x: x if isinstance(x, list) else [])
     })
 
-results_df = pd.DataFrame(results)
+    # Create EvaluationDataset
+    eval_dataset = EvaluationDataset.from_pandas(ragas_data)
 
-# RAGAS Evaluation
-ragas_data = pd.DataFrame({
-    "user_input": results_df['user_input'],
-    "reference": results_df['reference'],
-    "response": results_df['response'],
-    "retrieved_contexts": results_df['context'].apply(lambda x: x if isinstance(x, list) else [])
-})
+    # Define metrics including context recall
+    metrics = [
+        LenientFactualCorrectness(),
+        SemanticSimilarity(embeddings=evaluator_embeddings),
+        LLMContextRecall(llm=evaluator_llm),
+        Faithfulness(llm=evaluator_llm)
+    ]
 
-# Create EvaluationDataset
-eval_dataset = EvaluationDataset.from_pandas(ragas_data)
+    print(ragas_data[['user_input', 'response', 'reference']])
 
-# Define metrics including context recall
-metrics = [
-    LenientFactualCorrectness(),
-    SemanticSimilarity(embeddings=evaluator_embeddings),
-    LLMContextRecall(llm=evaluator_llm),
-    Faithfulness(llm=evaluator_llm)
-]
+    ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
 
-print(ragas_data[['user_input', 'response', 'reference']])
+    ragas_results.upload()
 
-ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
+    # Add RAGAS metrics to results_df
+    for metric_name, scores in ragas_results.to_pandas().items():
+        if metric_name != 'hash':
+            results_df[metric_name] = scores
 
-ragas_results.upload()
+    # Save results
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    cwd = Path(__file__).parent.parent.parent.parent.resolve()  # Go up to root directory
+    output_dir = cwd.joinpath("output")
 
-# Add RAGAS metrics to results_df
-for metric_name, scores in ragas_results.to_pandas().items():
-    if metric_name != 'hash':
-        results_df[metric_name] = scores
+    # Create timestamped directory within output that includes model ID
+    timestamped_dir = output_dir.joinpath(f"ragas_{timestamp}_{llm_model_id.replace('/', '_')}")
+    timestamped_dir.mkdir(exist_ok=True)
 
-# Save results
-timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-results_df.to_csv(f"output/ragas_results_{timestamp}.csv", index=False)
+    # Save results using timestamped paths
+    results_df.to_csv(timestamped_dir.joinpath("test_results.csv"), index=False)
+    print(f"Test results saved to {timestamped_dir}/test_results.csv")
 
-cwd = Path(__file__).parent.parent.parent.parent.resolve()  # Go up to root directory
-output_dir = cwd.joinpath("output")  # Use the same output directory as app.py
+    # Save metrics summary
+    metrics_df = ragas_results.to_pandas()
+    metrics_df.to_csv(timestamped_dir.joinpath("metrics_summary.csv"), index=False)
 
-# Create timestamped directory within output
-timestamped_dir = output_dir.joinpath(f"ragas_{timestamp}")
-timestamped_dir.mkdir(exist_ok=True)
+    print(f"Results saved in directory: {timestamped_dir}")
+    print("\nRAGAS Results:")
+    print(ragas_results)
+    
+    return ragas_results, results_df
 
-# Save results using timestamped paths
-results_df.to_csv(timestamped_dir.joinpath("test_results.csv"), index=False)
-print(f"Test results saved to {timestamped_dir}/test_results.csv")
-
-# Save metrics summary
-metrics_df = ragas_results.to_pandas()
-metrics_df.to_csv(timestamped_dir.joinpath("metrics_summary.csv"), index=False)
-
-print(f"Results saved in directory: {timestamped_dir}")
-print("\nRAGAS Results:")
-print(ragas_results)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run RAGAS evaluation with a specific LLM model')
+    parser.add_argument('--model_id', type=str, required=True, 
+                        help='The LLM model ID to use for testing (required)')
+    args = parser.parse_args()
+    
+    print(f"Running evaluation with model: {args.model_id}")
+    run_evaluation(llm_model_id=args.model_id)
