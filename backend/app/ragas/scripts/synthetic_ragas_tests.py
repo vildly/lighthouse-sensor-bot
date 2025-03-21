@@ -18,6 +18,7 @@ import datetime
 import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 from app.ragas.custom_metrics.bleu_score import BleuScore
+import argparse
 
 load_dotenv()
 
@@ -32,13 +33,14 @@ DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 evaluator_llm = LangchainLLMWrapper(ChatDeepSeek(model="deepseek-chat", temperature=0))
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
-def run_test_case(query, ground_truth=None):
+def run_test_case(query, ground_truth, llm_model_id):
     """Run a single test case through the API"""
     api_url = f"{API_URL}/api/query"
     try:
         response = requests.post(api_url, json={
             "question": query,
-            "source_file": "ferry_trips_data.csv"
+            "source_file": "ferry_trips_data.csv",
+            "llm_model_id": llm_model_id
         })
         response.raise_for_status()
         
@@ -80,7 +82,7 @@ def load_synthetic_test_cases():
         print(f"Error: Invalid JSON format in {test_cases_path}.")
         return None
 
-def run_synthetic_evaluation():
+def run_synthetic_evaluation(llm_model_id):
     """Run evaluation using the synthetic test cases"""
     # Load synthetic test cases
     test_cases = load_synthetic_test_cases()
@@ -93,7 +95,7 @@ def run_synthetic_evaluation():
     for test_case in test_cases:
         query = test_case['user_input']
         ground_truth = test_case['reference']
-        response, context, api_call_success = run_test_case(query, ground_truth)
+        response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
         
         if api_call_success:
             results.append({
@@ -138,7 +140,7 @@ def run_synthetic_evaluation():
     
     # Create output directory with timestamp
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = Path("output/synthetic_ragas_" + timestamp)
+    output_dir = Path(f"output/synthetic_ragas_{timestamp}_{llm_model_id.replace('/', '_')}")
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Save detailed results
@@ -161,5 +163,10 @@ def run_synthetic_evaluation():
     return ragas_results, results_df
 
 if __name__ == "__main__":
-    print("Starting synthetic dataset evaluation...")
-    run_synthetic_evaluation() 
+    parser = argparse.ArgumentParser(description='Run synthetic RAGAS evaluation with a specific LLM model')
+    parser.add_argument('--model_id', type=str, required=True, 
+                        help='The LLM model ID to use for testing (required)')
+    args = parser.parse_args()
+    
+    print(f"Running synthetic evaluation with model: {args.model_id}")
+    run_synthetic_evaluation(llm_model_id=args.model_id) 

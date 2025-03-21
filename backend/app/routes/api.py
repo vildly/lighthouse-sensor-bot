@@ -1,28 +1,10 @@
-import json
-import os
-from pathlib import Path
 from flask import Blueprint, request, jsonify, current_app
 from app.helpers.load_json_from_file import load_json_from_file
-import utils.duck 
-from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
-import io
-import logging
-from contextlib import redirect_stdout
 from app.services.query import query
-
-load_dotenv()  # Load environment variables (for OpenAI API key, etc.)
-
-from typing import Optional, List
-from pathlib import Path
-
-from textwrap import dedent
-
-from agno.agent import Agent, Message, RunResponse
-from agno.tools.duckdb import DuckDbTools
-from agno.utils.log import logger 
 from app.helpers.CustomDuckDbTools import CustomDuckDbTools
 
+load_dotenv()
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 @api_bp.route("/")

@@ -18,7 +18,7 @@ eval:
 	python -m app.ragas.scripts.ragas_tests
 
 eval-s:
-	python -m app.ragas.scripts.synthetic_ragas_tests  
+	python -m app.ragas.scripts.synthetic_ragas_tests --model_id="openai/gpt-4o-2024-11-20"
 
 convert:
 	python -m app.ragas.utils.convert_synthetic_to_json
