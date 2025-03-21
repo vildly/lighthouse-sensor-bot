@@ -21,7 +21,7 @@ def initialize_agent(data_dir, llm_model_id, tools):
 
     Args:
         data_dir: Path to the data directory
-        model_id: Optional model ID to use (defaults to "mistralai/ministral-8b")
+        llm_model_id: model ID to use for the OpenRouter model
         tools: The duckdb tools to use
 
     Returns:
