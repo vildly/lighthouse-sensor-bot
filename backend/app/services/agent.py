@@ -72,7 +72,7 @@ def initialize_agent(data_dir):
         tools=DuckDbTools(),  # Initialize with DuckDbTools
         show_tool_calls=False,
         model=OpenRouter(
-            base_url=BASE_URL, api_key=API_KEY, id="qwen/qwen-2.5-72b-instruct"
+            base_url=BASE_URL, api_key=API_KEY, id="ai21/jamba-1.6-large"
         ),
         tool_choice="required",
         tool_call_limit=20,
