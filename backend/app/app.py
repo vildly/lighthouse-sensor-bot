@@ -44,7 +44,7 @@ if not output_dir.exists():
     output_dir.mkdir(parents=True)
 
 # --- Agent Initialization ---
-data_analyst = initialize_agent(data_dir)
+# data_analyst = initialize_agent(data_dir)
 
 # --- Register Routes ---
 from app.routes.api import api_bp
@@ -53,7 +53,7 @@ from app.routes.api import api_bp
 app.register_blueprint(api_bp)
 
 # Pass the necessary objects to the routes
-app.config['DATA_ANALYST'] = data_analyst
+# app.config['DATA_ANALYST'] = data_analyst
 app.config['SEMANTIC_MODEL'] = load_json_from_file(data_dir.joinpath("semantic_model.json"))
 app.config['DATA_DIR'] = data_dir
 app.config['OUTPUT_DIR'] = output_dir
