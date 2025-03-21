@@ -1,5 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+import process from 'process';
+
+dotenv.config();
+
+const SERVER_URL = process.env.SERVER_URL;
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
@@ -25,7 +31,7 @@ export default async function handler(req, res) {
       
       console.log("Sending to backend:", { question: questionText, source_file });
       
-      const response = await fetch("http://127.0.0.1:5000/api/query", {
+      const response = await fetch(`${SERVER_URL}/api/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
