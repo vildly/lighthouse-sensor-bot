@@ -16,11 +16,13 @@ from textwrap import dedent
 load_dotenv()
 
 
-def initialize_agent(data_dir):
+def initialize_agent(data_dir, llm_model_id, tools):
     """Initialize the agent with the necessary tools and configuration
 
     Args:
         data_dir: Path to the data directory
+        model_id: Optional model ID to use (defaults to "mistralai/ministral-8b")
+        tools: The duckdb tools to use
 
     Returns:
         The initialized agent and tools
@@ -36,7 +38,6 @@ def initialize_agent(data_dir):
         semantic_instructions, semantic_model_data
     )
 
-
     BASE_URL = os.getenv("OPENROUTER_BASE_URL")
     API_KEY = os.getenv("OPENROUTER_API_KEY")
 
@@ -44,10 +45,10 @@ def initialize_agent(data_dir):
     data_analyst = Agent(
         instructions=semantic_instructions,
         system_message=standard_system_message,
-        tools=DuckDbTools(),  # Initialize with DuckDbTools
+        tools=tools,
         show_tool_calls=False,
         model=OpenRouter(
-            base_url=BASE_URL, api_key=API_KEY, id="mistralai/ministral-8b"
+            base_url=BASE_URL, api_key=API_KEY, id=llm_model_id
         ),
         tool_choice="required",
         tool_call_limit=20,
