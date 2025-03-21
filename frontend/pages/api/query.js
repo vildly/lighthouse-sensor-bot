@@ -4,7 +4,7 @@ import path from 'path';
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      const { question, source_file, prompt_file } = req.body;
+      const { question, source_file, prompt_file, model } = req.body;
       
       let questionText = question;
       
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ content: "Error: No question provided" });
       }
       
-      console.log("Sending to backend:", { question: questionText, source_file });
+      console.log("Sending to backend:", { question: questionText, source_file, model });
       
       const response = await fetch("http://127.0.0.1:5000/api/query", {
         method: "POST",
@@ -32,7 +32,8 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({ 
           question: questionText,
-          source_file
+          source_file,
+          model
         }),
       });
 
