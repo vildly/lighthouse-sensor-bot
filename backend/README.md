@@ -15,7 +15,7 @@ amazon/nova-pro-v1
 **qwen/qwen-2.5-72b-instruct** <-- Funkar bra
 
 qwen/qwen-turbo <--     "content": "Error: 'NoneType' object is not subscriptable",
-
+ 
 qwen/qwen-plus <- "content": "Error: 'NoneType' object is not subscriptable",
 
 qwen/qwen-max <- inga tool calls

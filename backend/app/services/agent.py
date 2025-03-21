@@ -32,47 +32,22 @@ def initialize_agent(data_dir):
 
     semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
 
-    # Create a custom system message with stronger formatting instructions
-    custom_system_message = (
-        "You are a Data Engineering expert designed to perform tasks using DuckDb.\n\n"
-    )
-
-    # Add explicit formatting instructions at the beginning for emphasis
-    custom_system_message += dedent(
-        """\
-        ## CRITICAL OUTPUT FORMAT REQUIREMENT:
-        You MUST structure your response in exactly this format:
-        1. First section: Your reasoning and SQL queries (start with "## Analysis")
-        2. Second section: ONLY the direct answer with NO planning, NO SQL, and NO explanation (start with "## Answer")
-        
-        """
-    )
-
-    # Add the rest of the standard system message
     standard_system_message = utils.duck.get_system_message(
         semantic_instructions, semantic_model_data
     )
-    # Remove the initial "You are a Data Engineering expert..." part to avoid duplication
-    if standard_system_message.startswith("You are a Data Engineering expert"):
-        standard_system_message = "\n\n".join(standard_system_message.split("\n\n")[1:])
 
-    custom_system_message += standard_system_message
 
     BASE_URL = os.getenv("OPENROUTER_BASE_URL")
     API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-    # openrouter_model = OpenAILike(
-    #   base_url=BASE_URL,
-    #   api_key=API_KEY
-    # )
 
     data_analyst = Agent(
         instructions=semantic_instructions,
-        system_message=custom_system_message,
+        system_message=standard_system_message,
         tools=DuckDbTools(),  # Initialize with DuckDbTools
         show_tool_calls=False,
         model=OpenRouter(
-            base_url=BASE_URL, api_key=API_KEY, id="x-ai/grok-beta"
+            base_url=BASE_URL, api_key=API_KEY, id="mistralai/ministral-8b"
         ),
         tool_choice="required",
         tool_call_limit=20,
@@ -80,26 +55,3 @@ def initialize_agent(data_dir):
     )
 
     return data_analyst
-
-
-# duck_tools
-
-
-def get_system_message(instructions, semantic_model) -> List[str]:
-    system_message = (
-        "You are a Data Engineering expert designed to perform tasks using DuckDb."
-    )
-    system_message += "\n\n"
-
-    # Add formatting instructions at the beginning for emphasis
-    system_message += dedent(
-        """\
-        ## CRITICAL OUTPUT FORMAT REQUIREMENT:
-        You MUST structure your response in exactly this format:
-        1. First section: ONLY the direct answer with NO planning, NO SQL, and NO explanation
-        2. Second section: Your reasoning and SQL queries (start with "## Analysis")
-        
-        """
-    )
-
-    # Continue with the rest of the system message...
