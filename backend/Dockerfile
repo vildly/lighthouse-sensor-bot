@@ -7,4 +7,4 @@ COPY . .
 RUN pip install -r requirements.txt
 
 # CMD ["gunicorn", "-c", "gunicorn_config.py", "app.main:app"]
-CMD ["python", "-m", "app.main"]
+CMD ["python", "-m", "app.app"]

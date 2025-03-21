@@ -1,0 +1,59 @@
+version: '3.8'
+name: 2dv50e
+services:
+  
+  postgres:
+    image: postgres:latest
+    container_name: postgres-container-2dv50e
+    restart: always
+    networks:
+      - 2dv50e
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stats
+    volumes:
+      - /home/melke/lnu/2dv50e/postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-container-2dv50e
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ma225tq@student.lnu.se
+      PGADMIN_DEFAULT_PASSWORD: password
+    depends_on:
+      - postgres
+    volumes:
+      - /home/melke/lnu/2dv50e/pgadmin:/var/lib/pgadmin
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    networks:
+      - 2dv50e
+    environment:
+    - TEST=1
+     
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"  
+    networks:
+      - 2dv50e
+    environment:
+      SERVER_URL: "http://backend:5000"
+
+networks:
+  2dv50e:
+    driver: bridge
