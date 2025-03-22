@@ -1,3 +1,4 @@
+ # type: ignore
 import json
 from pathlib import Path
 from agno.agent import Agent

@@ -92,7 +92,7 @@ def save_query_with_eval_to_db(
             )
 
     query_result_id = save_query_to_db(
-        query, direct_response, full_response, sql_queries # type: ignore
+        query, direct_response, full_response, sql_queries  # type: ignore
     )
 
     with get_cursor() as cursor:

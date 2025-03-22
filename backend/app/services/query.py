@@ -1,5 +1,4 @@
-# pyright: reportGeneralTypeIssues=false
-
+ # type: ignore
 from app.helpers.load_prompt_from_file import load_prompt_from_file
 from app.helpers.save_query_to_file import save_response_to_file
 import io
@@ -21,7 +20,7 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
     source_file = data.get("source_file", None)
 
     if prompt_filepath:
-        question = load_prompt_from_file(data_dir.joinpath(prompt_filepath)) # type: ignore
+        question = load_prompt_from_file(data_dir.joinpath(prompt_filepath))
         if question is None:
             return {
                 "error": "Prompt file not found or error reading",
