@@ -7,7 +7,7 @@ from app.conf.postgres import get_cursor
 
 def get_model_id(llm_model_name: str) -> int:
     with get_cursor() as cursor:
-        cursor.execute("SELECT id FROM llm_model WHERE name = %s", (llm_model_name,))
+        cursor.execute("SELECT id FROM llm_models WHERE name = %s", (llm_model_name,))
         result = cursor.fetchone()
         if result is None:
             raise ValueError(f"No model found with name: {llm_model_name}")

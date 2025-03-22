@@ -1,13 +1,14 @@
- # type: ignore
+# type: ignore
 from app.helpers.load_prompt_from_file import load_prompt_from_file
 from app.helpers.save_query_to_file import save_response_to_file
+from app.helpers.save_query_to_db import save_query_to_db
 import io
 import logging
 from agno.utils.log import logger
 import re
 
 
-def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=None):
+def query(data, data_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
 
     Args:
@@ -18,6 +19,7 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
     """
     prompt_filepath = data.get("prompt_file", None)
     source_file = data.get("source_file", None)
+    llm_model_id = data.get("llm_model_id", None)
 
     if prompt_filepath:
         question = load_prompt_from_file(data_dir.joinpath(prompt_filepath))
@@ -50,7 +52,7 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
         logger.addHandler(log_handler)
 
         # Run the agent
-        response = data_analyst.run(question) # type: ignore
+        response = data_analyst.run(question)  # type: ignore
 
         # Remove the log handler
         logger.removeHandler(log_handler)
@@ -85,36 +87,60 @@ def query(data, data_dir=None, output_dir=None, data_analyst=None, source_file=N
         fullResponse = response.content
 
         # Extract the answer section using regex - get the LAST answer section
-        answer_sections = re.findall(r'## Answer\s*(.*?)(?=\s*##|$)', fullResponse, re.DOTALL)
+        answer_sections = re.findall(
+            r"## Answer\s*(.*?)(?=\s*##|$)", fullResponse, re.DOTALL
+        )
         if answer_sections:
             clean_answer = answer_sections[-1].strip()  # Use the last answer section
         else:
             # Fallback: Split on the Analysis section header to get just the answer
             parts = fullResponse.split("## Analysis")
             clean_answer = parts[0].strip() if parts else fullResponse.strip()
-            
+
             # If the answer still contains planning steps, try to extract just the actual answer
-            if clean_answer and re.match(r'^\d+\.', clean_answer):
+            if clean_answer and re.match(r"^\d+\.", clean_answer):
                 # Look for sentences containing "average speed" or similar phrases
-                speed_match = re.search(r'[^.]*average speed[^.]*\.', clean_answer, re.IGNORECASE)
+                speed_match = re.search(
+                    r"[^.]*average speed[^.]*\.", clean_answer, re.IGNORECASE
+                )
                 if speed_match:
                     clean_answer = speed_match.group(0).strip()
                 else:
                     # Remove numbered planning steps
-                    clean_answer = re.sub(r'^\d+\.\s+.*?(?=\n\d+\.\s+The|$)', '', clean_answer, flags=re.DOTALL)
-                    clean_answer = re.sub(r'^\d+\.\s+', '', clean_answer)
+                    clean_answer = re.sub(
+                        r"^\d+\.\s+.*?(?=\n\d+\.\s+The|$)",
+                        "",
+                        clean_answer,
+                        flags=re.DOTALL,
+                    )
+                    clean_answer = re.sub(r"^\d+\.\s+", "", clean_answer)
 
         # If we still don't have a clean answer, look for it in the full response
         if not clean_answer or clean_answer.isspace():
             # Look for sentences containing "average speed" in the full response
-            speed_match = re.search(r'[^.]*average speed[^.]*\.', fullResponse, re.IGNORECASE)
+            speed_match = re.search(
+                r"[^.]*average speed[^.]*\.", fullResponse, re.IGNORECASE
+            )
             if speed_match:
                 clean_answer = speed_match.group(0).strip()
             else:
                 # Generic fallback
                 clean_answer = "Unable to extract a clear answer from the response."
 
-        # Return statement should be outside the if-else block
+        # Save the query and response to the database if model ID is provided
+        if llm_model_id:
+            try:
+                save_query_to_db(
+                    query=question,
+                    direct_response=clean_answer,
+                    full_response=fullResponse,
+                    llm_model_id=llm_model_id,
+                    sql_queries=sql_queries,
+                )
+                logger.info(f"Query saved to database with model ID: {llm_model_id}")
+            except Exception as db_error:
+                raise ValueError(f"Failed to save query to database: {str(db_error)}")
+
         return {
             "content": clean_answer,
             "full_response": fullResponse,

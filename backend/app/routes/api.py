@@ -59,8 +59,7 @@ def query_endpoint():
     # Call the query service
     return query(
         data=data, 
-        data_dir=data_dir, 
-        output_dir=output_dir, 
+        data_dir=data_dir,
         data_analyst=data_analyst
     )
 
