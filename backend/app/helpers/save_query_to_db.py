@@ -1,69 +1,73 @@
+from typing import Dict, Optional, List, Union
 from agno.utils.log import logger
-from app.conf.postgres import get_cursor
-import re
+from app.conf.postgres import get_connection
+from contextlib import contextmanager
 
 
-def get_model_id(llm_model_name):
-    """
-    Get the model ID from the database
-    """
+@contextmanager
+def get_cursor():
+    connection = get_connection()
+    cursor = connection.cursor()
+    try:
+        yield cursor
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        logger.error(f"Database error: {e}")
+        raise e
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def get_model_id(llm_model_name: str) -> int:
     with get_cursor() as cursor:
         cursor.execute("SELECT id FROM llm_model WHERE name = %s", (llm_model_name,))
-
         result = cursor.fetchone()
         if result is None:
             raise ValueError(f"No model found with name: {llm_model_name}")
-
-    model_id = result[0]
-
-    return model_id
+        return result[0]
 
 
 def save_query_to_db(
-    query, direct_response, full_Response, llm_model_id, sql_queries=None
-):
-    """Save the query and response to the database
-
-    Args:
-        query: The original question asked
-        direct: The direct response from the agent
-        full_response: The full response from the agent including reasoning and SQL queries
-        sql_queries: List of SQL queries executed (optional)
-    Returns:
-        query_id: The ID of the saved query
-    """
+    query: str,
+    direct_response: str,
+    full_response: str,
+    llm_model_id: str,
+    sql_queries: Optional[List[str]] = None,
+) -> int:
+    """Save the query and response to the database."""
     with get_cursor() as cursor:
         cursor.execute(
-            """INSERT INTO query_result (query, direct_response, full_response, sql_queries, 
-          llm_model_id) VALUES (%s, %s, %s, %s, %s) RETURNING id""",
+            """
+            INSERT INTO query_result (
+                query, direct_response, full_response, sql_queries, llm_model_id
+            ) VALUES (%s, %s, %s, %s, %s) RETURNING id
+            """,
             (
                 query,
                 direct_response,
-                full_Response,
+                full_response,
                 sql_queries,
                 get_model_id(llm_model_id),
             ),
         )
-    query_id = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        if result is None:
+            raise ValueError("Failed to save query: No ID returned")
+        query_result_id = result[0]
 
-    if not query_id:
-        raise ValueError("Query ID not found")
-
-    return query_id
+        return query_result_id
 
 
 def save_query_with_eval_to_db(
-    query, direct_response, full_response, evaluation_results, sql_queries=None
-):
-    """Save the query and response to the database with evaluation results
-
-    Args:
-        query: The original question asked
-        direct_response: The direct response from the agent
-        full_response: The full response from the agent including reasoning and SQL queries
-        evaluation_results: The evaluation results for the query as a JSON object (dict)
-        sql_queries: List of SQL queries executed (optional)
-    """
+    query: str,
+    direct_response: str,
+    full_response: str,
+    evaluation_results: Dict[str, Union[str, float, int, bool, None]],
+    sql_queries: Optional[List[str]] = None,
+) -> None:
+    """Save the query and response to the database with evaluation results."""
     if not isinstance(evaluation_results, dict):
         raise ValueError("Evaluation results must be a dictionary")
 
@@ -88,15 +92,18 @@ def save_query_with_eval_to_db(
             )
 
     query_result_id = save_query_to_db(
-        query, direct_response, full_response, sql_queries
+        query, direct_response, full_response, sql_queries # type: ignore
     )
 
     with get_cursor() as cursor:
-
         cursor.execute(
-            """INSERT INTO query_evaluation (retrieved_contexts, reference, factual_correctness, semantic_similarity, 
-          context_recall, faithfulness, bleu_score, non_llm_string_similarity, rogue_score, string_present, 
-          query_result_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """
+            INSERT INTO query_evaluation (
+                retrieved_contexts, reference, factual_correctness, semantic_similarity,
+                context_recall, faithfulness, bleu_score, non_llm_string_similarity,
+                rogue_score, string_present, query_result_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            """,
             (
                 evaluation_results.get("retrieved_contexts"),
                 evaluation_results.get("reference"),
