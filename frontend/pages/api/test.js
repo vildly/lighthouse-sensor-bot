@@ -1,12 +1,11 @@
-import dotenv from 'dotenv';
 import process from 'process';
-
-dotenv.config();
 
 const SERVER_URL = process.env.SERVER_URL;
 
 export default async function handler(req, res) {
     try {
+
+
       const response = await fetch(`${SERVER_URL}/api/test`);
       
       if (!response.ok) {

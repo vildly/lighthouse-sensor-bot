@@ -33,7 +33,7 @@ export default function QuestionForm() {
         body: JSON.stringify({
           question,
           source_file: sourceFile,
-          model: selectedModel // Include the selected model
+          llm_model_id: selectedModel // Include the selected model
         }),
       });
       

@@ -3,7 +3,6 @@ import path from 'path';
 import dotenv from 'dotenv';
 import process from 'process';
 
-dotenv.config();
 
 const SERVER_URL = process.env.SERVER_URL;
 
@@ -39,7 +38,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({ 
           question: questionText,
           source_file,
-          model: llm_model_id
+          llm_model_id: llm_model_id
         }),
       });
 

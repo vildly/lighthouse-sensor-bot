@@ -18,7 +18,9 @@ from app.services.agent import initialize_agent
 
 app = Flask(__name__)
 
-CORS(app) 
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+# Configure CORS to only allow requests from the frontend
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 # --- Configuration ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key
 if not OPENAI_API_KEY:

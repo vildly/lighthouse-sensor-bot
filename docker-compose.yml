@@ -40,7 +40,13 @@ services:
     networks:
       - 2dv50e
     environment:
-      - TEST=1
+      - FRONTEND_URL=http://frontend:3000
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - SERVER_URL=http://backend:5000
     depends_on:
       - postgres
 
