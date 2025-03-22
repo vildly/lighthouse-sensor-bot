@@ -1,23 +1,8 @@
 from typing import Dict, Optional, List, Union
 from agno.utils.log import logger
-from app.conf.postgres import get_connection
-from contextlib import contextmanager
+from app.conf.postgres import get_cursor
 
 
-@contextmanager
-def get_cursor():
-    connection = get_connection()
-    cursor = connection.cursor()
-    try:
-        yield cursor
-        connection.commit()
-    except Exception as e:
-        connection.rollback()
-        logger.error(f"Database error: {e}")
-        raise e
-    finally:
-        cursor.close()
-        connection.close()
 
 
 def get_model_id(llm_model_name: str) -> int:
