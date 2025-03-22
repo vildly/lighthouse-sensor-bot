@@ -1,18 +1,10 @@
  # type: ignore
-import json
-from pathlib import Path
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
 from agno.models.openrouter import OpenRouter
-from agno.tools.duckdb import DuckDbTools
-from agno.utils.log import logger
 import utils.duck
-from typing import Optional, List
-from app.helpers.CustomDuckDbTools import CustomDuckDbTools
 from app.helpers.load_json_from_file import load_json_from_file
 from dotenv import load_dotenv
 import os
-from textwrap import dedent
 
 load_dotenv()
 
