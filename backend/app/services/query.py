@@ -10,7 +10,6 @@ import re
 
 def query(data, data_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
-
     Args:
         data: The request data
         data_dir: Directory containing data files
