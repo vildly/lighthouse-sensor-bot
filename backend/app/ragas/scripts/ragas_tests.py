@@ -16,7 +16,7 @@ import argparse
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 
 load_dotenv()
-
+# This is the main RAGAS Evaluation script. It is used to evaluate the performance of the agent.
 API_URL = os.getenv('API_URL')
 RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 

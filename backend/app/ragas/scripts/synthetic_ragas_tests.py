@@ -21,7 +21,7 @@ from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
 
 load_dotenv()
-
+# this script is used to evaluate the performance of the agent on the synthetic dataset.
 API_URL = os.getenv('API_URL')
 RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 
