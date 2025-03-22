@@ -1,10 +1,7 @@
-import json
 import os
 from pathlib import Path
-from flask import Flask, request, jsonify
+from flask import Flask
 from app.helpers.load_json_from_file import load_json_from_file
-import utils.duck 
-from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
 import io
 import logging
@@ -14,9 +11,6 @@ from flask_cors import CORS
 load_dotenv()  # Load environment variables (for OpenAI API key, etc.)
 from pathlib import Path
 
-from textwrap import dedent
-
-from agno.agent import Agent, Message, RunResponse
 from agno.tools.duckdb import DuckDbTools
 from agno.utils.log import logger  
 

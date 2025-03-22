@@ -37,4 +37,4 @@ class BleuScore(SingleTurnMetric):
         # Calculate BLEU score
         score = sentence_bleu(reference_tokens, response_tokens)
         
-        return float(score)
+        return float(score) # type: ignore
