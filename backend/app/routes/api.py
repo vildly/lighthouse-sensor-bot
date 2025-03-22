@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from app.helpers.load_json_from_file import load_json_from_file
 from dotenv import load_dotenv
 from app.services.query import query
-from app.helpers.CustomDuckDbTools import CustomDuckDbTools
+from app.conf.CustomDuckDbTools import CustomDuckDbTools
 
 load_dotenv()
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -59,8 +59,7 @@ def query_endpoint():
     # Call the query service
     return query(
         data=data, 
-        data_dir=data_dir, 
-        output_dir=output_dir, 
+        data_dir=data_dir,
         data_analyst=data_analyst
     )
 

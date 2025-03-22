@@ -1,3 +1,4 @@
+# type: ignore
 import re
 import typing as t
 from dataclasses import dataclass, field
@@ -25,7 +26,7 @@ class LenientFactualCorrectness(SingleTurnMetric):
 
     async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks=None) -> float:
         # First try simple number extraction to handle simple cases directly
-        response_val = self.extract_first_number(sample.response)
+        response_val = self.extract_first_number(sample.response) 
         reference_val = self.extract_first_number(sample.reference)
         
         # If we have clean numbers with less than 5% difference, give a good score directly
@@ -73,7 +74,7 @@ class LenientFactualCorrectness(SingleTurnMetric):
             except (ValueError, AttributeError):
                 pass
                 
-        return None
+        return None 
 
     def extract_all_numbers(self, text: str) -> list[tuple[float, str]]:
         if not text:
