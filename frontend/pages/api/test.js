@@ -1,6 +1,11 @@
 import process from 'process';
 
-const SERVER_URL = process.env.SERVER_URL;
+let SERVER_URL;
+if (process.env.DEV_MODE) {
+  SERVER_URL = process.env.SERVER_URL;
+} else {
+ SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+}
 
 export default async function handler(req, res) {
     try {

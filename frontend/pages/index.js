@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useWebSocket } from "../contexts/WebSocketContext";
 
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
@@ -9,6 +10,9 @@ export default function QuestionForm() {
   const [modelCategory, setModelCategory] = useState("open-source"); // Default to open-source
   const [selectedModel, setSelectedModel] = useState("qwen/qwen-2.5-72b-instruct"); // Default model
   const [modelUsed, setModelUsed] = useState(null);
+  
+  // Get WebSocket context
+  const { sqlQueries, queryStatus, resetQueries } = useWebSocket();
 
   useEffect(() => {
     // Check backend status on component mount
@@ -23,6 +27,7 @@ export default function QuestionForm() {
     
     setIsLoading(true);
     setContent(null);
+    resetQueries(); // Reset SQL queries for new question
     
     try {
       const response = await fetch("/api/query", {
@@ -113,6 +118,24 @@ export default function QuestionForm() {
       </span>
     </div>
   );
+
+  // Add a section to display SQL queries
+  const renderSqlQueries = () => {
+    if (sqlQueries.length === 0) return null;
+    
+    return (
+      <div className="mt-4 bg-white bg-opacity-10 rounded-xl p-4">
+        <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {sqlQueries.map((query, index) => (
+            <div key={index} className="bg-black bg-opacity-30 p-2 rounded text-white text-opacity-80 text-sm font-mono">
+              {query}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-ferry-image min-h-screen">
@@ -314,6 +337,9 @@ export default function QuestionForm() {
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-opacity-20 border-t-white"></div>
                       <p className="mt-4 text-white text-opacity-80">Generating visualization...</p>
+                      
+                      {/* Show SQL queries while loading */}
+                      {renderSqlQueries()}
                     </div>
                   </div>
                 ) : content ? (
@@ -339,6 +365,11 @@ export default function QuestionForm() {
                     <div className="bg-white bg-opacity-20 rounded-xl p-4 h-[40%] visualization-container">
                       <h3 className="text-white text-sm font-medium mb-2">Fuel Efficiency</h3>
                       <div className="h-[calc(100%-30px)] w-full"></div>
+                    </div>
+                    
+                    {/* Add SQL queries section */}
+                    <div className="col-span-2">
+                      {renderSqlQueries()}
                     </div>
                   </div>
                 ) : (
