@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useWebSocket } from "../contexts/WebSocketContext";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
@@ -13,6 +15,16 @@ export default function QuestionForm() {
   
   // Get WebSocket context
   const { sqlQueries, queryStatus, resetQueries } = useWebSocket();
+  
+  // Reference to the SQL queries container for auto-scrolling
+  const queriesContainerRef = useRef(null);
+  
+  // Auto-scroll when new queries are added
+  useEffect(() => {
+    if (queriesContainerRef.current) {
+      queriesContainerRef.current.scrollTop = queriesContainerRef.current.scrollHeight;
+    }
+  }, [sqlQueries]);
 
   useEffect(() => {
     // Check backend status on component mount
@@ -119,17 +131,31 @@ export default function QuestionForm() {
     </div>
   );
 
-  // Add a section to display SQL queries
+  // Add a section to display SQL queries with syntax highlighting
   const renderSqlQueries = () => {
     if (sqlQueries.length === 0) return null;
     
     return (
       <div className="mt-4 bg-white bg-opacity-10 rounded-xl p-4">
         <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+        <div 
+          ref={queriesContainerRef}
+          className="space-y-2 max-h-60 overflow-y-auto"
+        >
           {sqlQueries.map((query, index) => (
-            <div key={index} className="bg-black bg-opacity-30 p-2 rounded text-white text-opacity-80 text-sm font-mono">
-              {query}
+            <div key={index} className="rounded">
+              <SyntaxHighlighter 
+                language="sql" 
+                style={vscDarkPlus}
+                customStyle={{ 
+                  margin: 0, 
+                  borderRadius: '0.25rem',
+                  fontSize: '0.875rem',
+                  padding: '0.5rem'
+                }}
+              >
+                {query}
+              </SyntaxHighlighter>
             </div>
           ))}
         </div>
