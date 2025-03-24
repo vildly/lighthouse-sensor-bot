@@ -343,4 +343,14 @@ select:hover,
 
 .text-white.text-opacity-60.text-sm.text-center.py-4 {
   color: #666666 !important; /* Darker placeholder text */
+}
+
+/* Add these new styles for tab content */
+.tab-pane {
+  display: none;
+  height: 100%;
+}
+
+.tab-pane.active {
+  display: block;
 } 
