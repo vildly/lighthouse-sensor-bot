@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import process from 'process';
 
 
-const SERVER_URL = process.env.SERVER_URL;
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
