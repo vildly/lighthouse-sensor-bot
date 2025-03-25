@@ -20,12 +20,12 @@ from app.services.agent import initialize_agent
 
 app = Flask(__name__)
 
-FRONTEND_URL = os.getenv("FRONTEND_URL")
-# Configure CORS to only allow requests from the frontend
-CORS(app, resources={r"/*": {"origins": FRONTEND_URL}})
 
-# Initialize SocketIO with CORS support
-init_socketio(app, FRONTEND_URL)
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+CORS(app, resources={r"/*": {"origins": [FRONTEND_URL, "http://localhost:3000"]}})
+
+
+init_socketio(app, [FRONTEND_URL, "http://localhost:3000"])
 
 # --- Configuration ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key
@@ -73,4 +73,4 @@ print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
 from app.app import app, socketio
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0')
+    socketio.run(app, debug=True, host='0.0.0.0', allow_unsafe_werkzeug=True)
