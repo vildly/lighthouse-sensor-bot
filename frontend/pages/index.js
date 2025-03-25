@@ -240,16 +240,16 @@ export default function QuestionForm() {
                 <h1 className="text-xl font-bold text-gray-800">Analysis Controls</h1>
               </div>
 
-              <div className="mb-5 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="mb-5 mt-5 p-3 bg-blue-50 rounded-lg border border-blue-100">
                 <p className="text-sm text-gray-700">
-                  <span className="font-medium text-blue-600">How to use:</span> Choose between proprietary commercial models or open source alternatives for your analysis, pick a data source, then enter your query or load an example.
+                  <span className="font-medium text-blue-600">How to use:</span> Choose between proprietary commercial models or open source alternatives for your analysis, then enter your query or load an example.
                 </p>
               </div>
 
               <div className="space-y-5">
                 <div>
                   
-                  <div className="mb-2">
+                  <div className="mb-2 mt-5">
                     
                     <div className="flex rounded-lg overflow-hidden border border-gray-200">
                       <button 
@@ -388,11 +388,10 @@ export default function QuestionForm() {
                     <polyline points="22 4 12 14.01 9 11.01" stroke="white" fill="none" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-white">Response & Analysis Results</h2>
+                <h2 className="text-xl font-bold">Response & Analysis Results</h2>
               </div>
               
-              <div className="mb-4 bg-white bg-opacity-20 rounded-xl p-4 visualization-container">
-                <h3 className="text-sm font-medium text-white mb-2">Response Preview</h3>
+              <div className="mb-4 visualization-container">
                 <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto">
                   {isLoading ? (
                     <div className="flex justify-center items-center py-4">

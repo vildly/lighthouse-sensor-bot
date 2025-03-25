@@ -117,15 +117,19 @@
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
-/* Add border to dropdown/select elements */
+/* More aggressive condensing for dropdown/select elements */
 select, 
 .dropdown-field {
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.9); /* Lighter background */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* More prominent shadow */
+  border-radius: 0.4rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   color: #333333;
-  cursor: pointer; /* Add pointer cursor to indicate it's clickable */
+  cursor: pointer;
+  padding: 0.25rem 0.4rem; /* Further reduced padding */
+  margin-bottom: 0.5rem; /* Smaller spacing between elements */
+  font-size: 0.85rem; /* Even smaller font */
+  min-height: 32px; /* Fixed minimum height */
 }
 
 select:hover,
@@ -134,17 +138,68 @@ select:hover,
   border-color: rgba(52, 152, 219, 0.5);
 }
 
+/* Make sidebar buttons even smaller */
+.sidebar-container .button-primary,
+.sidebar-container .button-secondary {
+  padding: 0.25rem 0.6rem; /* Smaller padding */
+  font-size: 0.85rem; /* Smaller text */
+  min-height: 1.8rem; /* Shorter height */
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Reduce label spacing */
+.sidebar-container label {
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  display: block;
+}
+
+/* Reduce form group margins further */
+.sidebar-container .form-group {
+  margin-bottom: 0.5rem; /* Even less margin */
+}
+
+/* Reduce overall sidebar padding even more */
+.sidebar-container {
+  padding: 1rem !important; /* Further reduced from 1.25rem */
+}
+
+/* Reduce space between sidebar sections */
+.sidebar-container > div {
+  margin-bottom: 0.8rem;
+}
+
+/* Smaller spacing for headers in sidebar */
+.sidebar-container h1,
+.sidebar-container h2,
+.sidebar-container h3 {
+  margin-bottom: 0.5rem !important;
+  font-size: 1.1rem !important;
+}
+
+/* Compact info alerts */
+.sidebar-container .bg-blue-50 {
+  padding: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.8rem;
+}
+
 /* Add styling for the model type toggle buttons */
 .model-type-toggle {
   border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 0.5rem;
+  border-radius: 0.4rem;
   overflow: hidden;
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem; /* Added margin top */
 }
 
 .model-type-option {
-  padding: 0.5rem 1rem;
+  padding: 0.3rem 0.6rem;
   border: none;
   transition: all 0.2s ease;
+  font-size: 0.85rem;
+  margin-top: 0.25rem; /* Added margin top */
 }
 
 .model-type-option.active {
@@ -252,14 +307,36 @@ select:hover,
   color: #000000; /* Black for the values to stand out */
 }
 
-/* Add more transparent styling for section headers */
+/* Unified heading styles for all section headings */
+.section-heading,
 .transparent-card h2,
-.transparent-card h3 {
+.transparent-card h3,
+.sidebar-container h1,
+.sidebar-container h2,
+.sidebar-container h3,
+.results-container h2,
+.results-container h3,
+.active-analysis-container h2,
+.active-analysis-container h3 {
   color: rgba(0, 0, 0, 0.8);
-  background-color: rgba(255, 255, 255, 0.4); /* Subtle background for headers */
+  background-color: rgba(255, 255, 255, 0.4);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   margin: -0.25rem -0.25rem 0.5rem -0.25rem;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Add hover effect for section headings */
+.section-heading:hover,
+.transparent-card h2:hover,
+.sidebar-container h2:hover,
+.results-container h2:hover,
+.active-analysis-container h2:hover {
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 /* Add breathing effect for backend connection indicator */
@@ -353,4 +430,41 @@ select:hover,
 
 .tab-pane.active {
   display: block;
+}
+
+/* Make navigation bar smaller */
+nav, 
+.navbar,
+header nav {
+  padding-top: 0.5rem !important; /* Reduced top padding */
+  padding-bottom: 0.5rem !important; /* Reduced bottom padding */
+  min-height: 3rem !important; /* Smaller overall height */
+}
+
+/* Smaller navigation elements */
+nav .container,
+.navbar .container,
+header nav .container {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Make logo and navigation links smaller */
+nav .logo,
+.navbar .logo,
+nav img,
+.navbar img {
+  height: 1.75rem !important; /* Smaller logo */
+}
+
+nav a,
+.navbar a,
+header nav a {
+  font-size: 0.9rem !important; /* Smaller text */
+  padding: 0.25rem 0.5rem !important; /* Less padding */
+}
+
+/* Adjust padding for the entire header section */
+header {
+  padding-top: 0.5rem !important;
 } 
