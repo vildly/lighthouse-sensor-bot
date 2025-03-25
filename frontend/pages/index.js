@@ -9,11 +9,20 @@ export default function QuestionForm() {
   const [modelCategory, setModelCategory] = useState("open-source"); // Default to open-source
   const [selectedModel, setSelectedModel] = useState("qwen/qwen-2.5-72b-instruct"); // Default model
   const [modelUsed, setModelUsed] = useState(null);
+  const [activeQuery, setActiveQuery] = useState(false);
 
   useEffect(() => {
     // Check backend status on component mount
     testConnection(false);
   }, []);
+
+  useEffect(() => {
+    if (content) {
+      setTimeout(() => {
+        switchTab('evaluation');
+      }, 100);
+    }
+  }, [content]);
 
   const askQuestion = async () => {
     if (question.trim() === "") {
@@ -23,6 +32,7 @@ export default function QuestionForm() {
     
     setIsLoading(true);
     setContent(null);
+    setActiveQuery(true);
     
     try {
       const response = await fetch("/api/query", {
@@ -114,6 +124,80 @@ export default function QuestionForm() {
     </div>
   );
 
+  // Add this function to handle tab switching
+  const switchTab = (tabName) => {
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-button').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    
+    // Find the button for this tab and make it active
+    const tabButton = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+    if (tabButton) {
+      tabButton.classList.add('active');
+    }
+    
+    // Hide all tab content
+    document.querySelectorAll('.tab-pane').forEach(content => {
+      content.classList.remove('active');
+      content.classList.add('hidden');
+    });
+    
+    // Find the content for this tab and make it visible
+    const tabContent = document.getElementById(`${tabName}-content`);
+    if (tabContent) {
+      tabContent.classList.remove('hidden');
+      tabContent.classList.add('active');
+    } else {
+      console.warn(`Tab content for "${tabName}" not found`);
+    }
+  };
+
+ 
+  const fetchEvaluationData = async () => {
+    try {
+      const response = await fetch('/api/get-evaluation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          queryId: currentQueryId 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      // Inject the evaluation data into the container
+      document.getElementById('evaluation-data-container').innerHTML = 
+        createEvaluationHTML(data.evaluationMetrics);
+    } catch (error) {
+      console.error('Error fetching evaluation data:', error);
+    }
+  };
+
+  const fetchSQLData = async () => {
+    try {
+      const response = await fetch('/api/get-sql-queries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          queryId: currentQueryId 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      // Inject the SQL data into the container
+      document.getElementById('sql-data-container').innerHTML = 
+        createSQLQueriesHTML(data.sqlQueries);
+    } catch (error) {
+      console.error('Error fetching SQL data:', error);
+    }
+  };
+
   return (
     <div className="bg-ferry-image min-h-screen">
       <header className="pt-4">
@@ -132,7 +216,7 @@ export default function QuestionForm() {
                 </svg>
          
 
-                <h1 className="text-xl font-bold text-white">Ferry Analytics</h1>
+                <h1 className="text-xl font-bold text-white">CostEfficient Maritime AI</h1>
               </div>
               
               <div className="flex items-center">
@@ -146,136 +230,168 @@ export default function QuestionForm() {
       <main className="container mx-auto py-6">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/3">
-            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30">
-              <h2 className="text-lg font-semibold text-white mb-4 text-enhanced">Query Settings</h2>
-              
-              <div className="mb-4">
-                <label className="text-sm font-medium text-white mb-2 block text-enhanced">Model Type</label>
-                <div className="model-type-toggle flex rounded-lg w-full">
-                  <button
-                    className={`model-type-option flex-1 ${modelCategory === "proprietary" ? "active" : ""}`}
-                    onClick={() => handleCategoryChange("proprietary")}
-                  >
-                    Proprietary
-                  </button>
-                  <button
-                    className={`model-type-option flex-1 ${modelCategory === "open-source" ? "active" : ""}`}
-                    onClick={() => handleCategoryChange("open-source")}
-                  >
-                    Open Source
-                  </button>
+            <div className="sidebar-container rounded-xl p-6 bg-white bg-opacity-95 shadow-lg border border-gray-100">
+              <div className="flex items-center mb-6">
+                <div className="p-2 bg-blue-600 rounded text-white mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17l4-4m0 0l4-4m-4 4H3m4 4h10" />
+                  </svg>
                 </div>
+                <h1 className="text-xl font-bold text-gray-800">Analysis Controls</h1>
               </div>
-              
-              <div className="mb-4">
-                <label className="text-sm font-medium text-white mb-2 block text-enhanced">Model</label>
-                <div className="relative">
-                  {modelCategory === "proprietary" ? (
-                    <select
-                      className="w-full px-3 py-2 dropdown-field text-white"
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                    >
-                      <option value="openai/gpt-4o-2024-11-20">OpenAI GPT-4o</option>
-                      <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet</option>
-                      <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
-                      <option value="amazon/nova-pro-v1">Amazon Nova Pro</option>
-                    </select>
-                  ) : (
-                    <select
-                      className="w-full px-3 py-2 dropdown-field text-white"
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                    >
-                      <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
-                      <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
-                      <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B</option>
-                      <option value="mistralai/ministral-8b">Mistral 8B</option>
-                    </select>
-                  )}
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
+
+              <div className="mb-5 mt-5 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium text-blue-600">How to use:</span> Choose between proprietary commercial models or open source alternatives for your analysis, then enter your query or load an example.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  
+                  <div className="mb-2 mt-5">
+                    
+                    <div className="flex rounded-lg overflow-hidden border border-gray-200">
+                      <button 
+                        className={`flex-1 py-2 px-4 text-center transition-colors ${modelCategory === "proprietary" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                        onClick={() => handleCategoryChange("proprietary")}
+                      >
+                        Proprietary
+                      </button>
+                      <button 
+                        className={`flex-1 py-2 px-4 text-center transition-colors ${modelCategory === "open-source" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                        onClick={() => handleCategoryChange("open-source")}
+                      >
+                        Open Source
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Model</label>
+                    <div className="relative">
+                      <select 
+                        className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                      >
+                        {modelCategory === "proprietary" ? (
+                          <>
+                            <option value="openai/gpt-4o-2024-11-20">OpenAI GPT-4o</option>
+                            <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet</option>
+                            <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+                            <option value="amazon/nova-pro-v1">Amazon Nova Pro</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
+                            <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+                            <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B</option>
+                            <option value="mistralai/ministral-8b">Mistral 8B</option>
+                          </>
+                        )}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="mb-4">
-                <label className="text-sm font-medium text-white mb-2 block text-enhanced">Data Source</label>
-                <div className="relative">
-                  <select
-                    className="w-full px-3 py-2 dropdown-field text-white"
-                    value={sourceFile}
-                    onChange={(e) => setSourceFile(e.target.value)}
-                  >
-                    <option value="ferry_trips_data.csv">Ferry Trips Data (CSV)</option>
-                    <option value="ferries.json">Ferries Info (JSON)</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Data Source</label>
+                  <div className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-700 bg-gray-50">
+                    Ferry Trips Data (CSV)
                   </div>
                 </div>
-              </div>
-              
-              <div className="mb-4">
-                <label className="text-sm font-medium text-white mb-2 block text-enhanced">Your Question</label>
-                <textarea
-                  className="w-full px-4 py-3 rounded-lg input-emphasized"
-                  rows="4"
-                  placeholder="Enter your question about ferry data..."
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                ></textarea>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="space-x-2">
-                  <button
-                    onClick={loadPrompt}
-                    className="button-secondary load-example text-white text-sm py-2 px-4 rounded-lg"
-                  >
-                    Load Example
-                  </button>
-                  <button
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Your Analysis Query</label>
+                  <textarea
+                    className="w-full h-32 px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="E.g., What is the average speed of ferry Jupiter? How does fuel consumption correlate with passenger load?"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  ></textarea>
+                </div>
+                
+                <div className="flex space-x-3 pt-2">
+                  <div className="relative group">
+                    <button 
+                      className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={loadPrompt}
+                      aria-label="Load an example query into the input field"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                      </svg>
+                      Example
+                    </button>
+                    <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      Click to load a pre-written example query into the input field
+                    </div>
+                  </div>
+                  
+                  <button 
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     onClick={() => setQuestion("")}
-                    className="button-secondary text-white text-sm py-2 px-4 rounded-lg"
                   >
                     Clear
                   </button>
+                  
+                  <button 
+                    className="flex-1 flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    onClick={askQuestion}
+                    disabled={isLoading || !question.trim()}
+                  >
+                    <span>Analyze</span>
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                  </button>
                 </div>
-                <button 
-                  onClick={askQuestion}
-                  disabled={isLoading || !question.trim()}
-                  className="button-primary text-sm py-2 px-4 rounded-lg"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin text-white h-4 w-4 border-b-2 border-current mr-2"></div>
-                      Processing...
+                
+                {activeQuery && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Active Analysis</h2>
+                    <div className="space-y-2 bg-blue-50 rounded-lg p-3">
+                      <div className="flex items-center">
+                        <span className="text-xs text-blue-500 uppercase font-semibold">Model</span>
+                        <span className="ml-2 text-sm font-mono bg-white px-2 py-1 rounded border border-blue-100">{selectedModel.split('/')[1]}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-xs text-blue-500 uppercase font-semibold">Data</span>
+                        <span className="ml-2 text-sm font-mono bg-white px-2 py-1 rounded border border-blue-100">{sourceFile}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-xs text-blue-500 uppercase font-semibold">Status</span>
+                        <div className="ml-2 flex items-center">
+                          <div className={`backend-status-indicator ${backendStatus === "online" ? "online" : "offline"}`}></div>
+                          <span className="ml-1 text-xs">{backendStatus === "online" ? "Connected" : "Disconnected"}</span>
+                        </div>
+                      </div>
                     </div>
-                  ) : 'Send'}
-                </button>
+                  </div>
+                )}
               </div>
-              
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Active Context</h3>
-                <div className="flex flex-wrap gap-2">
-                  <div className="context-label">
-                    <span className="context-label-title">Model:</span>
-                    <span className="context-label-value">{selectedModel.split('/')[1]}</span>
-                  </div>
-                  <div className="context-label">
-                    <span className="context-label-title">Data:</span>
-                    <span className="context-label-value">{sourceFile}</span>
-                  </div>
+            </div>
+          </div>
+          
+          <div className="lg:w-2/3">
+            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full">
+              <div className="flex items-center mb-5">
+                <div className="p-2 bg-blue-600 rounded text-white mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="white" />
+                    <polyline points="22 4 12 14.01 9 11.01" stroke="white" fill="none" />
+                  </svg>
                 </div>
+                <h2 className="text-xl font-bold">Response & Analysis Results</h2>
               </div>
               
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-white mb-2">Response Preview</h3>
+              <div className="mb-4 visualization-container">
                 <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto">
                   {isLoading ? (
                     <div className="flex justify-center items-center py-4">
@@ -292,19 +408,23 @@ export default function QuestionForm() {
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="lg:w-2/3">
-            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Data Visualization</h2>
               
               <div className="mb-4 border-b border-white border-opacity-20">
                 <div className="flex space-x-2 border-b border-white border-opacity-20">
-                  <button className="tab-button active px-4 py-2">Overview</button>
-                  <button className="tab-button px-4 py-2">Speed Analysis</button>
-                  <button className="tab-button px-4 py-2">Fuel Consumption</button>
-                  <button className="tab-button px-4 py-2">Routes</button>
+                  <button 
+                    className="tab-button active px-4 py-2" 
+                    data-tab="evaluation"
+                    onClick={() => switchTab('evaluation')}
+                  >
+                    Evaluation
+                  </button>
+                  <button 
+                    className="tab-button px-4 py-2" 
+                    data-tab="sql-queries"
+                    onClick={() => switchTab('sql-queries')}
+                  >
+                    SQL Queries
+                  </button>
                 </div>
               </div>
               
@@ -313,32 +433,25 @@ export default function QuestionForm() {
                   <div className="flex justify-center items-center h-full">
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-opacity-20 border-t-white"></div>
-                      <p className="mt-4 text-white text-opacity-80">Generating visualization...</p>
+                      <p className="mt-4 text-white text-opacity-80">Processing query...</p>
                     </div>
                   </div>
                 ) : content ? (
-                  <div className="grid grid-cols-2 gap-6 h-full">
-                    <div className="col-span-2 bg-white bg-opacity-20 rounded-xl p-4 h-[60%] visualization-container">
-                      <h3 className="text-white text-sm font-medium mb-2">Ferry Speed Comparison</h3>
-                      <div className="h-[calc(100%-30px)] w-full flex items-center justify-center">
-                        <div className="relative w-full h-full">
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <svg className="w-16 h-16 text-white text-opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                            </svg>
-                          </div>
+                  <div id="tab-content" className="h-full">
+                    <div id="evaluation-content" className="tab-pane active">
+                      <div className="h-full w-full flex items-center justify-center">
+                        <div id="evaluation-data-container" className="w-full h-full">
+                          <p className="text-gray-300 text-center">Evaluation data will be loaded from backend</p>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="bg-white bg-opacity-20 rounded-xl p-4 h-[40%] visualization-container">
-                      <h3 className="text-white text-sm font-medium mb-2">Trip Frequency</h3>
-                      <div className="h-[calc(100%-30px)] w-full"></div>
-                    </div>
-                    
-                    <div className="bg-white bg-opacity-20 rounded-xl p-4 h-[40%] visualization-container">
-                      <h3 className="text-white text-sm font-medium mb-2">Fuel Efficiency</h3>
-                      <div className="h-[calc(100%-30px)] w-full"></div>
+                    <div id="sql-queries-content" className="tab-pane hidden">
+                      <div className="h-full w-full flex items-center justify-center">
+                        <div id="sql-data-container" className="w-full h-full">
+                          <p className="text-gray-300 text-center">SQL queries will be loaded from backend</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -346,16 +459,12 @@ export default function QuestionForm() {
                     <svg className="w-24 h-24 text-white text-opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
                     </svg>
-                    <h3 className="mt-4 text-white text-opacity-80 text-lg font-medium">Ask a question to generate visualizations</h3>
+                    <h3 className="mt-4 text-white text-opacity-80 text-lg font-medium">Run an analysis to see results</h3>
                     <p className="mt-2 text-white text-opacity-60 text-center max-w-md">
-                      Your data will be analyzed and displayed here once you submit a query
+                      Analysis results and visualizations will appear here after you submit a query
                     </p>
                   </div>
                 )}
-              </div>
-              
-              <div className="mt-4">
-                {/* The Key Insights section has been completely removed */}
               </div>
             </div>
           </div>
