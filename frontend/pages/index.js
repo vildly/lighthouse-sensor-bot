@@ -14,6 +14,7 @@ export default function QuestionForm() {
   const [selectedModel, setSelectedModel] = useState("qwen/qwen-2.5-72b-instruct"); // Default model
   const [modelUsed, setModelUsed] = useState(null);
   const [activeQuery, setActiveQuery] = useState(false);
+  const [fullResponse, setFullResponse] = useState(null);
 
     // Get WebSocket context
     const { sqlQueries, queryStatus, resetQueries } = useWebSocket();
@@ -97,6 +98,7 @@ export default function QuestionForm() {
       
       const data = await response.json();
       setContent(data.content);
+      setFullResponse(data.full_response);
       setModelUsed(selectedModel); // Save the model used for this query.
       
       // Remove the line that switches to evaluation tab
@@ -452,6 +454,13 @@ export default function QuestionForm() {
                   </button>
                   <button 
                     className="tab-button px-4 py-2" 
+                    data-tab="full-response"
+                    onClick={() => switchTab('full-response')}
+                  >
+                    Full Response
+                  </button>
+                  <button 
+                    className="tab-button px-4 py-2" 
                     data-tab="evaluation"
                     onClick={() => switchTab('evaluation')}
                   >
@@ -539,6 +548,22 @@ export default function QuestionForm() {
                           ) : (
                             <div className="flex items-center justify-center h-full">
                               <p className="text-gray-300 text-center">No SQL queries executed yet</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div id="full-response-content" className="tab-pane hidden">
+                      <div className="h-full w-full flex flex-col">
+                        <div className="w-full h-full overflow-y-auto bg-white bg-opacity-10 rounded-xl p-4">
+                          {fullResponse ? (
+                            <div className="prose prose-sm max-w-none text-white">
+                              <ReactMarkdown>{fullResponse}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <p className="text-gray-300 text-center">No full response available</p>
                             </div>
                           )}
                         </div>

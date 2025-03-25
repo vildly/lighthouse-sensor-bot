@@ -593,4 +593,37 @@ pre {
 .prose th {
   background-color: rgba(0, 0, 0, 0.05);
   font-weight: 600;
+}
+
+/* Add styling for markdown in the full response tab */
+#full-response-content .prose {
+  color: white;
+}
+
+#full-response-content .prose h1,
+#full-response-content .prose h2,
+#full-response-content .prose h3 {
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+#full-response-content .prose code {
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #f8f8f8;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+#full-response-content .prose pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+#full-response-content .prose strong {
+  color: #4ade80;
+  font-weight: 700;
 } 
