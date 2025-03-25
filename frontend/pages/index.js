@@ -33,11 +33,35 @@ export default function QuestionForm() {
 
   useEffect(() => {
     if (content) {
-      setTimeout(() => {
-        switchTab('evaluation');
-      }, 100);
+      // Don't automatically switch to evaluation tab anymore
+      // Let the user decide which tab to view
     }
   }, [content]);
+
+  // Add this useEffect to set SQL queries as the default tab
+  useEffect(() => {
+    // Set SQL queries as the default tab when component mounts
+    const timer = setTimeout(() => {
+      const sqlTab = document.querySelector('.tab-button[data-tab="sql-queries"]');
+      if (sqlTab) {
+        sqlTab.classList.add('active');
+      }
+      
+      const sqlContent = document.getElementById('sql-queries-content');
+      if (sqlContent) {
+        sqlContent.classList.remove('hidden');
+        sqlContent.classList.add('active');
+      }
+      
+      const evalContent = document.getElementById('evaluation-content');
+      if (evalContent) {
+        evalContent.classList.add('hidden');
+        evalContent.classList.remove('active');
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const askQuestion = async () => {
     if (question.trim() === "") {
@@ -49,7 +73,9 @@ export default function QuestionForm() {
     setContent(null);
     setActiveQuery(true);
     resetQueries(); // Reset SQL queries for new question
-
+    
+    // Switch to SQL queries tab immediately when starting a query
+    switchTab('sql-queries');
     
     try {
       const response = await fetch("/api/query", {
@@ -71,6 +97,9 @@ export default function QuestionForm() {
       const data = await response.json();
       setContent(data.content);
       setModelUsed(selectedModel); // Save the model used for this query.
+      
+      // Remove the line that switches to evaluation tab
+      // switchTab('evaluation');
     } catch (error) {
       console.error("Error asking question:", error);
       setContent("Error connecting to the backend: " + error.message);
@@ -167,8 +196,9 @@ export default function QuestionForm() {
     } else {
       console.warn(`Tab content for "${tabName}" not found`);
     }
+  };
 
-     // Add a section to display SQL queries with syntax highlighting
+  // Add a section to display SQL queries with syntax highlighting
   const renderSqlQueries = () => {
     if (sqlQueries.length === 0) return null;
     
@@ -381,7 +411,7 @@ export default function QuestionForm() {
           </div>
           
           <div className="lg:w-2/3">
-            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full">
+            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full w-full">
               <div className="flex items-center mb-5">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -413,51 +443,113 @@ export default function QuestionForm() {
               <div className="mb-4 border-b border-white border-opacity-20">
                 <div className="flex space-x-2 border-b border-white border-opacity-20">
                   <button 
-                    className="tab-button active px-4 py-2" 
-                    data-tab="evaluation"
-                    onClick={() => switchTab('evaluation')}
-                  >
-                    Evaluation
-                  </button>
-                  <button 
                     className="tab-button px-4 py-2" 
                     data-tab="sql-queries"
                     onClick={() => switchTab('sql-queries')}
                   >
                     SQL Queries
                   </button>
+                  <button 
+                    className="tab-button px-4 py-2" 
+                    data-tab="evaluation"
+                    onClick={() => switchTab('evaluation')}
+                  >
+                    Evaluation
+                  </button>
                 </div>
               </div>
               
-              <div className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded">
+              <div className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded" style={{ width: '100%', maxWidth: '100%' }}>
                 {isLoading ? (
-                  <div className="flex justify-center items-center h-full">
-                    <div className="flex flex-col items-center">
-                      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-opacity-20 border-t-white"></div>
-                      <p className="mt-4 text-white text-opacity-80">Generating visualization...</p>
+                  <div id="tab-content" className="h-full">
+                    <div id="sql-queries-content" className="tab-pane active">
+                      <div className="h-full w-full flex flex-col">
+                        <div className="flex justify-center items-center mb-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-opacity-20 border-t-white mr-3"></div>
+                          <p className="text-white text-opacity-80">Processing your query...</p>
+                        </div>
+                        <div id="sql-data-container" className="w-full h-full flex-1">
+                          {sqlQueries.length > 0 ? (
+                            <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full w-full">
+                              <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
+                              <div 
+                                ref={queriesContainerRef}
+                                className="space-y-2 overflow-y-auto h-[calc(100%-2rem)] w-full"
+                              >
+                                {sqlQueries.map((query, index) => (
+                                  <div key={index} className="rounded w-full">
+                                    <SyntaxHighlighter 
+                                      language="sql" 
+                                      style={vscDarkPlus}
+                                      customStyle={{ 
+                                        margin: 0, 
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.875rem',
+                                        padding: '0.5rem',
+                                        width: '100%',
+                                        maxWidth: '100%'
+                                      }}
+                                    >
+                                      {query}
+                                    </SyntaxHighlighter>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <p className="text-gray-300 text-center">No SQL queries executed yet</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : content ? (
                   <div id="tab-content" className="h-full">
-                    <div id="evaluation-content" className="tab-pane active">
+                    <div id="sql-queries-content" className="tab-pane active">
+                      <div className="h-full w-full flex flex-col">
+                        <div id="sql-data-container" className="w-full h-full">
+                          {sqlQueries.length > 0 ? (
+                            <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full">
+                              <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
+                              <div 
+                                ref={queriesContainerRef}
+                                className="space-y-2 overflow-y-auto h-[calc(100%-2rem)]"
+                              >
+                                {sqlQueries.map((query, index) => (
+                                  <div key={index} className="rounded">
+                                    <SyntaxHighlighter 
+                                      language="sql" 
+                                      style={vscDarkPlus}
+                                      customStyle={{ 
+                                        margin: 0, 
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.875rem',
+                                        padding: '0.5rem'
+                                      }}
+                                    >
+                                      {query}
+                                    </SyntaxHighlighter>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <p className="text-gray-300 text-center">No SQL queries executed yet</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div id="evaluation-content" className="tab-pane hidden">
                       <div className="h-full w-full flex items-center justify-center">
                         <div id="evaluation-data-container" className="w-full h-full">
                           <p className="text-gray-300 text-center">Evaluation data will be loaded from backend</p>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div id="sql-queries-content" className="tab-pane hidden">
-                      <div className="h-full w-full flex items-center justify-center">
-                        <div id="sql-data-container" className="w-full h-full">
-                          <p className="text-gray-300 text-center">SQL queries will be loaded from backend</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Add SQL queries section */}
-                    <div className="col-span-2">
-                      {renderSqlQueries()}
                     </div>
                   </div>
                 ) : (
