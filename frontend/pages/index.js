@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWebSocket } from "../contexts/WebSocketContext";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import ReactMarkdown from 'react-markdown';
 
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
@@ -430,7 +431,7 @@ export default function QuestionForm() {
                     </div>
                   ) : content ? (
                     <div className="prose prose-sm max-w-none text-gray-800">
-                      <div dangerouslySetInnerHTML={{ __html: content }}></div>
+                      <ReactMarkdown>{content}</ReactMarkdown>
                     </div>
                   ) : (
                     <div className="text-gray-500 text-sm text-center py-4">
