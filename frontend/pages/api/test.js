@@ -1,6 +1,12 @@
+import process from 'process';
+
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+
 export default async function handler(req, res) {
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/test");
+
+
+      const response = await fetch(`${SERVER_URL}/api/test`);
       
       if (!response.ok) {
         throw new Error(`Backend returned ${response.status}`);

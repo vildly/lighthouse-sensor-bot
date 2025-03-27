@@ -1,28 +1,10 @@
-import json
-import os
-from pathlib import Path
 from flask import Blueprint, request, jsonify, current_app
 from app.helpers.load_json_from_file import load_json_from_file
-import utils.duck 
-from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
-import io
-import logging
-from contextlib import redirect_stdout
 from app.services.query import query
+from app.conf.CustomDuckDbTools import CustomDuckDbTools
 
-load_dotenv()  # Load environment variables (for OpenAI API key, etc.)
-
-from typing import Optional, List
-from pathlib import Path
-
-from textwrap import dedent
-
-from agno.agent import Agent, Message, RunResponse
-from agno.tools.duckdb import DuckDbTools
-from agno.utils.log import logger 
-from app.helpers.CustomDuckDbTools import CustomDuckDbTools
-
+load_dotenv()
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 @api_bp.route("/")
@@ -34,7 +16,6 @@ def query_endpoint():
     data = request.get_json()
     
     # Get the necessary objects from app config
-    data_analyst = current_app.config['DATA_ANALYST']
     data_dir = current_app.config['DATA_DIR']
     output_dir = current_app.config['OUTPUT_DIR']
     
@@ -44,18 +25,19 @@ def query_endpoint():
     if not source_file:
         return jsonify({"error": "Source file is required"}), 400
     
+    # Get model_id from request if provided
+    llm_model_id = data.get('llm_model_id') 
+    
+    if not llm_model_id:
+        return jsonify({"error": "LLM Model ID is required"}), 400
+    
     # If source_file is provided, create a new agent with the source_file
     if source_file:
-
-    
-        
         semantic_model_data = load_json_from_file(data_dir.joinpath("semantic_model.json"))
         if semantic_model_data is None:
             print("Error: Could not load semantic model. Exiting.")
             exit()
     
-        semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
-        
         # Create a new instance of CustomDuckDbTools with the source_file
         duck_tools = CustomDuckDbTools(
             data_dir=str(data_dir),
@@ -63,9 +45,9 @@ def query_endpoint():
             source_file=source_file
         )
         
-        # Update the existing agent's tools and instructions
-        data_analyst.tools = [duck_tools]
-        data_analyst.instructions = semantic_instructions
+        # Initialize a new agent for this request with the custom tools
+        from app.services.agent import initialize_agent
+        data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools])
         
         # Add source file specific instructions
         additional_instructions = [
@@ -77,8 +59,7 @@ def query_endpoint():
     # Call the query service
     return query(
         data=data, 
-        data_dir=data_dir, 
-        output_dir=output_dir, 
+        data_dir=data_dir,
         data_analyst=data_analyst
     )
 

@@ -1,10 +1,15 @@
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+import process from 'process';
+
+
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      const { question, source_file, prompt_file } = req.body;
+      const { question, source_file, prompt_file, llm_model_id } = req.body;
       
       let questionText = question;
       
@@ -23,16 +28,17 @@ export default async function handler(req, res) {
         return res.status(400).json({ content: "Error: No question provided" });
       }
       
-      console.log("Sending to backend:", { question: questionText, source_file });
+      console.log("Sending to backend:", { question: questionText, source_file, llm_model_id });
       
-      const response = await fetch("http://127.0.0.1:5000/api/query", {
+      const response = await fetch(`${SERVER_URL}/api/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
           question: questionText,
-          source_file
+          source_file,
+          llm_model_id: llm_model_id
         }),
       });
 
@@ -47,12 +53,21 @@ export default async function handler(req, res) {
       // Normalize the response format.
       if (data.response) {
         // If backend returns 'response' key, convert it to 'content'.
-        res.status(200).json({ content: data.response });
+        res.status(200).json({ 
+          content: data.response,
+          full_response: data.full_response || data.response 
+        });
       } else if (data.content) {
         // If backend already returns 'content' key, use it directly.
-        res.status(200).json({ content: data.content });
+        res.status(200).json({ 
+          content: data.content,
+          full_response: data.full_response || data.content 
+        });
       } else {
-        res.status(200).json({ content: "Response received but no content found" });
+        res.status(200).json({ 
+          content: "Response received but no content found",
+          full_response: data.full_response || "No full response available" 
+        });
       }
 
     } catch (error) {

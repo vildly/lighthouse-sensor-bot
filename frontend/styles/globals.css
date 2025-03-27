@@ -1,3 +1,629 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+/* Add background image styling */
+.bg-ferry-image {
+  /* Remove the background image */
+  background-image: none;
+  /* Create a stronger light blue/gray gradient */
+  background: linear-gradient(180deg, rgba(180, 200, 215, 0.95) 0%, rgba(215, 225, 235, 0.95) 100%);
+  /* Add a subtle noise texture for the frosted effect */
+  position: relative;
+}
+
+/* Add a frosted glass effect with pseudo-element */
+.bg-ferry-image::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px);
+  pointer-events: none; /* Allow clicks to pass through */
+  z-index: -1;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-position: center;
+  background-size: cover;
+}
+
+
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient {
+  background: linear-gradient(-45deg, #c9d6df, #d1dbe2, #dbe1e6, #e2e2e2);
+  background-size: 400% 400%;
+  animation: gradientAnimation 15s ease infinite;
+}
+
+/* Arc-shaped navigation bar - fixed version */
+.arc-navbar {
+  border-radius: 3rem;
+  margin: 1rem 4rem;
+  background-color: black;
+  border: none;
+  outline: none;
+  position: relative;
+  box-shadow: none;
+  /* Force a black border all around to cover any white artifacts */
+  border: 1px solid black;
+  /* Create a black pseudo-element that covers the top area */
+  position: relative;
+  overflow: visible;
+}
+
+/* Update the card styling to be more transparent */
+.transparent-card {
+  background-color: rgba(255, 255, 255, 0.50); /* Reduced opacity from 0.70 to 0.50 */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  width: 100%;
+  flex: 1;
+  min-width: 0; /* Prevents flex items from growing beyond their container */
+}
+
+.transparent-card:hover {
+  /* transform: translateY(-2px); */
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for card text (change to dark) */
+.transparent-card .text-white {
+  color: #333333; /* Dark gray, almost black */
+}
+
+.transparent-card .text-opacity-80,
+.transparent-card .text-opacity-70,
+.transparent-card .text-opacity-60 {
+  color: #555555; /* Medium gray for secondary text */
+  opacity: 1; /* Reset opacity since we're using direct colors */
+}
+
+.transparent-card .font-bold {
+  color: #000000; /* Pure black for important numbers/stats */
+}
+
+/* Enhanced text visibility */
+.text-enhanced {
+  text-shadow: none;
+  letter-spacing: 0.01em;
+  color: rgba(0, 0, 0, 0.75); /* Darker text for better readability */
+}
+
+/* Enhanced input fields with clearer borders */
+.input-emphasized {
+  background-color: rgba(255, 255, 255, 1); /* Changed to solid white */
+  border: 1px solid rgba(0, 0, 0, 0.1); /* Darker border for contrast */
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #333333; /* Dark text color for contrast with white background */
+}
+
+.input-emphasized:focus {
+  background-color: rgba(255, 255, 255, 1); /* Keep solid white on focus */
+  border-color: rgba(52, 152, 219, 0.7); /* Blue border on focus */
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* More aggressive condensing for dropdown/select elements */
+select, 
+.dropdown-field {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.4rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #333333;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem; /* Further reduced padding */
+  margin-bottom: 0.5rem; /* Smaller spacing between elements */
+  font-size: 0.85rem; /* Even smaller font */
+  min-height: 32px; /* Fixed minimum height */
+}
+
+select:hover,
+.dropdown-field:hover {
+  background-color: rgba(255, 255, 255, 1);
+  border-color: rgba(52, 152, 219, 0.5);
+}
+
+/* Make sidebar buttons even smaller */
+.sidebar-container .button-primary,
+.sidebar-container .button-secondary {
+  padding: 0.25rem 0.6rem; /* Smaller padding */
+  font-size: 0.85rem; /* Smaller text */
+  min-height: 1.8rem; /* Shorter height */
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Reduce label spacing */
+.sidebar-container label {
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  display: block;
+}
+
+/* Reduce form group margins further */
+.sidebar-container .form-group {
+  margin-bottom: 0.5rem; /* Even less margin */
+}
+
+/* Reduce overall sidebar padding even more */
+.sidebar-container {
+  padding: 1rem !important; /* Further reduced from 1.25rem */
+}
+
+/* Reduce space between sidebar sections */
+.sidebar-container > div {
+  margin-bottom: 0.8rem;
+}
+
+/* Smaller spacing for headers in sidebar */
+.sidebar-container h1,
+.sidebar-container h2,
+.sidebar-container h3 {
+  margin-bottom: 0.5rem !important;
+  font-size: 1.1rem !important;
+}
+
+/* Compact info alerts */
+.sidebar-container .bg-blue-50 {
+  padding: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.8rem;
+}
+
+/* Add styling for the model type toggle buttons */
+.model-type-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem; /* Added margin top */
+}
+
+.model-type-option {
+  padding: 0.3rem 0.6rem;
+  border: none;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  margin-top: 0.25rem; /* Added margin top */
+}
+
+.model-type-option.active {
+  background-color: rgba(52, 152, 219, 0.8);
+  color: white;
+}
+
+.model-type-option:not(.active) {
+  background-color: rgba(255, 255, 255, 1); /* More opaque background */
+  color: #333333; /* Dark text instead of white */
+}
+
+/* Button styles with consistent appearance for disabled state */
+.button-primary {
+  background-color: #4ade80 !important; /* Same green as the indicator */
+  color: white !important; /* Force white text */
+  border: none;
+  box-shadow: 0 2px 5px rgba(74, 222, 128, 0.3);
+  transition: all 0.2s ease;
+  font-weight: 500;
+  animation: send-button-breathe 2s infinite ease-in-out; /* Breathing animation */
+}
+
+.button-primary:hover:not(:disabled) {
+  background-color: #38c172 !important; /* Darker green on hover */
+  transform: translateY(-1px);
+}
+
+.button-primary:disabled {
+  background-color: #4ade80 !important; /* Same green when disabled - no change */
+  opacity: 0.85; /* Just slightly more transparent */
+  cursor: not-allowed;
+  /* Keep the animation running even when disabled */
+}
+
+.button-secondary {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #333333;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.button-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for tab buttons */
+.tab-button {
+  color: #555555;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab-button.active {
+  color: #3498db; /* Blue for active tab */
+  border-bottom: 2px solid #3498db;
+}
+
+.tab-button:hover:not(.active) {
+  color: #222222;
+  border-bottom: 2px solid rgba(52, 152, 219, 0.3);
+}
+
+/* Add border to data visualization area */
+.visualization-container {
+  background-color: rgba(255, 255, 255, 0.35); /* More transparent background */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.75rem;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important; /* Prevents content from causing container to expand */
+  flex-shrink: 0 !important;
+}
+
+/* Card text color updates */
+.transparent-card .text-white,
+.transparent-card .text-opacity-80,
+.transparent-card .text-opacity-70,
+.transparent-card .text-opacity-60 {
+  text-shadow: none; /* Ensure no text shadow */
+}
+
+/* Add styling for context labels */
+.context-label {
+  background-color: transparent; /* Remove background */
+  color: #333333 !important; /* Dark text */
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  border: none;
+  box-shadow: none;
+}
+
+.context-label-title {
+  font-weight: 600;
+  margin-right: 0.25rem;
+  color: #555555; /* Slightly darker gray for titles */
+}
+
+.context-label-value {
+  font-weight: 500;
+  font-family: monospace;
+  color: #000000; /* Black for the values to stand out */
+}
+
+/* Unified heading styles for all section headings */
+.section-heading,
+.transparent-card h2,
+.transparent-card h3,
+.sidebar-container h1,
+.sidebar-container h2,
+.sidebar-container h3,
+.results-container h2,
+.results-container h3,
+.active-analysis-container h2,
+.active-analysis-container h3 {
+  color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(255, 255, 255, 0.4);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  margin: -0.25rem -0.25rem 0.5rem -0.25rem;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Add hover effect for section headings */
+.section-heading:hover,
+.transparent-card h2:hover,
+.sidebar-container h2:hover,
+.results-container h2:hover,
+.active-analysis-container h2:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Add breathing effect for backend connection indicator */
+@keyframes breathe {
+  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px rgba(74, 222, 128, 0.8); }
+  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+}
+
+.backend-status-indicator {
+  display: inline-block;
+  height: 12px; /* Increased from 8px */
+  width: 12px; /* Increased from 8px */
+  border-radius: 50%;
+  animation: breathe 1.5s infinite ease-in-out; /* Faster animation */
+}
+
+.backend-status-indicator.online {
+  background-color: #4ade80; /* Green */
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.7);
+}
+
+.backend-status-indicator.offline {
+  background-color: #ef4444; /* Red */
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+}
+
+/* Expanded visualization container */
+.visualization-expanded {
+  height: calc(100vh - 180px) !important; /* Taller visualization area */
+  min-height: 600px !important;
+}
+
+/* White background for response area - matching input field */
+.response-container, 
+.bg-white.bg-opacity-20 {
+  background-color: rgba(255, 255, 255, 1) !important; /* Solid white like input field */
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.1); /* Slightly darker border */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  color: #333333 !important; /* Dark text color */
+}
+
+/* Send button with breathing effect similar to green indicator */
+@keyframes send-button-breathe {
+  0% { transform: scale(1); box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+  50% { transform: scale(1.03); box-shadow: 0 0 12px rgba(74, 222, 128, 0.8); }
+  100% { transform: scale(1); box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+}
+
+/* Fancy badge for "Live" or special indicators */
+.live-badge {
+  font-size: 0.7rem;
+  background-color: #4ade80;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  position: relative;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+  animation: breathe 2s infinite ease-in-out;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* Make the Load Example button blue */
+.button-secondary.load-example {
+  background-color: #3182ce; /* Blue color similar to "Proprietary" */
+  color: white !important; /* Force white text */
+}
+
+.button-secondary.load-example:hover {
+  background-color: #2b6cb0; /* Darker blue on hover */
+  color: white !important;
+}
+
+/* Fix for response preview text */
+.prose.prose-sm.text-white {
+  color: #333333 !important; /* Dark text for better visibility on white background */
+}
+
+.text-white.text-opacity-60.text-sm.text-center.py-4 {
+  color: #666666 !important; /* Darker placeholder text */
+}
+
+/* Add these new styles for tab content */
+.tab-pane {
+  display: none;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+}
+
+.tab-pane.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make navigation bar smaller */
+nav, 
+.navbar,
+header nav {
+  padding-top: 0.5rem !important; /* Reduced top padding */
+  padding-bottom: 0.5rem !important; /* Reduced bottom padding */
+  min-height: 3rem !important; /* Smaller overall height */
+}
+
+/* Smaller navigation elements */
+nav .container,
+.navbar .container,
+header nav .container {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Make logo and navigation links smaller */
+nav .logo,
+.navbar .logo,
+nav img,
+.navbar img {
+  height: 1.75rem !important; /* Smaller logo */
+}
+
+nav a,
+.navbar a,
+header nav a {
+  font-size: 0.9rem !important; /* Smaller text */
+  padding: 0.25rem 0.5rem !important; /* Less padding */
+}
+
+/* Adjust padding for the entire header section */
+header {
+  padding-top: 0.5rem !important;
+}
+
+/* Make sure the SQL queries container takes full height */
+#sql-data-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the tab content takes full height */
+#tab-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix for SQL queries display */
+.tab-pane {
+  display: none;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+}
+
+.tab-pane.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix for SyntaxHighlighter component */
+pre {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+}
+
+/* Markdown styling */
+.prose h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose p {
+  margin-bottom: 0.75rem;
+}
+
+.prose ul, .prose ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose li {
+  margin-bottom: 0.25rem;
+}
+
+.prose code {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+
+.prose pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose blockquote {
+  border-left: 3px solid rgba(0, 0, 0, 0.1);
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.prose th, .prose td {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+}
+
+.prose th {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+/* Add styling for markdown in the full response tab */
+#full-response-content .prose {
+  color: white;
+}
+
+#full-response-content .prose h1,
+#full-response-content .prose h2,
+#full-response-content .prose h3 {
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+#full-response-content .prose code {
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #f8f8f8;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+#full-response-content .prose pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+#full-response-content .prose strong {
+  color: #4ade80;
+  font-weight: 700;
+} 
