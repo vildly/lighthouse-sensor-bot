@@ -10,10 +10,10 @@ from langchain.docstore.document import Document
 import json
 
 # Load CSV data
-df = pd.read_csv("backend/data/ferry_trips_data.csv")
+df = pd.read_csv("data/ferry_trips_data.csv")
 
 # Load semantic model
-with open("backend/data/semantic_model.json", "r") as f:
+with open("data/semantic_model.json", "r") as f:
     semantic_model = json.load(f)
 
 # Create LangChain documents
@@ -31,4 +31,4 @@ generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 generator = TestsetGenerator(llm=generator_llm, embedding_model=generator_embeddings)
 dataset = generator.generate_with_langchain_docs(docs, testset_size=10)
 test_pd = dataset.to_pandas()
-test_pd.to_csv("../data/ragas/testset_syntethic.csv")
+test_pd.to_csv("data/ragas/testset_syntethic.csv")
