@@ -82,20 +82,20 @@ def evaluate_endpoint():
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
         
-    # Run the evaluation
+    # Run the synthetic evaluation
     try:
-        from app.ragas.scripts.ragas_tests import run_evaluation
+        from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation
         import numpy as np
         
-        # Get the evaluation results
-        ragas_results, df = run_evaluation(model_id)
+        # Get the evaluation results using synthetic tests
+        ragas_results, df = run_synthetic_evaluation(model_id)
         
         # The ragas_results object already has the metrics we need
         # Just convert it to a dictionary for JSON serialization
         results_dict = {}
         
         # Print the raw results to see what we're working with
-        print(f"RAGAS Results: {ragas_results}")
+        print(f"Synthetic RAGAS Results: {ragas_results}")
         
         # Simply use the values directly from ragas_results
         # This is what's printed in the console output
@@ -127,6 +127,6 @@ def evaluate_endpoint():
         import traceback
         traceback.print_exc()
         return jsonify({
-            "error": f"Evaluation failed: {str(e)}",
+            "error": f"Synthetic evaluation failed: {str(e)}",
             "results": {"error": str(e)}
         }), 500

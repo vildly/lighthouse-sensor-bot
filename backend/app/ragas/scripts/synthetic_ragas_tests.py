@@ -138,27 +138,7 @@ def run_synthetic_evaluation(llm_model_id):
     
     ragas_results.upload()
     
-    # Create output directory with timestamp
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = Path(f"output/synthetic_ragas_{timestamp}_{llm_model_id.replace('/', '_')}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Save detailed results
-    results_df.to_csv(output_dir / "detailed_results.csv", index=False)
-    
-    # Save metrics summary
-    metrics_df = ragas_results.to_pandas()
-    metrics_df.to_csv(output_dir / "metrics_summary.csv", index=False)
-    
-    # Save combined results with metrics
-    for metric_name, scores in ragas_results.to_pandas().items():
-        if metric_name != 'hash':
-            results_df[metric_name] = scores
-    results_df.to_csv(output_dir / "combined_results.csv", index=False)
-    
-    print("\nEvaluation Results:")
-    print(ragas_results)
-    print(f"\nDetailed results saved to: {output_dir}")
+
     
     return ragas_results, results_df
 
