@@ -1,4 +1,18 @@
 import { useState, useEffect, useRef } from "react";
+import { useTable } from 'react-table';
+import { useMemo } from 'react';
+import { marked } from 'marked'; // Import the marked library
+
+// Define the markdownToHtml function
+const markdownToHtml = (markdown) => {
+  if (!markdown) return '';
+  try {
+    return marked(markdown);
+  } catch (error) {
+    console.error('Error parsing markdown:', error);
+    return markdown; // Return the original text if parsing fails
+  }
+};
 import { useWebSocket } from "../contexts/WebSocketContext";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
@@ -14,6 +28,7 @@ export default function QuestionForm() {
   const [selectedModel, setSelectedModel] = useState("qwen/qwen-2.5-72b-instruct"); // Default model
   const [modelUsed, setModelUsed] = useState(null);
   const [activeQuery, setActiveQuery] = useState(false);
+  const [evaluationResults, setEvaluationResults] = useState(null);
   const [fullResponse, setFullResponse] = useState(null);
 
     // Get WebSocket context
@@ -573,7 +588,27 @@ export default function QuestionForm() {
                     <div id="evaluation-content" className="tab-pane hidden">
                       <div className="h-full w-full flex items-center justify-center">
                         <div id="evaluation-data-container" className="w-full h-full">
-                          <p className="text-gray-300 text-center">Evaluation data will be loaded from backend</p>
+                          {evaluationResults ? (
+                            <div className="p-4">
+                              <div className="mb-4 text-center">
+                                <h3 className="text-lg font-semibold">Evaluation Results for {selectedModel}</h3>
+                                <p className="text-green-600 font-medium">Evaluation successful!</p>
+                              </div>
+                              <EvaluationResultsTable results={evaluationResults} />
+                              
+                              {/* If there are retrieved contexts, display them */}
+                              {evaluationResults.retrieved_contexts && (
+                                <div className="mt-6">
+                                  <h4 className="text-md font-semibold mb-2">Retrieved Contexts</h4>
+                                  <div className="bg-gray-50 p-3 rounded text-sm">
+                                    {evaluationResults.retrieved_contexts}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-center">Evaluation data will be loaded from backend</p>
+                          )}
                         </div>
                       </div>
                     </div>
