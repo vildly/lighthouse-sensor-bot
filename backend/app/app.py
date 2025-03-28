@@ -31,6 +31,7 @@ init_socketio(app, [FRONTEND_URL, "http://localhost:3000"])
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable not set.")
+
   
 # Set up directory paths
 cwd = Path(__file__).parent.resolve()  # Current working directory
