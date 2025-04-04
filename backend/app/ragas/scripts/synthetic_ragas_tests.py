@@ -20,6 +20,7 @@ from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCor
 from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
 from typing import Callable, Optional
+import re
 
 load_dotenv()
 # this script is used to evaluate the performance of the agent on the synthetic dataset.
@@ -83,6 +84,38 @@ def load_synthetic_test_cases():
         print(f"Error: Invalid JSON format in {test_cases_path}.")
         return None
 
+def extract_answer_for_evaluation(response):
+    """Extract the answer from the model's response for evaluation purposes."""
+    
+    # Extract the answer section using regex - get the LAST answer section
+    answer_sections = re.findall(
+        r"## Answer\s*(.*?)(?=\s*##|$)", response, re.DOTALL
+    )
+    if answer_sections:
+        clean_answer = answer_sections[-1].strip()  # Use the last answer section
+    else:
+        # Check if there's an "Agent Reasoning and Response:" prefix
+        if "Agent Reasoning and Response:" in response:
+            response = response.split("Agent Reasoning and Response:")[1].strip()
+        
+        # Try to find any section that looks like an answer
+        answer_match = re.search(r"(?:###|##)\s*(?:Answer|Key Details.*?)\s*(.*?)(?=\s*(?:###|##)|$)", response, re.DOTALL)
+        if answer_match:
+            clean_answer = answer_match.group(1).strip()
+        else:
+            # Fallback: Split on the Analysis section header to get just the answer
+            parts = response.split("## Analysis")
+            clean_answer = parts[-1].strip() if len(parts) > 1 else response.strip()
+    
+    # Remove any remaining markdown headers
+    clean_answer = re.sub(r"^###\s*.*?\n", "", clean_answer, flags=re.MULTILINE)
+    
+    # If we still don't have a clean answer, use the original response
+    if not clean_answer or clean_answer.isspace():
+        clean_answer = response
+    
+    return clean_answer
+
 def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable] = None):
     """Run evaluation using the synthetic test cases"""
     # Load synthetic test cases
@@ -103,17 +136,19 @@ def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable]
         response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
         
         if api_call_success:
+            # Extract the clean answer from the full response
+            extracted_answer = extract_answer_for_evaluation(response)
+            
             results.append({
                 "user_input": query,
                 "reference": ground_truth,
-                "response": response,
+                "response": extracted_answer,
                 "context": context,
                 "reference_contexts": test_case['reference_contexts'],
                 "api_call_success": api_call_success
             })
     
     # After each major step, report progress
-    # For example, after running test cases:
     if progress_callback:
         progress_callback(3, 8, "Processing test results")
     
