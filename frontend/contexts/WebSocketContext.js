@@ -8,6 +8,7 @@ export const WebSocketProvider = ({ children }) => {
   const [sqlQueries, setSqlQueries] = useState([]);
   const [queryStatus, setQueryStatus] = useState('idle');
   const [connected, setConnected] = useState(false);
+  const [evaluationProgress, setEvaluationProgress] = useState(null);
 
   useEffect(() => {
     let SERVER_URL;
@@ -48,6 +49,12 @@ export const WebSocketProvider = ({ children }) => {
     socketInstance.on('query_status', (data) => {
       setQueryStatus(data.status);
     });
+    
+    // Add listener for evaluation progress
+    socketInstance.on('evaluation_progress', (data) => {
+      console.log('Evaluation progress update:', data);
+      setEvaluationProgress(data);
+    });
 
     socketInstance.on('disconnect', () => {
       console.log('WebSocket disconnected');
@@ -67,6 +74,7 @@ export const WebSocketProvider = ({ children }) => {
   const resetQueries = () => {
     setSqlQueries([]);
     setQueryStatus('idle');
+    setEvaluationProgress(null);
   };
 
   return (
@@ -75,7 +83,8 @@ export const WebSocketProvider = ({ children }) => {
       sqlQueries, 
       queryStatus, 
       resetQueries,
-      connected 
+      connected,
+      evaluationProgress
     }}>
       {children}
     </WebSocketContext.Provider>

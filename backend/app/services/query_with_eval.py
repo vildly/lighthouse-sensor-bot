@@ -3,6 +3,8 @@ import ast
 import logging
 from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation
 from app.helpers.save_query_to_db import save_query_with_eval_to_db
+from flask_socketio import emit
+from app.conf.websocket import socketio
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +19,31 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         Tuple containing results dictionary and HTTP status code
     """
     try:
+        # Emit initial progress update
+        try:
+            socketio.emit('evaluation_progress', {
+                'progress': 0,
+                'total': 100,
+                'message': 'Starting evaluation...'
+            }, namespace='/query')
+        except Exception as e:
+            logger.error(f"Error emitting initial progress: {e}")
+        
         # Get the evaluation results using the synthetic tests
-        ragas_results, df = run_synthetic_evaluation(model_id)
+        # Pass a progress callback function to report progress
+        def progress_callback(current, total, message="Evaluating"):
+            try:
+                percent = int((current / total) * 100)
+                socketio.emit('evaluation_progress', {
+                    'progress': current,
+                    'total': total,
+                    'percent': percent,
+                    'message': message
+                }, namespace='/query')
+            except Exception as e:
+                logger.error(f"Error emitting progress update: {e}")
+        
+        ragas_results, df = run_synthetic_evaluation(model_id, progress_callback)
 
         # Configure logger to ensure it's displaying
         logging.basicConfig(level=logging.INFO)
@@ -57,6 +82,17 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             'string_present': 'string_present'
         }
         
+        # Emit progress update for database saving
+        try:
+            socketio.emit('evaluation_progress', {
+                'progress': 90,
+                'total': 100,
+                'percent': 90,
+                'message': 'Saving results to database...'
+            }, namespace='/query')
+        except Exception as e:
+            logger.error(f"Error emitting database progress: {e}")
+        
         # For each test case in df, save the query and evaluation results to the database
         for i, row in df.iterrows():
             try:
@@ -93,12 +129,35 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {query}: {e}")
         
+        # Emit completion progress update
+        try:
+            socketio.emit('evaluation_progress', {
+                'progress': 100,
+                'total': 100,
+                'percent': 100,
+                'message': 'Evaluation complete!'
+            }, namespace='/query')
+        except Exception as e:
+            logger.error(f"Error emitting completion progress: {e}")
+        
         return {"results": results_dict}, 200
         
     except Exception as e:
         import traceback
         traceback.print_exc()
         logger.error(f"Synthetic evaluation failed: {str(e)}")
+        
+        # Emit error progress update
+        try:
+            socketio.emit('evaluation_progress', {
+                'progress': -1,
+                'total': 100,
+                'percent': 0,
+                'message': f'Error: {str(e)}'
+            }, namespace='/query')
+        except Exception as emit_error:
+            logger.error(f"Error emitting error progress: {emit_error}")
+            
         return {
             "error": f"Synthetic evaluation failed: {str(e)}",
             "results": {"error": str(e)}

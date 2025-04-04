@@ -17,7 +17,7 @@ export default function QuestionForm() {
   const [activeQuery, setActiveQuery] = useState(false);
   const [evaluationResults, setEvaluationResults] = useState(null);
   const [fullResponse, setFullResponse] = useState(null);
-  const { sqlQueries, queryStatus, resetQueries } = useWebSocket();
+  const { sqlQueries, queryStatus, resetQueries, evaluationProgress } = useWebSocket();
 
 
   const markdownToHtml = (markdown) => {
@@ -245,6 +245,9 @@ export default function QuestionForm() {
 
     try {
       setContent("Running model evaluation...");
+      
+      // Reset evaluation progress
+      resetQueries();
 
       const response = await fetch("/api/evaluate", {
         method: "POST",
@@ -348,6 +351,28 @@ export default function QuestionForm() {
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  // Add this function to render the progress bar
+  const renderEvaluationProgress = () => {
+    if (!evaluationProgress) return null;
+    
+    const { progress, total, percent, message } = evaluationProgress;
+    const displayPercent = percent !== undefined ? percent : Math.round((progress / total) * 100);
+    
+    return (
+      <div className="mt-4 mb-4">
+        <div className="flex justify-between mb-1">
+          <span className="text-sm font-medium text-blue-700">{message} - {displayPercent}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div 
+            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+            style={{ width: `${displayPercent}%` }}
+          ></div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -557,8 +582,12 @@ export default function QuestionForm() {
               <div className="mb-4 visualization-container">
                 <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto">
                   {isLoading ? (
-                    <div className="flex justify-center items-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-black"></div>
+                    <div className="flex flex-col justify-center items-center py-4">
+                      {evaluationProgress ? (
+                        renderEvaluationProgress()
+                      ) : (
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-black mb-3"></div>
+                      )}
                     </div>
                   ) : content ? (
                     <div className="prose prose-sm max-w-none text-gray-800">

@@ -19,6 +19,7 @@ import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
+from typing import Callable, Optional
 
 load_dotenv()
 # this script is used to evaluate the performance of the agent on the synthetic dataset.
@@ -82,7 +83,7 @@ def load_synthetic_test_cases():
         print(f"Error: Invalid JSON format in {test_cases_path}.")
         return None
 
-def run_synthetic_evaluation(llm_model_id):
+def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable] = None):
     """Run evaluation using the synthetic test cases"""
     # Load synthetic test cases
     test_cases = load_synthetic_test_cases()
@@ -90,6 +91,10 @@ def run_synthetic_evaluation(llm_model_id):
         return
     
     results = []
+    
+    # After loading test cases, report progress
+    if progress_callback:
+        progress_callback(1, 8, "Loading test cases")
     
     # Process each test case
     for test_case in test_cases:
@@ -106,6 +111,11 @@ def run_synthetic_evaluation(llm_model_id):
                 "reference_contexts": test_case['reference_contexts'],
                 "api_call_success": api_call_success
             })
+    
+    # After each major step, report progress
+    # For example, after running test cases:
+    if progress_callback:
+        progress_callback(3, 8, "Processing test results")
     
     # Create results DataFrame for RAGAS evaluation
     results_df = pd.DataFrame(results)
@@ -133,12 +143,17 @@ def run_synthetic_evaluation(llm_model_id):
         StringPresence()
     ]
     
+    # Before RAGAS evaluation
+    if progress_callback:
+        progress_callback(5, 8, "Running RAGAS evaluation")
+    
     # Run evaluation
     ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
     
-    ragas_results.upload()
+    if progress_callback:
+        progress_callback(7, 8, "Finalizing results")
     
-
+    ragas_results.upload()
     
     return ragas_results, results_df
 
