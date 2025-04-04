@@ -92,42 +92,27 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             }, namespace='/query')
         except Exception as e:
             logger.error(f"Error emitting database progress: {e}")
+            
+        # Format the full response data from the dataframe
+        full_response_data = []
+        for _, row in df.iterrows():
+            full_response_data.append({
+                "question": row.get('user_input', ''),
+                "reference": row.get('reference', ''),
+                "response": row.get('response', ''),
+                "context": row.get('context', '')
+            })
         
-        # For each test case in df, save the query and evaluation results to the database
-        for i, row in df.iterrows():
-            try:
-                query = row['user_input']
-                response = row['response']
-                
-                # Extract SQL queries from context
-                sql_queries = []
-                if row.get('context'):
-                    for item in row.get('context', []):
-                        if isinstance(item, str) and item.startswith("SQL Query: "):
-                            sql_query = item.replace("SQL Query: ", "", 1)
-                            sql_queries.append(sql_query)
-                
-                # Create evaluation results dictionary with the metrics from ragas_results
-                evaluation_data = {
-                    "retrieved_contexts": str(row.get('retrieved_contexts', [])),
-                    "reference": row.get('reference'),
-                }
-                
-                # Map the metrics using our mapping dictionary
-                for ragas_key, our_key in metric_mapping.items():
-                    evaluation_data[our_key] = results_dict.get(ragas_key)
-                
-                # Save the query with evaluation results
-                save_query_with_eval_to_db(
-                    query=query,
-                    direct_response=response,
-                    full_response=row.get('context', ''),
-                    llm_model_id=model_id,
-                    evaluation_results=evaluation_data,
-                    sql_queries=sql_queries
-                )
-            except Exception as e:
-                logger.error(f"Error saving evaluation for query {query}: {e}")
+        # Format the full response as markdown
+        full_response_md = "# Evaluation Results\n\n"
+        for i, item in enumerate(full_response_data):
+            full_response_md += f"## Test Case {i+1}\n\n"
+            full_response_md += f"### Question\n{item['question']}\n\n"
+            full_response_md += f"### Reference Answer\n{item['reference']}\n\n"
+            full_response_md += f"### Model Response\n{item['response']}\n\n"
+            if item['context']:
+                full_response_md += f"### Context\n{item['context']}\n\n"
+            full_response_md += "---\n\n"
         
         # Emit completion progress update
         try:
@@ -140,7 +125,11 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         except Exception as e:
             logger.error(f"Error emitting completion progress: {e}")
         
-        return {"results": results_dict}, 200
+        # Return both the results and the full response
+        return {
+            "results": results_dict,
+            "full_response": full_response_md
+        }, 200
         
     except Exception as e:
         import traceback
@@ -160,5 +149,6 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             
         return {
             "error": f"Synthetic evaluation failed: {str(e)}",
-            "results": {"error": str(e)}
+            "results": {"error": str(e)},
+            "full_response": f"Error during evaluation: {str(e)}"
         }, 500 

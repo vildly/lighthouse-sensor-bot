@@ -269,16 +269,23 @@ export default function QuestionForm() {
 
       if (data.error) {
         setContent(`## Error during evaluation\n${data.error}`);
+        setFullResponse(`## Error during evaluation\n${data.error}`);
         setEvaluationResults(null);
       } else {
         setEvaluationResults(data.results);
         setContent("## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.");
+        
+        // Set the full response if available
+        if (data.full_response) {
+          setFullResponse(data.full_response);
+        }
+        
+        switchTab('evaluation');
       }
-
-      switchTab('evaluation');
     } catch (error) {
       console.error("Error evaluating model:", error);
       setContent(`## Error during evaluation\n${error.message}`);
+      setFullResponse(`## Error during evaluation\n${error.message}`);
       setEvaluationResults(null);
     } finally {
       setIsLoading(false);
