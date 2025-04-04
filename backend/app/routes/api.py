@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from app.services.query import query
 from app.conf.CustomDuckDbTools import CustomDuckDbTools
 import pandas as pd
+from app.services.query_with_eval import query_with_eval
 
 load_dotenv()
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -82,51 +83,6 @@ def evaluate_endpoint():
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
         
-    # Run the synthetic evaluation
-    try:
-        from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation
-        import numpy as np
-        
-        # Get the evaluation results using synthetic tests
-        ragas_results, df = run_synthetic_evaluation(model_id)
-        
-        # The ragas_results object already has the metrics we need
-        # Just convert it to a dictionary for JSON serialization
-        results_dict = {}
-        
-        # Print the raw results to see what we're working with
-        print(f"Synthetic RAGAS Results: {ragas_results}")
-        
-        # Simply use the values directly from ragas_results
-        # This is what's printed in the console output
-        if isinstance(ragas_results, dict):
-            results_dict = ragas_results
-        else:
-            # Get the values directly from the printed output
-            # This is a simple approach that works with the current implementation
-            results_str = str(ragas_results)
-            if '{' in results_str and '}' in results_str:
-                # Extract the dictionary-like part from the string
-                dict_part = results_str[results_str.find('{'): results_str.rfind('}')+1]
-                # Convert string values to float where possible
-                import ast
-                try:
-                    parsed_dict = ast.literal_eval(dict_part)
-                    for k, v in parsed_dict.items():
-                        if isinstance(v, (int, float)):
-                            results_dict[k] = float(v)
-                        else:
-                            results_dict[k] = v
-                except (SyntaxError, ValueError):
-                    # If parsing fails, just return the raw string
-                    results_dict["raw_results"] = results_str
-        
-        return jsonify({"results": results_dict}), 200
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "error": f"Synthetic evaluation failed: {str(e)}",
-            "results": {"error": str(e)}
-        }), 500
+    
+    results, status_code = query_with_eval(model_id)
+    return jsonify(results), status_code
