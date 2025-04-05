@@ -5,9 +5,12 @@ from app.services.query import query
 from app.conf.CustomDuckDbTools import CustomDuckDbTools
 import pandas as pd
 from app.services.query_with_eval import query_with_eval
+from app.conf.postgres import get_cursor
+import logging
 
 load_dotenv()
 api_bp = Blueprint("api", __name__, url_prefix="/api")
+logger = logging.getLogger(__name__)
 
 
 @api_bp.route("/")
@@ -86,3 +89,50 @@ def evaluate_endpoint():
     
     results, status_code = query_with_eval(model_id)
     return jsonify(results), status_code
+
+
+@api_bp.route("/model-performance", methods=["GET"])
+def model_performance():
+    """Get aggregated model performance metrics."""
+    try:
+        model_type = request.args.get('type')
+        
+        with get_cursor() as cursor:
+            query = """
+            SELECT * FROM model_performance_metrics
+            """
+            
+            params = []
+            if model_type:
+                query += " WHERE model_type = %s"
+                params.append(model_type)
+                
+            query += " ORDER BY model_name"
+            
+            cursor.execute(query, params)
+            columns = [desc[0] for desc in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            # Convert metrics to proper format for visualization
+            for result in results:
+                for key, value in result.items():
+                    if key.startswith('avg_') and value is not None:
+                        result[key] = float(value)
+            
+            return jsonify({
+                "data": results,
+                "metrics": [
+                    {"id": "avg_factual_correctness", "name": "Factual Correctness"},
+                    {"id": "avg_semantic_similarity", "name": "Semantic Similarity"},
+                    {"id": "avg_context_recall", "name": "Context Recall"},
+                    {"id": "avg_faithfulness", "name": "Faithfulness"},
+                    {"id": "avg_bleu_score", "name": "BLEU Score"},
+                    {"id": "avg_non_llm_string_similarity", "name": "String Similarity"},
+                    {"id": "avg_rogue_score", "name": "ROUGE Score"},
+                    {"id": "avg_string_present", "name": "String Present"}
+                ]
+            })
+            
+    except Exception as e:
+        logger.error(f"Error fetching model performance: {e}")
+        return jsonify({"error": str(e)}), 500
