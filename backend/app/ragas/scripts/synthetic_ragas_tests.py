@@ -125,9 +125,9 @@ def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable]
     
     results = []
     
-    # After loading test cases, report progress
+    
     if progress_callback:
-        progress_callback(1, 8, "Loading test cases")
+        progress_callback(1, 8, "Running test cases")
     
     # Process each test case
     for test_case in test_cases:

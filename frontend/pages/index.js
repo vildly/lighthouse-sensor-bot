@@ -265,7 +265,7 @@ export default function QuestionForm() {
 
       const data = await response.json();
 
-      console.log('Evaluation data:', data);
+      // console.log('Evaluation data:', data);
 
       if (data.error) {
         setContent(`## Error during evaluation\n${data.error}`);
@@ -280,7 +280,32 @@ export default function QuestionForm() {
           setFullResponse(data.full_response);
         }
         
-        switchTab('evaluation');
+        // Switch to evaluation tab after a short delay to ensure state updates are processed
+        setTimeout(() => {
+          switchTab('evaluation');
+          
+          // Force the evaluation content to be visible
+          const evaluationContent = document.getElementById('evaluation-content');
+          if (evaluationContent) {
+            document.querySelectorAll('.tab-pane').forEach(content => {
+              content.classList.remove('active');
+              content.classList.add('hidden');
+            });
+            
+            evaluationContent.classList.remove('hidden');
+            evaluationContent.classList.add('active');
+            
+            // Force a re-render of the evaluation container
+            const evaluationContainer = document.getElementById('evaluation-data-container');
+            if (evaluationContainer) {
+              const displayStyle = evaluationContainer.style.display;
+              evaluationContainer.style.display = 'none';
+              setTimeout(() => {
+                evaluationContainer.style.display = displayStyle || 'block';
+              }, 10);
+            }
+          }
+        }, 100);
       }
     } catch (error) {
       console.error("Error evaluating model:", error);
@@ -294,11 +319,11 @@ export default function QuestionForm() {
 
   function EvaluationResultsTable({ results }) {
     if (!results) {
-      console.log("No evaluation results provided");
+      // console.log("No evaluation results provided");
       return null;
     }
 
-    console.log("Rendering evaluation results:", results);
+    // console.log("Rendering evaluation results:", results);
 
 
     const processMetrics = (data) => {
