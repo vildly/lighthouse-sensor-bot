@@ -52,5 +52,7 @@ The frontend will be available at http://localhost:3000.
 
 To evaluate a model, click the "Evaluate" button. This will run predefined queries and evaluate the model's performance using RAGAS metrics. You cannot submit your own queries when evaluating, due to the nature of the RAGAS evaluation requring a ground truth and reference context. 
 
+In the Evaluation tab, you can see the average RAGAS scores for each model with graphs.
+
 
 ## Troubleshooting

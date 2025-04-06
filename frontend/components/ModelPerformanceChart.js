@@ -13,7 +13,6 @@ import {
   Filler
 } from 'chart.js';
 import { Bar, Radar } from 'react-chartjs-2';
-import { getModelPerformance } from '../pages/api/modelPerformance';
 
 ChartJS.register(
   CategoryScale, 
@@ -53,7 +52,19 @@ export default function ModelPerformanceChart() {
     async function fetchData() {
       try {
         setLoading(true);
-        const data = await getModelPerformance(modelTypeFilter);
+        
+        const params = new URLSearchParams();
+        if (modelTypeFilter) {
+          params.append('type', modelTypeFilter);
+        }
+        
+        const response = await fetch(`/api/model-performance?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching model performance: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
         setPerformanceData(data);
         setError(null);
       } catch (err) {
