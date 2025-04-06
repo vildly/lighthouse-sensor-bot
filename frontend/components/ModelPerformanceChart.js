@@ -291,7 +291,7 @@ export default function ModelPerformanceChart() {
                     {metric.name}
                   </th>
                 ))}
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Query Count</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Evaluated Query Count</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -303,7 +303,7 @@ export default function ModelPerformanceChart() {
                       {model[metric.id] ? model[metric.id].toFixed(3) : 'N/A'}
                     </td>
                   ))}
-                  <td className="px-4 py-2 text-sm text-gray-900">{model.query_count}</td>
+                  <td className="px-4 py-2 text-sm text-gray-900">{model.query_evaluation_count}</td>
                 </tr>
               ))}
             </tbody>
