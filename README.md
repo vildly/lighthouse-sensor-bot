@@ -1,122 +1,56 @@
-# lighthouse-sensor-bot
-
-# How to
-
-Welcome to the setup guide for this project! This application leverages the power of Retrieval-Augmented Generation (RAG) using the phi framework, providing intelligent responses informed by a knowledge database which in this example consists of a 14-page document filled with delicious Thai recipes. From classic curries to refreshing salads, these recipes incorporate authentic Thai ingredients and techniques, offering a rich source for generating culinary insights. This document is central to the application's ability to deliver contextually relevant and mouth-watering recommendations.
-
-Harness the wisdom of traditional Thai cuisine combined with cutting-edge AI to bring flavorful, intelligent responses to your queries.
+# lighthouse
 
 ## Overview
 
-This app consists of:
+Lighthouse is a data analysis application that uses natural language queries to analyze maritime ferry data using agentic RAG. The system consists of:
 
-- **Frontend**: A user-friendly interface for asking questions.
-- **Backend**: A Flask server that processes requests using AI and a knowledge database.
-- **Database**: A PostgreSQL database managed by `phidata` to store and retrieve information efficiently.
+- **Frontend**: Interface for submitting queries, and viewing results
+- **Backend**: Flask server that processes queries with the help of an LLM as an agent
+- **Database**: PostgreSQL database for storing query results and model evaluations
 
 ## Prerequisites
 
 - **Docker** installed on your system.
-- **Node.js** and **npm** installed for running the frontend.
-- **Python** installed for the backend.
-- **OpenAI API key** for accessing language model functionalities.
+- **OpenRouter API key** for accessing language model functionalities.
+- **OpenAI API key** used when evaluating model responses using RAGAS metrics.
+- **DeepSeek API key** used when evaluating model responses using RAGAS metrics.
+- **RAGAS App token** used when evaluating model responses using RAGAS metrics.
 
 ## Setup Instructions
 
-### 1. Set Up the Database
+To run the application as Docker containers,
 
-Run the following command to start the PostgreSQL database container using `pgvector`:
+### 1. Set Up Environment Variables
 
-```bash
-docker run -d \
-  -e POSTGRES_DB=ai \
-  -e POSTGRES_USER=ai \
-  -e POSTGRES_PASSWORD=ai \
-  -e PGDATA=/var/lib/postgresql/data/pgdata \
-  -v pgvolume:/var/lib/postgresql/data \
-  -p 5532:5432 \
-  --name pgvector \
-  phidata/pgvector:16
-```
+Create a `.env` file in the backend directory.
 
-### 2. Start the Frontend
+Copy the example.env file to .env and fill in the missing variables.
 
-Navigate to the `frontend` directory and install dependencies:
+For the frontend, create a `.env.development.local` file. (This can be omitted if you don't want to run the frontend in development mode.)
 
-```bash
-cd frontend
-npm install
-```
+Copy the example.env.development.local file to .env.development.local.
 
-To start the frontend server:
+Create a `.env` file in the root directory.
+
+Copy the example.env file to .env and fill in the missing variables.
+
+### 2. Start the Application
+
+In the root directory, run:
 
 ```bash
-npm run dev
+docker-compose up -d --build
 ```
 
-This will start the frontend server at `http://localhost:3000`.
+The frontend will be available at http://localhost:3000.
 
-### 3. Start the Backend
+## Using the Application
 
-Navigate to the `backend` directory and create a virtual environment:
+1. Select a language model from the dropdown
+2. Enter your question about ferry data (e.g., "What is the average speed of ferry Jupiter?")
+3. View the response, including SQL queries executed
 
-```bash
-cd backend
-python -m venv venv
-```
+To evaluate a model, click the "Evaluate" button. This will run predefined queries and evaluate the model's performance using RAGAS metrics. You cannot submit your own queries when evaluating, due to the nature of the RAGAS evaluation requring a ground truth and reference context. 
 
-Activate the virtual environment:
 
-- **On macOS/Linux**:
-  ```bash
-  source venv/bin/activate
-  ```
-- **On Windows**:
-  ```bash
-  .\venv\Scripts\activate
-  ```
-
-Install the required Python packages:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run the backend server:
-
-```bash
-python app.py
-```
-
-### 4. Set Up OpenAI API Key
-
-For the backend to access OpenAI's services, you need to set your API key:
-
-- **On macOS/Linux**:
-  ```bash
-  export OPENAI_API_KEY=sk-<your_api_key>
-  ```
-- **On Windows**:
-  ```cmd
-  set OPENAI_API_KEY=sk-<your_api_key>
-  ```
-
-Replace `<your_api_key>` with your actual OpenAI API key.
-
-### 5. Access the Application
-
-Open your web browser and navigate to:
-
-```
-http://localhost:3000
-```
-
-Enter your question into the input field and press "Send" to receive an AI-generated response.
-
-### Troubleshooting
-
-- Ensure all services (frontend, backend, and database) are running.
-- Check network connectivity and API key validity if you encounter errors.
-- Review console logs for detailed error messages.
-
-This setup guide should help you initialize and use your application efficiently. Enjoy asking and answering questions with the power of AI!
+## Troubleshooting
