@@ -409,33 +409,6 @@ export default function QuestionForm() {
 
   return (
     <div className="bg-ferry-image min-h-screen">
-      <header className="pt-4">
-        <div className="arc-navbar">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-
-                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 18H21L19 22H5L3 18Z" fill="currentColor" />
-                  <path d="M19 18L21 8H3L5 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M15 18V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M9 18V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M12 8V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M8 4H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-
-
-                <h1 className="text-xl font-bold text-white">CostEfficient Maritime AI</h1>
-              </div>
-
-              <div className="flex items-center">
-                {statusIndicator}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="container mx-auto py-6">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/3">
