@@ -4,9 +4,13 @@ from dotenv import load_dotenv
 from app.services.query import query
 from app.conf.CustomDuckDbTools import CustomDuckDbTools
 import pandas as pd
+from app.services.query_with_eval import query_with_eval
+from app.conf.postgres import get_cursor
+import logging
 
 load_dotenv()
 api_bp = Blueprint("api", __name__, url_prefix="/api")
+logger = logging.getLogger(__name__)
 
 
 @api_bp.route("/")
@@ -82,51 +86,53 @@ def evaluate_endpoint():
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
         
-    # Run the synthetic evaluation
+    
+    results, status_code = query_with_eval(model_id)
+    return jsonify(results), status_code
+
+
+@api_bp.route("/model-performance", methods=["GET"])
+def model_performance():
+    """Get aggregated model performance metrics."""
     try:
-        from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation
-        import numpy as np
+        model_type = request.args.get('type')
         
-        # Get the evaluation results using synthetic tests
-        ragas_results, df = run_synthetic_evaluation(model_id)
-        
-        # The ragas_results object already has the metrics we need
-        # Just convert it to a dictionary for JSON serialization
-        results_dict = {}
-        
-        # Print the raw results to see what we're working with
-        print(f"Synthetic RAGAS Results: {ragas_results}")
-        
-        # Simply use the values directly from ragas_results
-        # This is what's printed in the console output
-        if isinstance(ragas_results, dict):
-            results_dict = ragas_results
-        else:
-            # Get the values directly from the printed output
-            # This is a simple approach that works with the current implementation
-            results_str = str(ragas_results)
-            if '{' in results_str and '}' in results_str:
-                # Extract the dictionary-like part from the string
-                dict_part = results_str[results_str.find('{'): results_str.rfind('}')+1]
-                # Convert string values to float where possible
-                import ast
-                try:
-                    parsed_dict = ast.literal_eval(dict_part)
-                    for k, v in parsed_dict.items():
-                        if isinstance(v, (int, float)):
-                            results_dict[k] = float(v)
-                        else:
-                            results_dict[k] = v
-                except (SyntaxError, ValueError):
-                    # If parsing fails, just return the raw string
-                    results_dict["raw_results"] = results_str
-        
-        return jsonify({"results": results_dict}), 200
-        
+        with get_cursor() as cursor:
+            query = """
+            SELECT * FROM model_performance_metrics
+            """
+            
+            params = []
+            if model_type:
+                query += " WHERE model_type = %s"
+                params.append(model_type)
+                
+            query += " ORDER BY model_name"
+            
+            cursor.execute(query, params)
+            columns = [desc[0] for desc in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            # Convert metrics to proper format for visualization
+            for result in results:
+                for key, value in result.items():
+                    if key.startswith('avg_') and value is not None:
+                        result[key] = float(value)
+            
+            return jsonify({
+                "data": results,
+                "metrics": [
+                    {"id": "avg_factual_correctness", "name": "Factual Correctness"},
+                    {"id": "avg_semantic_similarity", "name": "Semantic Similarity"},
+                    {"id": "avg_context_recall", "name": "Context Recall"},
+                    {"id": "avg_faithfulness", "name": "Faithfulness"},
+                    {"id": "avg_bleu_score", "name": "BLEU Score"},
+                    {"id": "avg_non_llm_string_similarity", "name": "String Similarity"},
+                    {"id": "avg_rogue_score", "name": "ROUGE Score"},
+                    {"id": "avg_string_present", "name": "String Present"}
+                ]
+            })
+            
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "error": f"Synthetic evaluation failed: {str(e)}",
-            "results": {"error": str(e)}
-        }), 500
+        logger.error(f"Error fetching model performance: {e}")
+        return jsonify({"error": str(e)}), 500

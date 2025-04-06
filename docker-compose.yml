@@ -2,7 +2,7 @@ version: '3.8'
 name: 2dv50e
 services:
   
-  postgres: # Database "backend" (själva databasen)
+  postgres:
     image: postgres:latest
     container_name: postgres-container-2dv50e
     restart: always
@@ -16,9 +16,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
-      - ./backend/postgres/backups:/docker-entrypoint-initdb.d # autoloads data from backups
+      - ./backend/postgres/backups:/docker-entrypoint-initdb.d
 
-  pgadmin: # Database "frontend" (visualiseringsverktyg)
+  pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin-container-2dv50e
     restart: always
@@ -42,13 +42,13 @@ services:
     networks:
       - 2dv50e
     environment:
-      - FRONTEND_URL=http://frontend:3000
+      - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=${DB_HOST}
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_PORT=${DB_PORT}
-      - SERVER_URL=http://backend:5000
+      - SERVER_URL=${SERVER_URL}
     depends_on:
       - postgres
 
@@ -62,7 +62,7 @@ services:
       - 2dv50e
     environment:
       - DEV_MODE=true
-      - SERVER_URL="http://backend:5000"
+      - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
     depends_on:
       - backend
 

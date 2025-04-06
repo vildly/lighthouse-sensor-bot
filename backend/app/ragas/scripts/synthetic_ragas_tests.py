@@ -19,6 +19,8 @@ import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
+from typing import Callable, Optional
+import re
 
 load_dotenv()
 # this script is used to evaluate the performance of the agent on the synthetic dataset.
@@ -82,7 +84,39 @@ def load_synthetic_test_cases():
         print(f"Error: Invalid JSON format in {test_cases_path}.")
         return None
 
-def run_synthetic_evaluation(llm_model_id):
+def extract_answer_for_evaluation(response):
+    """Extract the answer from the model's response for evaluation purposes."""
+    
+    # Extract the answer section using regex - get the LAST answer section
+    answer_sections = re.findall(
+        r"## Answer\s*(.*?)(?=\s*##|$)", response, re.DOTALL
+    )
+    if answer_sections:
+        clean_answer = answer_sections[-1].strip()  # Use the last answer section
+    else:
+        # Check if there's an "Agent Reasoning and Response:" prefix
+        if "Agent Reasoning and Response:" in response:
+            response = response.split("Agent Reasoning and Response:")[1].strip()
+        
+        # Try to find any section that looks like an answer
+        answer_match = re.search(r"(?:###|##)\s*(?:Answer|Key Details.*?)\s*(.*?)(?=\s*(?:###|##)|$)", response, re.DOTALL)
+        if answer_match:
+            clean_answer = answer_match.group(1).strip()
+        else:
+            # Fallback: Split on the Analysis section header to get just the answer
+            parts = response.split("## Analysis")
+            clean_answer = parts[-1].strip() if len(parts) > 1 else response.strip()
+    
+    # Remove any remaining markdown headers
+    clean_answer = re.sub(r"^###\s*.*?\n", "", clean_answer, flags=re.MULTILINE)
+    
+    # If we still don't have a clean answer, use the original response
+    if not clean_answer or clean_answer.isspace():
+        clean_answer = response
+    
+    return clean_answer
+
+def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable] = None):
     """Run evaluation using the synthetic test cases"""
     # Load synthetic test cases
     test_cases = load_synthetic_test_cases()
@@ -91,6 +125,10 @@ def run_synthetic_evaluation(llm_model_id):
     
     results = []
     
+    
+    if progress_callback:
+        progress_callback(1, 8, "Running test cases")
+    
     # Process each test case
     for test_case in test_cases:
         query = test_case['user_input']
@@ -98,14 +136,21 @@ def run_synthetic_evaluation(llm_model_id):
         response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
         
         if api_call_success:
+            # Extract the clean answer from the full response
+            extracted_answer = extract_answer_for_evaluation(response)
+            
             results.append({
                 "user_input": query,
                 "reference": ground_truth,
-                "response": response,
+                "response": extracted_answer,
                 "context": context,
                 "reference_contexts": test_case['reference_contexts'],
                 "api_call_success": api_call_success
             })
+    
+    # After each major step, report progress
+    if progress_callback:
+        progress_callback(3, 8, "Processing test results")
     
     # Create results DataFrame for RAGAS evaluation
     results_df = pd.DataFrame(results)
@@ -133,12 +178,17 @@ def run_synthetic_evaluation(llm_model_id):
         StringPresence()
     ]
     
+    # Before RAGAS evaluation
+    if progress_callback:
+        progress_callback(5, 8, "Running RAGAS evaluation")
+    
     # Run evaluation
     ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
     
-    ragas_results.upload()
+    if progress_callback:
+        progress_callback(7, 8, "Finalizing results")
     
-
+    ragas_results.upload()
     
     return ragas_results, results_df
 

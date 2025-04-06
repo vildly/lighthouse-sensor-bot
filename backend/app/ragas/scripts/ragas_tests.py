@@ -36,7 +36,7 @@ def run_test_case(query, ground_truth, llm_model_id):
         response.raise_for_status()
         
         response_data = response.json()
-        agent_response = response_data.get('content')  # This is already the clean response
+        agent_response = response_data.get('content')  
         full_response = response_data.get('full_response')  # This contains the full context
         sql_queries = response_data.get('sql_queries', [])
         

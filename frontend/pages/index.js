@@ -17,7 +17,7 @@ export default function QuestionForm() {
   const [activeQuery, setActiveQuery] = useState(false);
   const [evaluationResults, setEvaluationResults] = useState(null);
   const [fullResponse, setFullResponse] = useState(null);
-  const { sqlQueries, queryStatus, resetQueries } = useWebSocket();
+  const { sqlQueries, queryStatus, resetQueries, evaluationProgress } = useWebSocket();
 
 
   const markdownToHtml = (markdown) => {
@@ -245,6 +245,9 @@ export default function QuestionForm() {
 
     try {
       setContent("Running model evaluation...");
+      
+      // Reset evaluation progress
+      resetQueries();
 
       const response = await fetch("/api/evaluate", {
         method: "POST",
@@ -262,20 +265,52 @@ export default function QuestionForm() {
 
       const data = await response.json();
 
-      console.log('Evaluation data:', data);
+      // console.log('Evaluation data:', data);
 
       if (data.error) {
         setContent(`## Error during evaluation\n${data.error}`);
+        setFullResponse(`## Error during evaluation\n${data.error}`);
         setEvaluationResults(null);
       } else {
         setEvaluationResults(data.results);
         setContent("## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.");
+        
+        // Set the full response if available
+        if (data.full_response) {
+          setFullResponse(data.full_response);
+        }
+        
+        // Switch to evaluation tab after a short delay to ensure state updates are processed
+        setTimeout(() => {
+          switchTab('evaluation');
+          
+          // Force the evaluation content to be visible
+          const evaluationContent = document.getElementById('evaluation-content');
+          if (evaluationContent) {
+            document.querySelectorAll('.tab-pane').forEach(content => {
+              content.classList.remove('active');
+              content.classList.add('hidden');
+            });
+            
+            evaluationContent.classList.remove('hidden');
+            evaluationContent.classList.add('active');
+            
+            // Force a re-render of the evaluation container
+            const evaluationContainer = document.getElementById('evaluation-data-container');
+            if (evaluationContainer) {
+              const displayStyle = evaluationContainer.style.display;
+              evaluationContainer.style.display = 'none';
+              setTimeout(() => {
+                evaluationContainer.style.display = displayStyle || 'block';
+              }, 10);
+            }
+          }
+        }, 100);
       }
-
-      switchTab('evaluation');
     } catch (error) {
       console.error("Error evaluating model:", error);
       setContent(`## Error during evaluation\n${error.message}`);
+      setFullResponse(`## Error during evaluation\n${error.message}`);
       setEvaluationResults(null);
     } finally {
       setIsLoading(false);
@@ -284,11 +319,11 @@ export default function QuestionForm() {
 
   function EvaluationResultsTable({ results }) {
     if (!results) {
-      console.log("No evaluation results provided");
+      // console.log("No evaluation results provided");
       return null;
     }
 
-    console.log("Rendering evaluation results:", results);
+    // console.log("Rendering evaluation results:", results);
 
 
     const processMetrics = (data) => {
@@ -350,35 +385,30 @@ export default function QuestionForm() {
       .join(' ');
   };
 
+  // Add this function to render the progress bar
+  const renderEvaluationProgress = () => {
+    if (!evaluationProgress) return null;
+    
+    const { progress, total, percent, message } = evaluationProgress;
+    const displayPercent = percent !== undefined ? percent : Math.round((progress / total) * 100);
+    
+    return (
+      <div className="mt-4 mb-4">
+        <div className="flex justify-between mb-1">
+          <span className="text-sm font-medium text-blue-700">{message} - {displayPercent}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div 
+            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+            style={{ width: `${displayPercent}%` }}
+          ></div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-ferry-image min-h-screen">
-      <header className="pt-4">
-        <div className="arc-navbar">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-
-                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 18H21L19 22H5L3 18Z" fill="currentColor" />
-                  <path d="M19 18L21 8H3L5 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M15 18V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M9 18V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M12 8V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M8 4H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-
-
-                <h1 className="text-xl font-bold text-white">CostEfficient Maritime AI</h1>
-              </div>
-
-              <div className="flex items-center">
-                {statusIndicator}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="container mx-auto py-6">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/3">
@@ -557,8 +587,12 @@ export default function QuestionForm() {
               <div className="mb-4 visualization-container">
                 <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto">
                   {isLoading ? (
-                    <div className="flex justify-center items-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-black"></div>
+                    <div className="flex flex-col justify-center items-center py-4">
+                      {evaluationProgress ? (
+                        renderEvaluationProgress()
+                      ) : (
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-black mb-3"></div>
+                      )}
                     </div>
                   ) : content ? (
                     <div className="prose prose-sm max-w-none text-gray-800">
