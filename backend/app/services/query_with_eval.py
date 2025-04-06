@@ -83,6 +83,43 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             'string_present': 'string_present'
         }
         
+            # For each test case in df, save the query and evaluation results to the database
+        for i, row in df.iterrows():
+            try:
+                query = row['user_input']
+                response = row['response']
+                
+                # Extract SQL queries from context
+                sql_queries = []
+                if row.get('context'):
+                    for item in row.get('context', []):
+                        if isinstance(item, str) and item.startswith("SQL Query: "):
+                            sql_query = item.replace("SQL Query: ", "", 1)
+                            sql_queries.append(sql_query)
+                
+                # Create evaluation results dictionary with the metrics from ragas_results
+                evaluation_data = {
+                    "retrieved_contexts": str(row.get('retrieved_contexts', [])),
+                    "reference": row.get('reference'),
+                }
+                
+                # Map the metrics using our mapping dictionary
+                for ragas_key, our_key in metric_mapping.items():
+                    evaluation_data[our_key] = results_dict.get(ragas_key)
+                
+                # Save the query with evaluation results
+                save_query_with_eval_to_db(
+                    query=query,
+                    direct_response=response,
+                    full_response=row.get('context', ''),
+                    llm_model_id=model_id,
+                    evaluation_results=evaluation_data,
+                    sql_queries=sql_queries
+                )
+            except Exception as e:
+                logger.error(f"Error saving evaluation for query {query}: {e}")
+        
+       
         # Emit progress update for database saving
         try:
             socketio.emit('evaluation_progress', {
@@ -154,6 +191,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             "full_response": f"Error during evaluation: {str(e)}"
         }, 500 
 
+
+# this should be a standardized helper function!!!!!
 def extract_answer_for_evaluation(response):
     """Extract the answer from the model's response for evaluation purposes."""
     
