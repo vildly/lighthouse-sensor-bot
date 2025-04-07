@@ -21,6 +21,11 @@ from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
 from typing import Callable, Optional
 import re
+from app.helpers.extract_answer import extract_answer_for_evaluation
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 # this script is used to evaluate the performance of the agent on the synthetic dataset.
@@ -84,76 +89,49 @@ def load_synthetic_test_cases():
         print(f"Error: Invalid JSON format in {test_cases_path}.")
         return None
 
-def extract_answer_for_evaluation(response):
-    """Extract the answer from the model's response for evaluation purposes."""
-    
-    # Extract the answer section using regex - get the LAST answer section
-    answer_sections = re.findall(
-        r"## Answer\s*(.*?)(?=\s*##|$)", response, re.DOTALL
-    )
-    if answer_sections:
-        clean_answer = answer_sections[-1].strip()  # Use the last answer section
-    else:
-        # Check if there's an "Agent Reasoning and Response:" prefix
-        if "Agent Reasoning and Response:" in response:
-            response = response.split("Agent Reasoning and Response:")[1].strip()
-        
-        # Try to find any section that looks like an answer
-        answer_match = re.search(r"(?:###|##)\s*(?:Answer|Key Details.*?)\s*(.*?)(?=\s*(?:###|##)|$)", response, re.DOTALL)
-        if answer_match:
-            clean_answer = answer_match.group(1).strip()
-        else:
-            # Fallback: Split on the Analysis section header to get just the answer
-            parts = response.split("## Analysis")
-            clean_answer = parts[-1].strip() if len(parts) > 1 else response.strip()
-    
-    # Remove any remaining markdown headers
-    clean_answer = re.sub(r"^###\s*.*?\n", "", clean_answer, flags=re.MULTILINE)
-    
-    # If we still don't have a clean answer, use the original response
-    if not clean_answer or clean_answer.isspace():
-        clean_answer = response
-    
-    return clean_answer
+
 
 def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable] = None):
     """Run evaluation using the synthetic test cases"""
+    logger.info("Starting run_synthetic_evaluation...")
+    
     # Load synthetic test cases
     test_cases = load_synthetic_test_cases()
+    logger.info(f"Loaded test cases: {test_cases is not None}")
+    
     if test_cases is None:
-        return
+        logger.error("No test cases loaded - returning None")
+        return None, None
     
     results = []
-    
-    
-    if progress_callback:
-        progress_callback(1, 8, "Running test cases")
+    logger.info(f"Number of test cases: {len(test_cases)}")
     
     # Process each test case
     for test_case in test_cases:
         query = test_case['user_input']
         ground_truth = test_case['reference']
+        logger.info(f"Processing test case with query: {query[:50]}...")  # Log first 50 chars
+        
         response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
+        logger.info(f"API call success: {api_call_success}")
         
         if api_call_success:
-            # Extract the clean answer from the full response
-            extracted_answer = extract_answer_for_evaluation(response)
-            
+            # The response is already the clean answer from the API
             results.append({
                 "user_input": query,
                 "reference": ground_truth,
-                "response": extracted_answer,
+                "response": response,  # Don't extract again, it's already clean
                 "context": context,
                 "reference_contexts": test_case['reference_contexts'],
                 "api_call_success": api_call_success
             })
     
-    # After each major step, report progress
-    if progress_callback:
-        progress_callback(3, 8, "Processing test results")
+    logger.info(f"Total results collected: {len(results)}")
     
     # Create results DataFrame for RAGAS evaluation
     results_df = pd.DataFrame(results)
+    logger.info(f"DataFrame shape: {results_df.shape}")
+    logger.info(f"DataFrame columns: {results_df.columns.tolist()}")
     
     # Prepare data for RAGAS evaluation
     ragas_data = pd.DataFrame({

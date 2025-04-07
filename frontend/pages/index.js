@@ -422,12 +422,6 @@ export default function QuestionForm() {
                 <h1 className="text-xl font-bold text-gray-800">Analysis Controls</h1>
               </div>
 
-              <div className="mb-5 mt-5 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium text-blue-600">How to use:</span> Choose between proprietary commercial models or open source alternatives for your analysis, then enter your query or load an example.
-                </p>
-              </div>
-
               <div className="space-y-5">
                 <div>
 
@@ -528,7 +522,7 @@ export default function QuestionForm() {
                     onClick={askQuestion}
                     disabled={isLoading || !question.trim()}
                   >
-                    <span>Analyze</span>
+                    <span>Query</span>
                     <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                     </svg>
