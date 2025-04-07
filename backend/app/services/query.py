@@ -105,9 +105,17 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
                 unique_queries.append(query)
         sql_queries = unique_queries
 
-        fullResponse = response.content
+        # Format the full response as markdown
+        fullResponse = "# Query Results\n\n"
+        fullResponse += f"## Question\n{question}\n\n"
+        if sql_queries:
+            fullResponse += "## SQL Queries\n"
+            for sql in sql_queries:
+                fullResponse += f"```sql\n{sql}\n```\n\n"
+        fullResponse += f"## Response\n{response.content}\n\n"
         
-        clean_answer = extract_answer_for_evaluation(fullResponse)
+        # Extract clean answer
+        clean_answer = extract_answer_for_evaluation(response.content)
         
         # Save the query and response to the database if model ID is provided
         if llm_model_id:
