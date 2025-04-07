@@ -26,8 +26,8 @@ def extract_answer_for_evaluation(response):
     # Remove any remaining markdown headers
     clean_answer = re.sub(r"^###\s*.*?\n", "", clean_answer, flags=re.MULTILINE)
     
-    # If we still don't have a clean answer, use the original response
+    # If we still don't have a clean answer, return an empty string
     if not clean_answer or clean_answer.isspace():
-        clean_answer = response
+        clean_answer = ''
     
     return clean_answer
