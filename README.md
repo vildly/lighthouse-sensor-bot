@@ -24,15 +24,15 @@ To run the application as Docker containers,
 
 Create a `.env` file in the backend directory.
 
-Copy the example.env file to .env and fill in the missing variables.
+Copy the backend-example.env file to .env and update the variables.
 
 For the frontend, create a `.env.development.local` file. (This can be omitted if you don't want to run the frontend in development mode.)
 
-Copy the example.env.development.local file to .env.development.local.
+Copy the frontend-example.env.development.local file to .env.development.local and update the variable if needed.
 
 Create a `.env` file in the root directory.
 
-Copy the example.env file to .env and fill in the missing variables.
+Copy the root-example.env file to .env and update the variables.
 
 ### 2. Start the Application
 
