@@ -7,6 +7,7 @@ from flask_socketio import emit
 from app.conf.websocket import socketio
 import re
 
+
 logger = logging.getLogger(__name__)
 
 def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
@@ -44,7 +45,10 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             except Exception as e:
                 logger.error(f"Error emitting progress update: {e}")
         
+        logger.info("Starting synthetic evaluation...")
         ragas_results, df = run_synthetic_evaluation(model_id, progress_callback)
+        logger.info(f"Evaluation complete. DataFrame shape: {df.shape if df is not None else 'None'}")
+        logger.info(f"DataFrame columns: {df.columns.tolist() if df is not None else 'None'}")
 
         # Log the DataFrame contents and size
         logger.info(f"DataFrame shape: {df.shape}")
@@ -87,7 +91,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             'string_present': 'string_present'
         }
         
-        print (f"DataFrame shape: {df.to_string()}")
+        print(f"DataFrame shape: {df.shape}")
+        print(f"DataFrame columns: {df.columns.tolist()}")
         
         # For each test case in df, save the query and evaluation results to the database
         total_rows = len(df)
@@ -107,8 +112,16 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 except Exception as e:
                     logger.error(f"Error emitting row progress: {e}")
                 
-                query = row['user_input']
-                response = row['response']
+                # Handle different possible column names for the question
+                query = row.get('user_input')
+                if query is None:
+                    logger.error(f"No question/query column found in row. Available columns: {row.index.tolist()}")
+                    continue
+                    
+                response = row.get('response')
+                if response is None:
+                    logger.error(f"No response column found in row. Available columns: {row.index.tolist()}")
+                    continue
                 
                 # Extract SQL queries from context
                 sql_queries = []
@@ -211,37 +224,3 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             "results": {"error": str(e)},
             "full_response": f"Error during evaluation: {str(e)}"
         }, 500 
-
-
-# this should be a standardized helper function!!!!!
-def extract_answer_for_evaluation(response):
-    """Extract the answer from the model's response for evaluation purposes."""
-    
-    # Extract the answer section using regex - get the LAST answer section
-    answer_sections = re.findall(
-        r"## Answer\s*(.*?)(?=\s*##|$)", response, re.DOTALL
-    )
-    if answer_sections:
-        clean_answer = answer_sections[-1].strip()  # Use the last answer section
-    else:
-        # Check if there's an "Agent Reasoning and Response:" prefix
-        if "Agent Reasoning and Response:" in response:
-            response = response.split("Agent Reasoning and Response:")[1].strip()
-        
-        # Try to find any section that looks like an answer
-        answer_match = re.search(r"(?:###|##)\s*(?:Answer|Key Details.*?)\s*(.*?)(?=\s*(?:###|##)|$)", response, re.DOTALL)
-        if answer_match:
-            clean_answer = answer_match.group(1).strip()
-        else:
-            # Fallback: Split on the Analysis section header to get just the answer
-            parts = response.split("## Analysis")
-            clean_answer = parts[-1].strip() if len(parts) > 1 else response.strip()
-    
-    # Remove any remaining markdown headers
-    clean_answer = re.sub(r"^###\s*.*?\n", "", clean_answer, flags=re.MULTILINE)
-    
-    # If we still don't have a clean answer, use the original response
-    if not clean_answer or clean_answer.isspace():
-        clean_answer = response
-    
-    return clean_answer 
