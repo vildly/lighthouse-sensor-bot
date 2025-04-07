@@ -46,6 +46,10 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         
         ragas_results, df = run_synthetic_evaluation(model_id, progress_callback)
 
+        # Log the DataFrame contents and size
+        logger.info(f"DataFrame shape: {df.shape}")
+        logger.info(f"Number of test cases to process: {len(df)}")
+        
         # Configure logger to ensure it's displaying
         logging.basicConfig(level=logging.INFO)
         logger.setLevel(logging.INFO)
@@ -83,9 +87,26 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             'string_present': 'string_present'
         }
         
-            # For each test case in df, save the query and evaluation results to the database
+        print (f"DataFrame shape: {df.to_string()}")
+        
+        # For each test case in df, save the query and evaluation results to the database
+        total_rows = len(df)
         for i, row in df.iterrows():
             try:
+                # Calculate progress percentage for this row
+                row_progress = int(50 + ((i + 1) / total_rows) * 40)  # Scale to 50-90% range
+                
+                # Update progress for each row
+                try:
+                    socketio.emit('evaluation_progress', {
+                        'progress': row_progress,
+                        'total': 100,
+                        'percent': row_progress,
+                        'message': f'Processing test case {i+1} of {total_rows}...'
+                    }, namespace='/query')
+                except Exception as e:
+                    logger.error(f"Error emitting row progress: {e}")
+                
                 query = row['user_input']
                 response = row['response']
                 
@@ -99,7 +120,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 
                 # Create evaluation results dictionary with the metrics from ragas_results
                 evaluation_data = {
-                    "retrieved_contexts": str(row.get('retrieved_contexts', [])),
+                    # Convert reference_contexts to a string if it's a list
+                    "retrieved_contexts": str(row.get('reference_contexts', [])) if isinstance(row.get('reference_contexts'), list) else str(row.get('reference_contexts', [])),
                     "reference": row.get('reference'),
                 }
                 
@@ -117,9 +139,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                     sql_queries=sql_queries
                 )
             except Exception as e:
-                logger.error(f"Error saving evaluation for query {query}: {e}")
+                logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
         
-       
         # Emit progress update for database saving
         try:
             socketio.emit('evaluation_progress', {
