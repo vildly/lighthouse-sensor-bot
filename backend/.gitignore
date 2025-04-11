@@ -1,2 +1,4 @@
 .env
 output/
+
+tmp.txt

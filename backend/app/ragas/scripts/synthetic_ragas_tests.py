@@ -19,6 +19,13 @@ import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
+from typing import Callable, Optional
+import re
+from app.helpers.extract_answer import extract_answer_for_evaluation
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 # this script is used to evaluate the performance of the agent on the synthetic dataset.
@@ -82,33 +89,49 @@ def load_synthetic_test_cases():
         print(f"Error: Invalid JSON format in {test_cases_path}.")
         return None
 
-def run_synthetic_evaluation(llm_model_id):
+
+
+def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable] = None):
     """Run evaluation using the synthetic test cases"""
+    logger.info("Starting run_synthetic_evaluation...")
+    
     # Load synthetic test cases
     test_cases = load_synthetic_test_cases()
+    logger.info(f"Loaded test cases: {test_cases is not None}")
+    
     if test_cases is None:
-        return
+        logger.error("No test cases loaded - returning None")
+        return None, None
     
     results = []
+    logger.info(f"Number of test cases: {len(test_cases)}")
     
     # Process each test case
     for test_case in test_cases:
         query = test_case['user_input']
         ground_truth = test_case['reference']
+        logger.info(f"Processing test case with query: {query[:50]}...")  # Log first 50 chars
+        
         response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
+        logger.info(f"API call success: {api_call_success}")
         
         if api_call_success:
+            # The response is already the clean answer from the API
             results.append({
                 "user_input": query,
                 "reference": ground_truth,
-                "response": response,
+                "response": response,  # Don't extract again, it's already clean
                 "context": context,
                 "reference_contexts": test_case['reference_contexts'],
                 "api_call_success": api_call_success
             })
     
+    logger.info(f"Total results collected: {len(results)}")
+    
     # Create results DataFrame for RAGAS evaluation
     results_df = pd.DataFrame(results)
+    logger.info(f"DataFrame shape: {results_df.shape}")
+    logger.info(f"DataFrame columns: {results_df.columns.tolist()}")
     
     # Prepare data for RAGAS evaluation
     ragas_data = pd.DataFrame({
@@ -133,32 +156,17 @@ def run_synthetic_evaluation(llm_model_id):
         StringPresence()
     ]
     
+    # Before RAGAS evaluation
+    if progress_callback:
+        progress_callback(5, 8, "Running RAGAS evaluation")
+    
     # Run evaluation
     ragas_results = evaluate(eval_dataset, metrics, llm=evaluator_llm)
     
+    if progress_callback:
+        progress_callback(7, 8, "Finalizing results")
+    
     ragas_results.upload()
-    
-    # Create output directory with timestamp
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = Path(f"output/synthetic_ragas_{timestamp}_{llm_model_id.replace('/', '_')}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Save detailed results
-    results_df.to_csv(output_dir / "detailed_results.csv", index=False)
-    
-    # Save metrics summary
-    metrics_df = ragas_results.to_pandas()
-    metrics_df.to_csv(output_dir / "metrics_summary.csv", index=False)
-    
-    # Save combined results with metrics
-    for metric_name, scores in ragas_results.to_pandas().items():
-        if metric_name != 'hash':
-            results_df[metric_name] = scores
-    results_df.to_csv(output_dir / "combined_results.csv", index=False)
-    
-    print("\nEvaluation Results:")
-    print(ragas_results)
-    print(f"\nDetailed results saved to: {output_dir}")
     
     return ragas_results, results_df
 

@@ -36,7 +36,7 @@ def run_test_case(query, ground_truth, llm_model_id):
         response.raise_for_status()
         
         response_data = response.json()
-        agent_response = response_data.get('content')  # This is already the clean response
+        agent_response = response_data.get('content')  
         full_response = response_data.get('full_response')  # This contains the full context
         sql_queries = response_data.get('sql_queries', [])
         
@@ -121,24 +121,24 @@ def run_evaluation(llm_model_id):
             results_df[metric_name] = scores
 
     # Save results
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    cwd = Path(__file__).parent.parent.parent.parent.resolve()  # Go up to root directory
-    output_dir = cwd.joinpath("output")
+    # cwd = Path(__file__).parent.parent.parent.parent.resolve()  # Go up to root directory
+    # output_dir = cwd.joinpath("output")
 
-    # Create timestamped directory within output that includes model ID
-    timestamped_dir = output_dir.joinpath(f"ragas_{timestamp}_{llm_model_id.replace('/', '_')}")
-    timestamped_dir.mkdir(exist_ok=True)
+    # # Create timestamped directory within output that includes model ID
+    # timestamped_dir = output_dir.joinpath(f"ragas_{timestamp}_{llm_model_id.replace('/', '_')}")
+    # timestamped_dir.mkdir(exist_ok=True)
 
-    # Save results using timestamped paths
-    results_df.to_csv(timestamped_dir.joinpath("test_results.csv"), index=False)
-    print(f"Test results saved to {timestamped_dir}/test_results.csv")
+    # # Save results using timestamped paths
+    # results_df.to_csv(timestamped_dir.joinpath("test_results.csv"), index=False)
+    # print(f"Test results saved to {timestamped_dir}/test_results.csv")
 
-    # Save metrics summary
-    metrics_df = ragas_results.to_pandas()
-    metrics_df.to_csv(timestamped_dir.joinpath("metrics_summary.csv"), index=False)
+    # # Save metrics summary
+    # metrics_df = ragas_results.to_pandas()
+    # metrics_df.to_csv(timestamped_dir.joinpath("metrics_summary.csv"), index=False)
 
-    print(f"Results saved in directory: {timestamped_dir}")
+    # print(f"Results saved in directory: {timestamped_dir}")
     print("\nRAGAS Results:")
     print(ragas_results)
     
