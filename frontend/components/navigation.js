@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import Image from 'next/image';
 
 export default function Navigation() {
   const { connected } = useWebSocket();
@@ -12,15 +13,14 @@ export default function Navigation() {
             <div className="flex items-center space-x-3">
               <Link href="/">
                 <a className="flex items-center space-x-3">
-                  <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 18H21L19 22H5L3 18Z" fill="currentColor" />
-                    <path d="M19 18L21 8H3L5 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M15 18V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M9 18V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 8V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M8 4H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <h1 className="text-xl font-bold text-white">Lighthouse</h1>
+                  <Image
+                    src="/logo.png"
+                    alt="Lighthouse Bot Logo"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8"
+                  />
+                  <h1 className="text-xl font-bold text-white">Lighthouse Bot</h1>
                 </a>
               </Link>
             </div>
