@@ -419,7 +419,7 @@ export default function QuestionForm() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17l4-4m0 0l4-4m-4 4H3m4 4h10" />
                   </svg>
                 </div>
-                <h1 className="text-xl font-bold text-gray-800">Analysis Controls</h1>
+                <h1 className="text-xl font-bold text-gray-800">Query Controls</h1>
               </div>
 
               <div className="space-y-5">

@@ -492,7 +492,6 @@ header {
   flex-direction: column;
 }
 
-/* Fix for SQL queries display */
 .tab-pane {
   display: none;
   height: 100%;
@@ -505,11 +504,11 @@ header {
   flex-direction: column;
 }
 
-/* Fix for SyntaxHighlighter component */
 pre {
   width: 100% !important;
   max-width: 100% !important;
   overflow-x: auto !important;
+  color: black;
 }
 
 /* Markdown styling */
@@ -594,9 +593,8 @@ pre {
   font-weight: 600;
 }
 
-/* Fix text color in full response content */
 #full-response-content .prose {
-  color: #000000 !important; /* Force black text color */
+  color: #000000 !important; 
 }
 
 #full-response-content .prose h1,
@@ -609,15 +607,16 @@ pre {
 #full-response-content .prose ul,
 #full-response-content .prose ol,
 #full-response-content .prose li {
-  color: #000000 !important; /* Force black text for all text elements */
+  color: #000000 !important; 
 }
 
-/* Only keep code blocks with their existing styling */
+
 #full-response-content .prose pre {
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 0.25rem;
   padding: 1rem;
   margin: 1rem 0;
+  color: black;
 }
 
 #full-response-content .prose code {
@@ -625,6 +624,7 @@ pre {
   color: #f8f8f8;
   padding: 0.2rem 0.4rem;
   border-radius: 0.25rem;
+  color: black;
 }
 
 @keyframes progress-bar-stripes {
@@ -648,4 +648,44 @@ pre {
     transparent
   );
   background-size: 1rem 1rem;
+}
+
+/* History page specific styles */
+.history-table th {
+  position: relative;
+}
+
+.history-table th:after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.history-table th.sort-asc:after {
+  content: '↑';
+}
+
+.history-table th.sort-desc:after {
+  content: '↓';
+}
+
+/* Modal backdrop animation */
+.modal-backdrop {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal-content {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 } 

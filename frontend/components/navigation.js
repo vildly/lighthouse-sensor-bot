@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function Navigation() {
   const { connected } = useWebSocket();
-  
+
   return (
     <header className="pt-4">
       <div className="arc-navbar">
@@ -27,7 +27,10 @@ export default function Navigation() {
 
             <div className="flex items-center space-x-6">
               <Link href="/">
-                <a className="text-white hover:text-gray-300 transition-colors font-medium">
+                <a className="text-white hover:text-gray-300 transition-colors font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
                   Query
                 </a>
               </Link>
@@ -39,7 +42,15 @@ export default function Navigation() {
                     <path d="M5 9a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" />
                     <path d="M6 12a1 1 0 011-1h2a1 1 0 110 2H7a1 1 0 01-1-1z" />
                   </svg>
-                  Evaluation
+                  Analytics
+                </a>
+              </Link>
+              <Link href="/history">
+                <a className="text-white hover:text-gray-300 transition-colors font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  History
                 </a>
               </Link>
               <div className="flex items-center">
