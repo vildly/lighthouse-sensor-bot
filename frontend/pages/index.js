@@ -626,7 +626,9 @@ export default function QuestionForm() {
                 </div>
               </div>
 
-              <div className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded" style={{ width: '100%', maxWidth: '100%' }}>
+              <div 
+                className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded overflow-x-auto" 
+              >
                 {isLoading ? (
                   <div id="tab-content" className="h-full">
                     <div id="sql-queries-content" className="tab-pane active">

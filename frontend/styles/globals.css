@@ -274,10 +274,8 @@ select:hover,
   background-color: rgba(255, 255, 255, 0.35); /* More transparent background */
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 0.75rem;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important; /* Prevents content from causing container to expand */
-  flex-shrink: 0 !important;
+  width: 100%; /* Let it fill its grid column */
+  max-width: 100%;
 }
 
 /* Card text color updates */
