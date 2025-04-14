@@ -21,6 +21,7 @@ def save_query_to_db(
     full_response: str,
     llm_model_id: str,
     sql_queries: Optional[List[str]] = None,
+    token_usage: Optional[Dict[str, int]] = None,
 ) -> int:
     """Save the query and response to the database."""
     with get_cursor() as cursor:
@@ -43,10 +44,29 @@ def save_query_to_db(
             if result is None:
                 raise ValueError("Failed to save query: No ID returned")
             query_result_id = result[0]
+            
+            # Save token usage in the separate table if provided
+            if token_usage:
+                cursor.execute(
+                    """
+                    INSERT INTO token_usage (
+                        query_result_id, prompt_tokens, completion_tokens, total_tokens
+                    ) VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        query_result_id,
+                        token_usage.get('prompt_tokens'),
+                        token_usage.get('completion_tokens'),
+                        token_usage.get('total_tokens'),
+                    ),
+                )
+            
             return query_result_id
         except Exception as e:
             logger.error(f"Error saving query to database: {e}")
             raise
+          
+
 
 
 def save_query_with_eval_to_db(
@@ -56,10 +76,11 @@ def save_query_with_eval_to_db(
     llm_model_id: str,
     evaluation_results: Dict[str, Union[str, float, int, bool, None]],
     sql_queries: Optional[List[str]] = None,
+    token_usage: Optional[Dict[str, int]] = None,
 ) -> None:
     """Save the query and response to the database with evaluation results."""
     if not isinstance(evaluation_results, dict):
-        raise ValueError("Evaluation results must be a dictionary")
+      raise ValueError("Evaluation results must be a dictionary")
 
     required_keys = {
         "retrieved_contexts": (str, type(None)),
@@ -83,7 +104,7 @@ def save_query_with_eval_to_db(
 
     # First save the query to get query_result_id
     query_result_id = save_query_to_db(
-        query, direct_response, full_response, llm_model_id, sql_queries
+        query, direct_response, full_response, llm_model_id, sql_queries, token_usage
     )
 
     with get_cursor() as cursor:
