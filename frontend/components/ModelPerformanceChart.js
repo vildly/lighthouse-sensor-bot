@@ -92,36 +92,14 @@ export default function ModelPerformanceChart() {
   };
 
   const handleMetricTypeChange = (e) => {
-    setMetricType(e.target.value);
-    if (e.target.value === 'token') {
-      const tokenMetrics = performanceData.metrics.filter(m => 
-        ['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'].includes(m.id));
-      
-      if (tokenMetrics.length > 0) {
-        setSelectedMetric(tokenMetrics[0].id);
-      } else {
-        const tokenMetricIds = ['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'];
-        const tokenMetricNames = ['Prompt Tokens', 'Completion Tokens', 'Total Tokens'];
-        
-        const updatedMetrics = [...performanceData.metrics];
-        
-        tokenMetricIds.forEach((id, index) => {
-          if (!updatedMetrics.some(m => m.id === id)) {
-            updatedMetrics.push({
-              id: id,
-              name: tokenMetricNames[index]
-            });
-          }
-        });
-        
-        setPerformanceData({
-          ...performanceData,
-          metrics: updatedMetrics
-        });
-        
-        setSelectedMetric('avg_total_tokens');
-      }
+    const newMetricType = e.target.value;
+    setMetricType(newMetricType);
+    
+    if (newMetricType === 'token') {
+      // Default to avg_total_tokens when switching to token metrics
+      setSelectedMetric('avg_total_tokens');
     } else {
+      // Default to first performance metric when switching to performance metrics
       const perfMetrics = performanceData.metrics.filter(m => 
         !['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'].includes(m.id) && 
         m.id.startsWith('avg_'));
@@ -215,7 +193,7 @@ export default function ModelPerformanceChart() {
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-4">Model Performance Metrics</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Chart Type
@@ -246,28 +224,45 @@ export default function ModelPerformanceChart() {
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {metricType === 'token' ? 'Token Metric' : 'Performance Metric'}
-                </label>
-                <select
-                  value={selectedMetric}
-                  onChange={handleMetricChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {performanceData.metrics
-                    .filter(m => {
-                      const isToken = ['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'].includes(m.id);
-                      return metricType === 'token' ? isToken : (!isToken && m.id.startsWith('avg_'));
-                    })
-                    .map(metric => (
-                      <option key={metric.id} value={metric.id}>
-                        {metric.name}
-                      </option>
-                    ))
-                  }
-                </select>
-              </div>
+              {metricType === 'token' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Token Metric
+                  </label>
+                  <select
+                    value={selectedMetric}
+                    onChange={handleMetricChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="avg_prompt_tokens">Prompt Tokens</option>
+                    <option value="avg_completion_tokens">Completion Tokens</option>
+                    <option value="avg_total_tokens">Total Tokens</option>
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Performance Metric
+                  </label>
+                  <select
+                    value={selectedMetric}
+                    onChange={handleMetricChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {performanceData.metrics
+                      .filter(m => 
+                        m.id.startsWith('avg_') && 
+                        !['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'].includes(m.id)
+                      )
+                      .map(metric => (
+                        <option key={metric.id} value={metric.id}>
+                          {metric.name}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+              )}
             </>
           )}
           
@@ -409,11 +404,16 @@ export default function ModelPerformanceChart() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Model</th>
-                {performanceData.metrics.map(metric => (
-                  <th key={metric.id} className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                    {metric.name}
-                  </th>
-                ))}
+                {performanceData.metrics
+                  .filter(m => m.id.startsWith('avg_') && !['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'].includes(m.id))
+                  .map(metric => (
+                    <th key={metric.id} className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
+                      {metric.name}
+                    </th>
+                  ))}
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Prompt Tokens</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Completion Tokens</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Total Tokens</th>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Evaluated Query Count</th>
               </tr>
             </thead>
@@ -421,20 +421,38 @@ export default function ModelPerformanceChart() {
               {performanceData.data.map((model, idx) => (
                 <tr key={model.model_id} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="px-4 py-2 text-sm text-gray-900 font-medium">{model.model_name.split('/')[1]}</td>
-                  {performanceData.metrics.map(metric => {
-                    const metricValue = model[metric.id];
-                    const stdDevField = getStdDevField(metric.id);
-                    const stdDev = model[stdDevField];
-                    
-                    return (
-                      <td key={`${model.model_id}-${metric.id}`} className="px-4 py-2 text-sm text-gray-900">
-                        {metricValue !== null && metricValue !== undefined ? metricValue.toFixed(3) : 'N/A'}
-                        <span className="text-gray-500 ml-1">
-                          (σ: {formatStdDev(stdDev)})
-                        </span>
-                      </td>
-                    );
-                  })}
+                  {performanceData.metrics
+                    .filter(m => m.id.startsWith('avg_') && !['avg_prompt_tokens', 'avg_completion_tokens', 'avg_total_tokens'].includes(m.id))
+                    .map(metric => {
+                      const metricValue = model[metric.id];
+                      const stdDevField = getStdDevField(metric.id);
+                      const stdDev = model[stdDevField];
+                      
+                      return (
+                        <td key={`${model.model_id}-${metric.id}`} className="px-4 py-2 text-sm text-gray-900">
+                          {metricValue !== null && metricValue !== undefined ? metricValue.toFixed(3) : 'N/A'}
+                          <br />
+                          <span className="text-gray-500 text-xs">
+                            σ: {formatStdDev(stdDev)}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  <td className="px-4 py-2 text-sm text-gray-900">
+                    {model.avg_prompt_tokens !== null && model.avg_prompt_tokens !== undefined 
+                      ? Math.round(model.avg_prompt_tokens).toLocaleString() 
+                      : 'N/A'}
+                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-900">
+                    {model.avg_completion_tokens !== null && model.avg_completion_tokens !== undefined 
+                      ? Math.round(model.avg_completion_tokens).toLocaleString() 
+                      : 'N/A'}
+                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-900">
+                    {model.avg_total_tokens !== null && model.avg_total_tokens !== undefined 
+                      ? Math.round(model.avg_total_tokens).toLocaleString() 
+                      : 'N/A'}
+                  </td>
                   <td className="px-4 py-2 text-sm text-gray-900">{model.query_evaluation_count}</td>
                 </tr>
               ))}
