@@ -39,7 +39,7 @@ export default function Navigation() {
                     <path d="M5 9a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" />
                     <path d="M6 12a1 1 0 011-1h2a1 1 0 110 2H7a1 1 0 01-1-1z" />
                   </svg>
-                  Evaluation
+                  Analytics
                 </a>
               </Link>
               <div className="flex items-center">

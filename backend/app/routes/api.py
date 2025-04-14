@@ -150,9 +150,8 @@ def model_performance():
 
 @api_bp.route("/full-query-data", methods=["GET"])
 def query_data():
-    """Get"""
+    """Get full results for all evaluated queries."""
     try:
-        model_type = request.args.get("type")
 
         with get_cursor() as cursor:
             query = """
