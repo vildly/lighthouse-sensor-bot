@@ -391,7 +391,11 @@ export default function HistoryPage() {
                     <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(selectedQuery)
                         .filter(([key, value]) => 
-                          !['query', 'model_name', 'query_timestamp', 'formatted_timestamp', 'full_response', 'sql_queries', 'query_result_id', 'evaluation_metric_id', 'direct_response'].includes(key) && 
+                          !['query', 'model_name', 'query_timestamp', 'formatted_timestamp', 
+                            'full_response', 'sql_queries', 'query_result_id', 'evaluation_metric_id', 
+                            'direct_response', 'prompt_tokens', 'completion_tokens', 'total_tokens',
+                            'token_usage_id']
+                          .includes(key) && 
                           value !== null
                         )
                         .map(([key, value]) => (
