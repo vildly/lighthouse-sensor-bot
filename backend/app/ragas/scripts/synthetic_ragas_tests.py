@@ -55,10 +55,11 @@ def run_test_case(query, ground_truth, llm_model_id):
         agent_response = response_data.get('content')
         full_response = response_data.get('full_response')
         sql_queries = response_data.get('sql_queries', [])
+        token_usage = response_data.get('token_usage')
         
         if agent_response is None:
             print(f"Error: No 'content' key found in the API response for query: {query}")
-            return None, None, False
+            return None, None, False, None
             
         # Format contexts including SQL queries and full response
         contexts = []
@@ -66,14 +67,14 @@ def run_test_case(query, ground_truth, llm_model_id):
             contexts.append(f"SQL Query: {sql}")
         contexts.append(f"Agent Reasoning and Response: {full_response}")
         
-        return agent_response, contexts, True
+        return agent_response, contexts, True, token_usage
         
     except requests.exceptions.RequestException as e:
         print(f"Error calling API for query: {query}: {e}")
-        return None, None, False
+        return None, None, False, None
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON response for query: {query}: {e}")
-        return None, None, False
+        return None, None, False, None
 
 def load_synthetic_test_cases():
     """Load synthetic test cases from JSON file"""
@@ -111,8 +112,7 @@ def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable]
         query = test_case['user_input']
         ground_truth = test_case['reference']
         logger.info(f"Processing test case with query: {query[:50]}...")  # Log first 50 chars
-        
-        response, context, api_call_success = run_test_case(query, ground_truth, llm_model_id)
+        response, context, api_call_success, token_usage = run_test_case(query, ground_truth, llm_model_id)
         logger.info(f"API call success: {api_call_success}")
         
         if api_call_success:
@@ -120,10 +120,11 @@ def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable]
             results.append({
                 "user_input": query,
                 "reference": ground_truth,
-                "response": response,  # Don't extract again, it's already clean
+                "response": response,
                 "context": context,
                 "reference_contexts": test_case['reference_contexts'],
-                "api_call_success": api_call_success
+                "api_call_success": api_call_success,
+                "token_usage": token_usage
             })
     
     logger.info(f"Total results collected: {len(results)}")

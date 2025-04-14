@@ -131,7 +131,10 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                             sql_query = item.replace("SQL Query: ", "", 1)
                             sql_queries.append(sql_query)
                 
-                # Create evaluation results dictionary with the metrics from ragas_results
+                # Get token_usage directly from the row
+                token_usage = row.get('token_usage') 
+
+                # Create evaluation results dictionary 
                 evaluation_data = {
                     # Convert reference_contexts to a string if it's a list
                     "retrieved_contexts": str(row.get('reference_contexts', [])) if isinstance(row.get('reference_contexts'), list) else str(row.get('reference_contexts', [])),
@@ -140,7 +143,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 
                 # Map the metrics using our mapping dictionary
                 for ragas_key, our_key in metric_mapping.items():
-                    evaluation_data[our_key] = results_dict.get(ragas_key)
+                    evaluation_data[our_key] = results_dict.get(ragas_key) 
                 
                 # Save the query with evaluation results
                 save_query_with_eval_to_db(
@@ -149,7 +152,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                     full_response=row.get('context', ''),
                     llm_model_id=model_id,
                     evaluation_results=evaluation_data,
-                    sql_queries=sql_queries
+                    sql_queries=sql_queries,
+                    token_usage=token_usage # <-- Pass the token_usage from the row
                 )
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
