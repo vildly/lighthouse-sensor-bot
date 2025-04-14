@@ -114,6 +114,11 @@ export default function ModelPerformanceChart() {
     );
   }
 
+  // Get the corresponding stddev field for a metric
+  const getStdDevField = (metricField) => {
+    return metricField.replace('avg_', 'stddev_');
+  };
+
   // Prepare bar chart data
   const prepareBarChartData = () => {
     const modelNames = performanceData.data.map(model => model.model_name.split('/')[1]);
@@ -147,6 +152,15 @@ export default function ModelPerformanceChart() {
         pointRadius: 3
       }))
     };
+  };
+
+  // Format standard deviation value
+  const formatStdDev = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'string') {
+      return parseFloat(value).toFixed(3);
+    }
+    return value.toFixed(3);
   };
 
   return (
@@ -226,7 +240,14 @@ export default function ModelPerformanceChart() {
                 tooltip: {
                   callbacks: {
                     label: function(context) {
+                      const model = performanceData.data[context.dataIndex];
                       return `${context.dataset.label}: ${context.parsed.y.toFixed(3)}`;
+                    },
+                    afterLabel: function(context) {
+                      const model = performanceData.data[context.dataIndex];
+                      const stdDevField = getStdDevField(selectedMetric);
+                      const stdDev = model[stdDevField];
+                      return `Standard Deviation: ${formatStdDev(stdDev)}`;
                     }
                   }
                 }
@@ -249,20 +270,22 @@ export default function ModelPerformanceChart() {
             options={{
               responsive: true,
               maintainAspectRatio: false,
-              elements: {
-                line: {
-                  tension: 0.2
-                }
-              },
               scales: {
                 r: {
-                  angleLines: {
-                    display: true
-                  },
+                  beginAtZero: true,
                   min: 0,
                   max: 1,
                   ticks: {
-                    stepSize: 0.2
+                    stepSize: 0.2,
+                    showLabelBackdrop: false,
+                    font: {
+                      size: 10
+                    }
+                  },
+                  pointLabels: {
+                    font: {
+                      size: 12
+                    }
                   }
                 }
               },
@@ -272,7 +295,7 @@ export default function ModelPerformanceChart() {
                 },
                 title: {
                   display: true,
-                  text: 'Model Performance Comparison',
+                  text: 'Model Performance Comparison (All Metrics)',
                   font: {
                     size: 16
                   }
@@ -280,7 +303,15 @@ export default function ModelPerformanceChart() {
                 tooltip: {
                   callbacks: {
                     label: function(context) {
+                      const model = performanceData.data[context.datasetIndex];
                       return `${context.dataset.label}: ${context.raw.toFixed(3)}`;
+                    },
+                    afterLabel: function(context) {
+                      const model = performanceData.data[context.datasetIndex];
+                      const metricId = performanceData.metrics[context.dataIndex].id;
+                      const stdDevField = getStdDevField(metricId);
+                      const stdDev = model[stdDevField];
+                      return `Standard Deviation: ${formatStdDev(stdDev)}`;
                     }
                   }
                 }
@@ -309,11 +340,22 @@ export default function ModelPerformanceChart() {
               {performanceData.data.map((model, idx) => (
                 <tr key={model.model_id} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="px-4 py-2 text-sm text-gray-900 font-medium">{model.model_name.split('/')[1]}</td>
-                  {performanceData.metrics.map(metric => (
-                    <td key={`${model.model_id}-${metric.id}`} className="px-4 py-2 text-sm text-gray-900">
-                      {model[metric.id] ? model[metric.id].toFixed(3) : 'N/A'}
-                    </td>
-                  ))}
+                  {performanceData.metrics.map(metric => {
+                    const metricValue = model[metric.id];
+                    const stdDevField = getStdDevField(metric.id);
+                    const stdDev = model[stdDevField];
+                    
+                    return (
+                      <td key={`${model.model_id}-${metric.id}`} className="px-4 py-2 text-sm text-gray-900">
+                        {metricValue ? metricValue.toFixed(3) : 'N/A'}
+                        {stdDev && (
+                          <span className="text-gray-500 ml-1">
+                            (σ: {formatStdDev(stdDev)})
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
                   <td className="px-4 py-2 text-sm text-gray-900">{model.query_evaluation_count}</td>
                 </tr>
               ))}
