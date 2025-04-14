@@ -8,7 +8,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('query_timestamp');
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [selectedQuery, setSelectedQuery] = useState(null);
 
   useEffect(() => {
@@ -65,6 +65,20 @@ export default function HistoryPage() {
   const sortedHistory = [...queryHistory].sort((a, b) => {
     let valueA = a[sortField];
     let valueB = b[sortField];
+
+    // Special handling for timestamp fields
+    if (sortField === 'query_timestamp') {
+      // Convert to Date objects for proper comparison
+      const dateA = new Date(valueA);
+      const dateB = new Date(valueB);
+      
+      // Handle invalid dates
+      if (isNaN(dateA) && isNaN(dateB)) return 0;
+      if (isNaN(dateA)) return sortDirection === 'asc' ? -1 : 1;
+      if (isNaN(dateB)) return sortDirection === 'asc' ? 1 : -1;
+      
+      return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+    }
 
     // Handle numeric values
     if (!isNaN(parseFloat(valueA)) && !isNaN(parseFloat(valueB))) {
@@ -145,10 +159,54 @@ export default function HistoryPage() {
       .join(' ');
   };
 
+  const refreshData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/full-query-data');
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching query history: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      const formattedData = data.data.map(item => {
+        if (item.query_timestamp) {
+          const timestamp = new Date(item.query_timestamp);
+          if (!isNaN(timestamp)) {
+            item.formatted_timestamp = timestamp.toLocaleString();
+          } else {
+            item.formatted_timestamp = item.query_timestamp;
+          }
+        } else {
+          item.formatted_timestamp = 'N/A';
+        }
+        return item;
+      });
+      
+      setQueryHistory(formattedData);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching query history:', err);
+      setError('Failed to load query history data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-8">Query History</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-white">Query History</h1>
+          <button 
+            onClick={refreshData}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : 'Refresh Data'}
+          </button>
+        </div>
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -310,7 +368,23 @@ export default function HistoryPage() {
                     <p className="mt-1 text-sm text-gray-600">{selectedQuery.direct_response || 'N/A'}</p>
                   </div>
 
-                
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Token Usage</h3>
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-50 p-3 rounded">
+                        <span className="text-sm font-medium text-gray-700">Prompt Tokens</span>
+                        <p className="text-sm text-gray-900">{selectedQuery.prompt_tokens || 'N/A'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded">
+                        <span className="text-sm font-medium text-gray-700">Completion Tokens</span>
+                        <p className="text-sm text-gray-900">{selectedQuery.completion_tokens || 'N/A'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded">
+                        <span className="text-sm font-medium text-gray-700">Total Tokens</span>
+                        <p className="text-sm text-gray-900">{selectedQuery.total_tokens || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
 
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">Metrics</h3>
