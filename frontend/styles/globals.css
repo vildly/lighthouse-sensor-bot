@@ -648,4 +648,44 @@ pre {
     transparent
   );
   background-size: 1rem 1rem;
+}
+
+/* History page specific styles */
+.history-table th {
+  position: relative;
+}
+
+.history-table th:after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.history-table th.sort-asc:after {
+  content: '↑';
+}
+
+.history-table th.sort-desc:after {
+  content: '↓';
+}
+
+/* Modal backdrop animation */
+.modal-backdrop {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal-content {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 } 
