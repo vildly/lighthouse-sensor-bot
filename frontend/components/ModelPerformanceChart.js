@@ -347,12 +347,10 @@ export default function ModelPerformanceChart() {
                     
                     return (
                       <td key={`${model.model_id}-${metric.id}`} className="px-4 py-2 text-sm text-gray-900">
-                        {metricValue ? metricValue.toFixed(3) : 'N/A'}
-                        {stdDev && (
-                          <span className="text-gray-500 ml-1">
-                            (σ: {formatStdDev(stdDev)})
-                          </span>
-                        )}
+                        {metricValue !== null && metricValue !== undefined ? metricValue.toFixed(3) : 'N/A'}
+                        <span className="text-gray-500 ml-1">
+                          (σ: {formatStdDev(stdDev)})
+                        </span>
                       </td>
                     );
                   })}
