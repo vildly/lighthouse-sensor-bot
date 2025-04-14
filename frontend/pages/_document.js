@@ -5,6 +5,7 @@ class MyDocument extends Document {
     return (
       <Html>
         <Head>
+          <title>Lighthouse Bot</title>
           <link rel="icon" href="/L.png" />
         </Head>
         <body>
