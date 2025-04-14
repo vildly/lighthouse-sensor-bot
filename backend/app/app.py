@@ -44,8 +44,11 @@ output_dir = cwd.parent.joinpath("output")
 if not output_dir.exists():
     output_dir.mkdir(parents=True)
 
-# --- Agent Initialization ---
-# data_analyst = initialize_agent(data_dir)
+
+# --- Database Initialization ---
+from app.conf.postgres import init_db
+
+init_db()
 
 # --- Register Routes ---
 from app.routes.api import api_bp
