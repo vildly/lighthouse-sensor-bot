@@ -1,10 +1,18 @@
 [
   {
-    "user_input": "What are the details of the Ljuster\u00f6leden ferry route on January 11, 2024?",
+    "user_input": "What is the total fuel cost for ferry Jupiter in January 2024 assuming that the price per liter is 20 sek?",
     "reference_contexts": [
-      "route_id: 16, route_name: Ljuster\u00f6leden, ferry_name: Jupiter, ferry_id: 345, terminal_departure: Ljuster\u00f6                                          , terminal_arrival: \u00d6stan\u00e5                                            , time_departure: 2024-01-11 14:20:00, cars_outbound: 25, trucks_outbound: 2, trucks_with_trailer_outbound: 0, motorcycles_outbound: 0, exemption_vehicles_outbound: 0, pedestrians_outbound: 2, buses_outbound: 1, vehicles_left_at_terminal_outbound: 0, cars_inbound: 14, trucks_inbound: 1, trucks_with_trailer_inbound: 0, motorcycles_inbound: 0, exemption_vehicles_inbound: 0, pedestrians_inbound: 2, buses_inbound: 1, vehicles_left_at_terminal_inbound: 0, trip_type: ordinary           , passenger_car_equivalent_outbound_and_inbound: 64.5, tailored_trip: 0, full_ferry_outbound: 0, full_ferry_inbound: 0, passenger_car_equivalent_outbound: 39.0, passenger_car_equivalent_inbound: 25.5, fuelcons_outbound_l: nan, distance_outbound_nm: nan, start_time_outbound: nan, end_time_outbound: nan, fuelcons_inbound_l: nan, distance_inbound_nm: nan, start_time_inbound: nan, end_time_inbound: nan"
+      "Total fuel consumption for ferry Jupiter in January 2024: 12709.34 liters"
     ],
-    "reference": "The Ljuster\u00f6leden ferry route, identified as route_id 16, involves the ferry named Jupiter with ferry_id 345. On January 11, 2024, the ferry departs from Ljuster\u00f6 terminal and arrives at \u00d6stan\u00e5 terminal. The departure time is scheduled for 14:20:00. Outbound, the ferry carries 25 cars, 2 trucks, 2 pedestrians, and 1 bus, with no vehicles left at the terminal. Inbound, it carries 14 cars, 1 truck, 2 pedestrians, and 1 bus, also with no vehicles left at the terminal. The trip is classified as ordinary, with a passenger car equivalent of 64.5 for both outbound and inbound trips. The ferry is not full in either direction.",
+    "reference": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "user_input": "What is the average speed of ferry Jupiter? (in km/h)",
+    "reference_contexts": [
+      "The average speed of ferry Jupiter is: 6.23 knots. Average speed in km/h: 11.55 km/h. Average speed in mph: 7.17 mph"
+    ],
+    "reference": "Average speed in km/h is 11.55 km/h",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]

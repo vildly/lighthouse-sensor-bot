@@ -65,6 +65,7 @@ def get_system_message(instructions, semantic_model) -> List[str]:
           - If you run a query, explain why you ran it.
           - If you run a function, dont explain why you ran it.
           - **NEVER, EVER RUN CODE TO DELETE DATA OR ABUSE THE LOCAL SYSTEM**
+          - Do NOT save anything to a file.
           - Unless the user specifies in their question the number of results to obtain, limit your query to 10 results.
           - When calculating speeds from timestamps and distances:
             - Use EPOCH() for time differences
