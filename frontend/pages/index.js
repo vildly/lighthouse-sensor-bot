@@ -84,17 +84,17 @@ export default function QuestionForm() {
   }, []);
 
   useEffect(() => {
-    // Set SQL queries as the default tab when component mounts
+    // Set Live Tool Calls as the default tab when component mounts
     const timer = setTimeout(() => {
-      const sqlTab = document.querySelector('.tab-button[data-tab="sql-queries"]');
-      if (sqlTab) {
-        sqlTab.classList.add('active');
+      const toolCallsTab = document.querySelector('.tab-button[data-tab="live-tool-calls"]');
+      if (toolCallsTab) {
+        toolCallsTab.classList.add('active');
       }
 
-      const sqlContent = document.getElementById('sql-queries-content');
-      if (sqlContent) {
-        sqlContent.classList.remove('hidden');
-        sqlContent.classList.add('active');
+      const toolCallsContent = document.getElementById('live-tool-calls-content');
+      if (toolCallsContent) {
+        toolCallsContent.classList.remove('hidden');
+        toolCallsContent.classList.add('active');
       }
 
       const evalContent = document.getElementById('evaluation-content');
@@ -118,18 +118,28 @@ export default function QuestionForm() {
         sqlQueries,
         activeQuery
       });
-      
+
       // Restore query mode state
       setContent(queryModeState.content);
       setFullResponse(queryModeState.fullResponse);
       setModelUsed(queryModeState.modelUsed);
       setActiveQuery(queryModeState.activeQuery);
-      
+
       // Reset evaluation-specific state
       setEvaluationResults(null);
-      
-      resetQueries();
 
+      // Reset SQL queries display to show query mode queries
+      resetQueries(); // Clear the current display
+
+      // Switch to full response tab when switching to query mode
+      // Only if there is a full response, otherwise show live tool calls
+      Promise.resolve().then(() => {
+        if (queryModeState.fullResponse) {
+          switchTab('full-response');
+        } else {
+          switchTab('live-tool-calls');
+        }
+      });
     } else {
       // Coming from query mode, save query state
       setQueryModeState({
@@ -139,16 +149,27 @@ export default function QuestionForm() {
         sqlQueries,
         activeQuery
       });
-      
+
       // Restore evaluation mode state
       setContent(evaluationModeState.content);
       setFullResponse(evaluationModeState.fullResponse);
       setEvaluationResults(evaluationModeState.evaluationResults);
       setActiveQuery(evaluationModeState.activeQuery);
-      
 
-      resetQueries();
+      // Reset SQL queries display to show evaluation mode queries
+      resetQueries(); // Clear the current display
 
+      // Switch to evaluation tab when switching to evaluation mode
+      // Only if evaluation results exist, otherwise show full response or live tool calls
+      Promise.resolve().then(() => {
+        if (evaluationModeState.evaluationResults) {
+          switchTab('evaluation');
+        } else if (evaluationModeState.fullResponse) {
+          switchTab('full-response');
+        } else {
+          switchTab('live-tool-calls');
+        }
+      });
     }
   }, [controlMode]);
 
@@ -162,6 +183,9 @@ export default function QuestionForm() {
     setContent(null);
     setActiveQuery(true);
     resetQueries(); // Reset SQL queries for new question
+
+    // Switch to Live Tool Calls tab to show progress
+    switchTab('live-tool-calls');
 
     try {
       const response = await fetch("/api/query", {
@@ -181,12 +205,12 @@ export default function QuestionForm() {
       }
 
       const data = await response.json();
-      
-      // Only update query mode state, not evaluation mode state
+
+      // First update all state values
       setContent(data.content);
       setFullResponse(data.full_response);
       setModelUsed(selectedModel);
-      
+
       // Update query mode state with all relevant data
       setQueryModeState({
         content: data.content,
@@ -194,6 +218,12 @@ export default function QuestionForm() {
         modelUsed: selectedModel,
         sqlQueries: sqlQueries,
         activeQuery: true
+      });
+
+      // Use React's state batching to our advantage
+      // This will run after the state updates are applied
+      Promise.resolve().then(() => {
+        switchTab('full-response');
       });
     } catch (error) {
       console.error("Error asking question:", error);
@@ -332,6 +362,8 @@ export default function QuestionForm() {
 
     setIsLoading(true);
 
+    switchTab('live-tool-calls');
+
     try {
       setContent("Running model evaluation...");
 
@@ -354,14 +386,12 @@ export default function QuestionForm() {
 
       const data = await response.json();
 
-      // console.log('Evaluation data:', data);
-
       if (data.error) {
         // Only update evaluation mode state, not query mode state
         setContent(`## Error during evaluation\n${data.error}`);
         setFullResponse(`## Error during evaluation\n${data.error}`);
         setEvaluationResults(null);
-        
+
         setEvaluationModeState({
           content: `## Error during evaluation\n${data.error}`,
           fullResponse: `## Error during evaluation\n${data.error}`,
@@ -373,11 +403,11 @@ export default function QuestionForm() {
         // Only update evaluation mode state, not query mode state
         setEvaluationResults(data.results);
         setContent("## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.");
-        
+
         if (data.full_response) {
           setFullResponse(data.full_response);
         }
-        
+
         setEvaluationModeState({
           content: "## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.",
           fullResponse: data.full_response || null,
@@ -389,7 +419,6 @@ export default function QuestionForm() {
         // Switch to evaluation tab after a short delay to ensure state updates are processed
         setTimeout(() => {
           switchTab('evaluation');
-
           // Force the evaluation content to be visible
           const evaluationContent = document.getElementById('evaluation-content');
           if (evaluationContent) {
@@ -532,26 +561,24 @@ export default function QuestionForm() {
                 <div className="flex items-center mb-2">
                   <div className="flex rounded-lg overflow-hidden border border-gray-200 flex-grow">
                     <button
-                      className={`flex-1 py-2 px-4 text-center transition-colors ${
-                        controlMode === "query" 
-                          ? "bg-blue-600 text-white" 
-                          : isLoading 
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                      className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "query"
+                          ? "bg-blue-600 text-white"
+                          : isLoading
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-gray-100 text-gray-600"
-                      }`}
+                        }`}
                       onClick={() => !isLoading && setControlMode("query")}
                       disabled={isLoading}
                     >
                       Query Mode
                     </button>
                     <button
-                      className={`flex-1 py-2 px-4 text-center transition-colors ${
-                        controlMode === "evaluation" 
-                          ? "bg-blue-600 text-white" 
-                          : isLoading 
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                      className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "evaluation"
+                          ? "bg-blue-600 text-white"
+                          : isLoading
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-gray-100 text-gray-600"
-                      }`}
+                        }`}
                       onClick={() => !isLoading && setControlMode("evaluation")}
                       disabled={isLoading}
                     >
@@ -724,28 +751,7 @@ export default function QuestionForm() {
                   </>
                 )}
 
-                {activeQuery && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Active Analysis</h2>
-                    <div className="space-y-2 bg-blue-50 rounded-lg p-3">
-                      <div className="flex items-center">
-                        <span className="text-xs text-blue-500 uppercase font-semibold">Model</span>
-                        <span className="ml-2 text-sm font-mono bg-white px-2 py-1 rounded border border-blue-100">{selectedModel.split('/')[1]}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-xs text-blue-500 uppercase font-semibold">Data</span>
-                        <span className="ml-2 text-sm font-mono bg-white px-2 py-1 rounded border border-blue-100">{sourceFile}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-xs text-blue-500 uppercase font-semibold">Status</span>
-                        <div className="ml-2 flex items-center">
-                          <div className={`backend-status-indicator ${backendStatus === "online" ? "online" : "offline"}`}></div>
-                          <span className="ml-1 text-xs">{backendStatus === "online" ? "Connected" : "Disconnected"}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+  
               </div>
             </div>
           </div>
@@ -788,10 +794,10 @@ export default function QuestionForm() {
                 <div className="flex space-x-2 border-b border-white border-opacity-20">
                   <button
                     className="tab-button px-4 py-2"
-                    data-tab="sql-queries"
-                    onClick={() => switchTab('sql-queries')}
+                    data-tab="live-tool-calls"
+                    onClick={() => switchTab('live-tool-calls')}
                   >
-                    SQL Queries
+                    Live Tool Calls
                   </button>
                   <button
                     className="tab-button px-4 py-2"
@@ -817,7 +823,7 @@ export default function QuestionForm() {
               >
                 {isLoading ? (
                   <div id="tab-content" className="h-full">
-                    <div id="sql-queries-content" className="tab-pane active">
+                    <div id="live-tool-calls-content" className="tab-pane active">
                       <div className="h-full w-full flex flex-col">
                         <div className="flex justify-center items-center mb-4">
                           <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-opacity-20 border-t-white mr-3"></div>
@@ -851,7 +857,7 @@ export default function QuestionForm() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <p className="text-gray-300 text-center">No SQL queries executed yet</p>
+                              <p className="text-gray-300 text-center">No tool calls executed yet</p>
                             </div>
                           )}
                         </div>
@@ -860,7 +866,7 @@ export default function QuestionForm() {
                   </div>
                 ) : content ? (
                   <div id="tab-content" className="h-full">
-                    <div id="sql-queries-content" className="tab-pane active">
+                    <div id="live-tool-calls-content" className="tab-pane active">
                       <div className="h-full w-full flex flex-col">
                         <div id="sql-data-container" className="w-full h-full">
                           {sqlQueries.length > 0 ? (
@@ -889,7 +895,7 @@ export default function QuestionForm() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <p className="text-gray-300 text-center">No SQL queries executed yet</p>
+                              <p className="text-gray-300 text-center">No tool calls executed yet</p>
                             </div>
                           )}
                         </div>
@@ -955,7 +961,7 @@ export default function QuestionForm() {
                               )}
                             </div>
                           ) : (
-                            <p className="text-gray-500 text-center">Evaluation data will be loaded from backend</p>
+                            <p className="text-gray-500 text-center">Something went wrong</p>
                           )}
                         </div>
                       </div>
