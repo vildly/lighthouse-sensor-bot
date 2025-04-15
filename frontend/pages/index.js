@@ -209,7 +209,6 @@ export default function QuestionForm() {
 
     return (
       <div className="mt-4 bg-white bg-opacity-10 rounded-xl p-4">
-        <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
         <div
           ref={queriesContainerRef}
           className="space-y-2 max-h-60 overflow-y-auto"
@@ -626,7 +625,9 @@ export default function QuestionForm() {
                 </div>
               </div>
 
-              <div className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded" style={{ width: '100%', maxWidth: '100%' }}>
+              <div 
+                className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded overflow-x-auto" 
+              >
                 {isLoading ? (
                   <div id="tab-content" className="h-full">
                     <div id="sql-queries-content" className="tab-pane active">
@@ -637,7 +638,6 @@ export default function QuestionForm() {
                         <div id="sql-data-container" className="w-full h-full flex-1">
                           {sqlQueries.length > 0 ? (
                             <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full w-full">
-                              <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
                               <div
                                 ref={queriesContainerRef}
                                 className="space-y-2 overflow-y-auto h-[calc(100%-2rem)] w-full"
@@ -678,7 +678,6 @@ export default function QuestionForm() {
                         <div id="sql-data-container" className="w-full h-full">
                           {sqlQueries.length > 0 ? (
                             <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full">
-                              <h3 className="text-white text-sm font-medium mb-2">SQL Queries</h3>
                               <div
                                 ref={queriesContainerRef}
                                 className="space-y-2 overflow-y-auto h-[calc(100%-2rem)]"
@@ -713,15 +712,36 @@ export default function QuestionForm() {
                     <div id="full-response-content" className="tab-pane hidden">
                       <div className="h-full w-full flex flex-col">
                         <div className="w-full h-full overflow-y-auto bg-white bg-opacity-10 rounded-xl p-4">
-                          {fullResponse ? (
-                            <div className="prose prose-sm max-w-none text-white">
-                              <ReactMarkdown>{fullResponse}</ReactMarkdown>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <p className="text-gray-300 text-center">No full response available</p>
-                            </div>
-                          )}
+                          <ReactMarkdown
+                            className="prose prose-sm max-w-none text-gray-200"
+                            components={{
+                              code({node, inline, className, children, ...props}) {
+                                const match = /language-(\w+)/.exec(className || '')
+                                const language = match ? match[1] : 'text'
+                                return !inline && (language === 'sql' || language === 'mysql') ? (
+                                  <SyntaxHighlighter
+                                    language="sql"
+                                    style={vscDarkPlus}
+                                    customStyle={{
+                                      margin: 0,
+                                      borderRadius: '0.25rem',
+                                      fontSize: '0.875rem',
+                                      padding: '0.5rem'
+                                    }}
+                                    {...props}
+                                  >
+                                    {String(children).replace(/\n$/, '')}
+                                  </SyntaxHighlighter>
+                                ) : (
+                                  <code className="bg-gray-200 px-1 py-0.5 rounded text-gray-800" {...props}>
+                                    {children}
+                                  </code>
+                                )
+                              }
+                            }}
+                          >
+                            {fullResponse || 'No response available'}
+                          </ReactMarkdown>
                         </div>
                       </div>
                     </div>

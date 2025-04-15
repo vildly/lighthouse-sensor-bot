@@ -1,6 +1,9 @@
-DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_query_evaluation;
-DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_llm_models;
-DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_evaluation_metrics;
+DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_query_evaluation ON public.query_evaluation;
+DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_llm_models ON public.llm_models;
+DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_evaluation_metrics ON public.evaluation_metrics;
+DROP TRIGGER IF EXISTS refresh_model_performance_metrics_on_token_usage ON public.token_usage;
+
+DROP FUNCTION IF EXISTS refresh_model_performance_metrics();
 
 DROP MATERIALIZED VIEW IF EXISTS model_performance_metrics;
 
@@ -28,15 +31,20 @@ SELECT
     STDDEV_SAMP(em.rogue_score) FILTER (WHERE em.rogue_score IS NOT NULL) as stddev_rogue_score,
     STDDEV_SAMP(em.string_present) FILTER (WHERE em.string_present IS NOT NULL) as stddev_string_present,
 
-    COUNT(qe.id) as query_evaluation_count
+    COUNT(qe.id) as query_evaluation_count,
+    AVG(tu.total_tokens) FILTER (WHERE tu.total_tokens IS NOT NULL) as avg_total_tokens,
+    AVG(tu.prompt_tokens) FILTER (WHERE tu.prompt_tokens IS NOT NULL) as avg_prompt_tokens,
+    AVG(tu.completion_tokens) FILTER (WHERE tu.completion_tokens IS NOT NULL) as avg_completion_tokens
 FROM
     llm_models lm
 INNER JOIN
-    query_result qr ON lm.id = qr.llm_model_id
+    public.query_result qr ON lm.id = qr.llm_model_id
 INNER JOIN
-    query_evaluation qe ON qr.id = qe.query_result_id
+    public.query_evaluation qe ON qr.id = qe.query_result_id
 LEFT JOIN -- Using LEFT JOIN for metrics is good in case metrics are sometimes missing for an evaluation
-    evaluation_metrics em ON qe.evaluation_metrics_id = em.id
+    public.evaluation_metrics em ON qe.evaluation_metrics_id = em.id
+LEFT JOIN
+    public.token_usage tu ON qr.id = tu.query_result_id
 GROUP BY
     lm.id, lm.name, lm.type
 WITH DATA;
@@ -44,14 +52,12 @@ WITH DATA;
 DROP INDEX IF EXISTS model_performance_metrics_idx;
 CREATE UNIQUE INDEX model_performance_metrics_idx ON model_performance_metrics (model_id);
 
-DROP FUNCTION IF EXISTS refresh_model_performance_metrics();
-
 CREATE OR REPLACE FUNCTION refresh_model_performance_metrics()
 RETURNS TRIGGER AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY model_performance_metrics;
     RETURN NULL;
-EXCEPTION WHEN OTHERS THEN 
+EXCEPTION WHEN OTHERS THEN
     RAISE WARNING 'Could not refresh materialized view model_performance_metrics concurrently: %', SQLERRM;
     BEGIN
         REFRESH MATERIALIZED VIEW model_performance_metrics;
@@ -74,5 +80,10 @@ EXECUTE FUNCTION refresh_model_performance_metrics();
 
 CREATE TRIGGER refresh_model_performance_metrics_on_evaluation_metrics
 AFTER INSERT OR UPDATE OR DELETE ON evaluation_metrics
+FOR EACH STATEMENT
+EXECUTE FUNCTION refresh_model_performance_metrics();
+
+CREATE TRIGGER refresh_model_performance_metrics_on_token_usage
+AFTER INSERT OR UPDATE OR DELETE ON public.token_usage
 FOR EACH STATEMENT
 EXECUTE FUNCTION refresh_model_performance_metrics();

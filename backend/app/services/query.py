@@ -10,7 +10,7 @@ from flask_socketio import emit
 from app.conf.websocket import socketio
 from app.utils.websocket_logger import WebSocketLogHandler
 from app.helpers.extract_answer import extract_answer_for_evaluation
-
+from app.helpers.extract_token_usage import extract_token_usage
 
 def query(data, data_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
@@ -67,6 +67,9 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
 
         # Run the agent
         response = data_analyst.run(question)
+        
+        token_usage = extract_token_usage(response)
+      
         
         # Remove the log handlers
         logger.removeHandler(log_handler)
@@ -126,6 +129,7 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
                     full_response=fullResponse,
                     llm_model_id=llm_model_id,
                     sql_queries=sql_queries,
+                    token_usage=token_usage,
                 )
                 logger.info(f"Query saved to database with model ID: {llm_model_id}")
             except Exception as db_error:
@@ -135,6 +139,7 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
             "content": clean_answer,
             "full_response": fullResponse,
             "sql_queries": sql_queries,
+            "token_usage": token_usage
         }
 
     except Exception as e:
