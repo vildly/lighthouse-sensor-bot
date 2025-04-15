@@ -16,7 +16,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
-      - ./backend/postgres/backups:/docker-entrypoint-initdb.d
+      - ./backend/postgres/init:/docker-entrypoint-initdb.d
 
   pgadmin:
     image: dpage/pgadmin4:latest

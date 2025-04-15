@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, current_app
+import json
+from flask import Blueprint, request, jsonify, current_app, Response
 from app.helpers.load_json_from_file import load_json_from_file
 from dotenv import load_dotenv
 from app.services.query import query
@@ -7,6 +8,8 @@ import pandas as pd
 from app.services.query_with_eval import query_with_eval
 from app.conf.postgres import get_cursor
 import logging
+from pathlib import Path
+from collections import OrderedDict
 
 load_dotenv()
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -165,4 +168,32 @@ def query_data():
 
     except Exception as e:
         logger.error(f"Error fetching model performance: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route("/test-cases", methods=["GET"])
+def get_test_cases():
+    try:
+        # Load test cases from JSON file
+        test_cases_path = Path("app/ragas/test_cases/synthetic_test_cases.json")
+        with open(test_cases_path, "r") as f:
+            test_cases = json.load(f)
+
+        # Create an ordered list of test cases
+        ordered_test_cases = []
+        for test_case in test_cases:
+            ordered_test_case = OrderedDict()
+            ordered_test_case["user_input"] = test_case["user_input"]
+            ordered_test_case["reference_contexts"] = test_case["reference_contexts"]
+            ordered_test_case["reference"] = test_case["reference"]
+            ordered_test_case["synthesizer_name"] = test_case["synthesizer_name"]
+            ordered_test_cases.append(ordered_test_case)
+
+        response_data = {"test_cases": ordered_test_cases}
+        
+        return Response(
+            json.dumps(response_data, indent=2),
+            mimetype="application/json"
+        )
+    except Exception as e:
+        logger.error(f"Error fetching test cases: {e}")
         return jsonify({"error": str(e)}), 500
