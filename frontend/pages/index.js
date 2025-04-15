@@ -445,19 +445,30 @@ export default function QuestionForm() {
               </div>
 
               <div className="mb-4">
-                <div className="flex rounded-lg overflow-hidden border border-gray-200">
-                  <button
-                    className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "query" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
-                    onClick={() => setControlMode("query")}
-                  >
-                    Query Mode
-                  </button>
-                  <button
-                    className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "evaluation" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
-                    onClick={() => setControlMode("evaluation")}
-                  >
-                    Evaluation Mode
-                  </button>
+                <div className="flex items-center mb-2">
+                  <div className="flex rounded-lg overflow-hidden border border-gray-200 flex-grow">
+                    <button
+                      className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "query" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                      onClick={() => setControlMode("query")}
+                    >
+                      Query Mode
+                    </button>
+                    <button
+                      className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "evaluation" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                      onClick={() => setControlMode("evaluation")}
+                    >
+                      Evaluation Mode
+                    </button>
+                  </div>
+                  <div className="relative ml-2 group">
+                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center cursor-help">
+                      <span className="text-gray-600 font-semibold">?</span>
+                    </div>
+                    <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      <p className="mb-1"><strong>Query Mode:</strong> Ask questions about the dataset and get AI-generated analysis.</p>
+                      <p><strong>Evaluation Mode:</strong> Benchmark a model's performance with predefined test cases and metrics.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -690,13 +701,15 @@ export default function QuestionForm() {
                   >
                     Full Response
                   </button>
-                  <button
-                    className="tab-button px-4 py-2"
-                    data-tab="evaluation"
-                    onClick={() => switchTab('evaluation')}
-                  >
-                    Evaluation
-                  </button>
+                  {controlMode === "evaluation" && (
+                    <button
+                      className="tab-button px-4 py-2"
+                      data-tab="evaluation"
+                      onClick={() => switchTab('evaluation')}
+                    >
+                      Evaluation
+                    </button>
+                  )}
                 </div>
               </div>
 
