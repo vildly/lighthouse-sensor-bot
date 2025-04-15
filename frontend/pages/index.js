@@ -21,6 +21,22 @@ export default function QuestionForm() {
   const [controlMode, setControlMode] = useState("query"); // "query" or "evaluation"
   const [testCases, setTestCases] = useState(null);
 
+  const [queryModeState, setQueryModeState] = useState({
+    content: null,
+    fullResponse: null,
+    sqlQueries: [],
+    modelUsed: null,
+    activeQuery: false
+  });
+
+  const [evaluationModeState, setEvaluationModeState] = useState({
+    content: null,
+    fullResponse: null,
+    evaluationResults: null,
+    sqlQueries: [],
+    activeQuery: false
+  });
+
   const fetchTestCases = async () => {
     try {
       const response = await fetch("/api/test-cases");
@@ -91,6 +107,51 @@ export default function QuestionForm() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    // Save current state when switching modes
+    if (controlMode === "query") {
+      // Coming from evaluation mode, save evaluation state
+      setEvaluationModeState({
+        content,
+        fullResponse,
+        evaluationResults,
+        sqlQueries,
+        activeQuery
+      });
+      
+      // Restore query mode state
+      setContent(queryModeState.content);
+      setFullResponse(queryModeState.fullResponse);
+      setModelUsed(queryModeState.modelUsed);
+      setActiveQuery(queryModeState.activeQuery);
+      
+      // Reset evaluation-specific state
+      setEvaluationResults(null);
+      
+      resetQueries();
+
+    } else {
+      // Coming from query mode, save query state
+      setQueryModeState({
+        content,
+        fullResponse,
+        modelUsed,
+        sqlQueries,
+        activeQuery
+      });
+      
+      // Restore evaluation mode state
+      setContent(evaluationModeState.content);
+      setFullResponse(evaluationModeState.fullResponse);
+      setEvaluationResults(evaluationModeState.evaluationResults);
+      setActiveQuery(evaluationModeState.activeQuery);
+      
+
+      resetQueries();
+
+    }
+  }, [controlMode]);
+
   const askQuestion = async () => {
     if (question.trim() === "") {
       setContent("Please enter a question");
@@ -101,9 +162,6 @@ export default function QuestionForm() {
     setContent(null);
     setActiveQuery(true);
     resetQueries(); // Reset SQL queries for new question
-
-    // Switch to SQL queries tab immediately when starting a query
-    switchTab('sql-queries');
 
     try {
       const response = await fetch("/api/query", {
@@ -123,11 +181,20 @@ export default function QuestionForm() {
       }
 
       const data = await response.json();
+      
+      // Only update query mode state, not evaluation mode state
       setContent(data.content);
       setFullResponse(data.full_response);
       setModelUsed(selectedModel);
-
-
+      
+      // Update query mode state with all relevant data
+      setQueryModeState({
+        content: data.content,
+        fullResponse: data.full_response,
+        modelUsed: selectedModel,
+        sqlQueries: sqlQueries,
+        activeQuery: true
+      });
     } catch (error) {
       console.error("Error asking question:", error);
       setContent("Error connecting to the backend: " + error.message);
@@ -290,17 +357,34 @@ export default function QuestionForm() {
       // console.log('Evaluation data:', data);
 
       if (data.error) {
+        // Only update evaluation mode state, not query mode state
         setContent(`## Error during evaluation\n${data.error}`);
         setFullResponse(`## Error during evaluation\n${data.error}`);
         setEvaluationResults(null);
+        
+        setEvaluationModeState({
+          content: `## Error during evaluation\n${data.error}`,
+          fullResponse: `## Error during evaluation\n${data.error}`,
+          evaluationResults: null,
+          sqlQueries: sqlQueries,
+          activeQuery: true
+        });
       } else {
+        // Only update evaluation mode state, not query mode state
         setEvaluationResults(data.results);
         setContent("## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.");
-
-        // Set the full response if available
+        
         if (data.full_response) {
           setFullResponse(data.full_response);
         }
+        
+        setEvaluationModeState({
+          content: "## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.",
+          fullResponse: data.full_response || null,
+          evaluationResults: data.results,
+          sqlQueries: sqlQueries,
+          activeQuery: true
+        });
 
         // Switch to evaluation tab after a short delay to ensure state updates are processed
         setTimeout(() => {
@@ -448,14 +532,28 @@ export default function QuestionForm() {
                 <div className="flex items-center mb-2">
                   <div className="flex rounded-lg overflow-hidden border border-gray-200 flex-grow">
                     <button
-                      className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "query" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
-                      onClick={() => setControlMode("query")}
+                      className={`flex-1 py-2 px-4 text-center transition-colors ${
+                        controlMode === "query" 
+                          ? "bg-blue-600 text-white" 
+                          : isLoading 
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                            : "bg-gray-100 text-gray-600"
+                      }`}
+                      onClick={() => !isLoading && setControlMode("query")}
+                      disabled={isLoading}
                     >
                       Query Mode
                     </button>
                     <button
-                      className={`flex-1 py-2 px-4 text-center transition-colors ${controlMode === "evaluation" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
-                      onClick={() => setControlMode("evaluation")}
+                      className={`flex-1 py-2 px-4 text-center transition-colors ${
+                        controlMode === "evaluation" 
+                          ? "bg-blue-600 text-white" 
+                          : isLoading 
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                            : "bg-gray-100 text-gray-600"
+                      }`}
+                      onClick={() => !isLoading && setControlMode("evaluation")}
+                      disabled={isLoading}
                     >
                       Evaluation Mode
                     </button>
@@ -465,8 +563,9 @@ export default function QuestionForm() {
                       <span className="text-gray-600 font-semibold">?</span>
                     </div>
                     <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                      <p className="mb-1"><strong>Query Mode:</strong> Ask questions about the dataset and get AI-generated analysis.</p>
-                      <p><strong>Evaluation Mode:</strong> Benchmark a model's performance with predefined test cases and metrics.</p>
+                      <p className="mb-1"><strong>Query Mode:</strong> Ask questions about the ferry data and get AI-generated analysis.</p>
+                      <p><strong>Evaluation Mode:</strong> Test the model's performance against predefined test cases to measure accuracy and reliability.</p>
+                      {isLoading && <p className="mt-1 text-yellow-300">Mode switching is disabled while a query is running.</p>}
                     </div>
                   </div>
                 </div>
