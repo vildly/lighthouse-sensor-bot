@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -40,7 +40,8 @@ const COLORS = [
   'rgba(23, 190, 207, 0.8)'
 ];
 
-export default function ModelPerformanceChart() {
+const ModelPerformanceChart = forwardRef(function ModelPerformanceChart(props, ref) {
+  const { setPageLoading } = props;
   const [performanceData, setPerformanceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,33 +50,39 @@ export default function ModelPerformanceChart() {
   const [modelTypeFilter, setModelTypeFilter] = useState(null);
   const [metricType, setMetricType] = useState('performance');
   
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        
-        const params = new URLSearchParams();
-        if (modelTypeFilter) {
-          params.append('type', modelTypeFilter);
-        }
-        
-        const response = await fetch(`/api/model-performance?${params.toString()}`);
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching model performance: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        setPerformanceData(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching model performance:', err);
-        setError('Failed to load model performance data');
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      if (setPageLoading) setPageLoading(true);
+      
+      const params = new URLSearchParams();
+      if (modelTypeFilter) {
+        params.append('type', modelTypeFilter);
       }
+      
+      const response = await fetch(`/api/model-performance?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching model performance: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setPerformanceData(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching model performance:', err);
+      setError('Failed to load model performance data');
+    } finally {
+      setLoading(false);
+      if (setPageLoading) setPageLoading(false);
     }
-    
+  };
+  
+  useImperativeHandle(ref, () => ({
+    refreshData: fetchData
+  }));
+  
+  useEffect(() => {
     fetchData();
   }, [modelTypeFilter]);
 
@@ -191,7 +198,7 @@ export default function ModelPerformanceChart() {
   return (
     <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 w-full">
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-4">Model Performance Metrics</h2>
+       
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
@@ -462,4 +469,6 @@ export default function ModelPerformanceChart() {
       </div>
     </div>
   );
-} 
+});
+
+export default ModelPerformanceChart; 
