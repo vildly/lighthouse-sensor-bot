@@ -1,13 +1,13 @@
 version: '3.8'
-name: 2dv50e
+name: 2dv50e-test
 services:
   
   postgres:
     image: postgres:latest
-    container_name: postgres-container-2dv50e
+    container_name: postgres-container-2dv50e-test
     restart: always
     networks:
-      - 2dv50e
+      - 2dv50e-test
     ports:
       - "5432:5432"
     environment:
@@ -16,11 +16,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
-      - ./backend/postgres/init:/docker-entrypoint-initdb.d
-
+      - ./backend/postgres/init/db_schemas.sql:/docker-entrypoint-initdb.d/db_schemas.sql
+      - ./backend/postgres/init/01-init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
+      - ./backend/postgres/init/insert_models.sql:/docker-entrypoint-initdb.d/insert_models.sql
+      
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin-container-2dv50e
+    container_name: pgadmin-container-2dv50e-test
     restart: always
     ports:
       - "8081:80"
@@ -40,7 +42,7 @@ services:
     ports:
           - 5000:5000
     networks:
-      - 2dv50e
+      - 2dv50e-test
     environment:
       - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=${DB_HOST}
@@ -59,7 +61,7 @@ services:
     ports:
       - "3000:3000"  
     networks:
-      - 2dv50e
+      - 2dv50e-test
     environment:
       - DEV_MODE=true
       - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
@@ -67,5 +69,5 @@ services:
       - backend
 
 networks:
-  2dv50e:
+  2dv50e-test:
     driver: bridge
