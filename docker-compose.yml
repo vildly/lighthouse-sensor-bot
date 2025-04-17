@@ -1,13 +1,13 @@
 version: '3.8'
-name: 2dv50e-test
+name: lighthouse
 services:
   
   postgres:
     image: postgres:latest
-    container_name: postgres-container-2dv50e-test
+    container_name: postgres-container-lighthouse
     restart: always
     networks:
-      - 2dv50e-test
+      - lighthouse
     ports:
       - "5432:5432"
     environment:
@@ -22,7 +22,7 @@ services:
       
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin-container-2dv50e-test
+    container_name: pgadmin-container-lighthouse
     restart: always
     ports:
       - "8081:80"
@@ -42,7 +42,7 @@ services:
     ports:
           - 5000:5000
     networks:
-      - 2dv50e-test
+      - lighthouse
     environment:
       - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=${DB_HOST}
@@ -61,7 +61,7 @@ services:
     ports:
       - "3000:3000"  
     networks:
-      - 2dv50e-test
+      - lighthouse
     environment:
       - DEV_MODE=true
       - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
@@ -69,5 +69,5 @@ services:
       - backend
 
 networks:
-  2dv50e-test:
+  lighthouse:
     driver: bridge
