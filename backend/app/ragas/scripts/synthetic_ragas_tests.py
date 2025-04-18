@@ -34,6 +34,8 @@ RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 
 DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 
+# OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 # Initialize LLM and Embeddings wrappers
 
 # evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
