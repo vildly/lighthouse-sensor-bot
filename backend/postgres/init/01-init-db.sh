@@ -1,20 +1,20 @@
 #!/bin/bash
 set -e
 
-# Check if llm_models table already exists and capture the actual result
+# Check if llm_models as a proxy for if the database is initialized
 TABLE_EXISTS=$(psql -t -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "SELECT EXISTS (
     SELECT FROM information_schema.tables 
     WHERE table_schema = 'public' 
     AND table_name = 'llm_models'
   );" | grep -v '^$')
 
-# Trim whitespace
+
 TABLE_EXISTS=$(echo "$TABLE_EXISTS" | xargs)
 
 echo "Table existence check result: '$TABLE_EXISTS'"
 
-# Check the actual result (t for true, f for false)
 if [ "$TABLE_EXISTS" = "f" ]; then
+# Initialize the database schema
   echo "Database tables not found. Initializing database schema..."
   psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/db_schemas.sql
   
