@@ -13,8 +13,11 @@ Lighthouse is a data analysis application that uses natural language queries to 
 - **Docker** installed on your system.
 - **OpenRouter API key** for accessing language model functionalities.
 - **OpenAI API key** used when evaluating model responses using RAGAS metrics.
-- **DeepSeek API key** used when evaluating model responses using RAGAS metrics.
-- **RAGAS App token** used when evaluating model responses using RAGAS metrics.
+- **DeepSeek API key** optional, used when evaluating model responses using RAGAS metrics. (Much cheaper than OpenAI.)
+
+**(You can choose between OpenAI and DeepSeek for evaluation, however, OpenAI key is required in either case for creating embeddings. If a DeepSeek key is provided in the backend .env file, it will be used for evaluation.)**
+
+- **RAGAS App token** optional, used for uploading evaluation results to RAGAS app dashboard.
 
 ## Setup Instructions
 
@@ -41,7 +44,7 @@ In the root directory, run:
 ```bash
 docker-compose up -d --build
 ```
-
+The PostgresQL database will be automatically initialized with the neccessary schema and data.
 The frontend will be available at http://localhost:3000.
 
 ## Using the Application
@@ -53,6 +56,3 @@ The frontend will be available at http://localhost:3000.
 To evaluate a model, click the "Evaluate" button. This will run predefined queries and evaluate the model's performance using RAGAS metrics. You cannot submit your own queries when evaluating, due to the nature of the RAGAS evaluation requring a ground truth and reference context. 
 
 In the Evaluation tab, you can see the average RAGAS scores for each model with graphs.
-
-
-## Troubleshooting
