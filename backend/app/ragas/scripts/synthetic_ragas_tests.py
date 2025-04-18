@@ -8,7 +8,7 @@ from ragas.metrics import RougeScore
 from ragas.metrics import StringPresence
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-# from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain_deepseek import ChatDeepSeek
 from langchain_openai import OpenAIEmbeddings
 import os
@@ -34,12 +34,16 @@ RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
 
 DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 
-# OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # Initialize LLM and Embeddings wrappers
+if DEEPSEEK_API_KEY:
+  print("Using DeepSeek API key")
+  evaluator_llm = LangchainLLMWrapper(ChatDeepSeek(model="deepseek-chat", temperature=0))
+if not DEEPSEEK_API_KEY:
+  print("Using OpenAI API key")
+  evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
 
-# evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
-evaluator_llm = LangchainLLMWrapper(ChatDeepSeek(model="deepseek-chat", temperature=0))
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 def run_test_case(query, ground_truth, llm_model_id):
@@ -169,7 +173,11 @@ def run_synthetic_evaluation(llm_model_id, progress_callback: Optional[Callable]
     if progress_callback:
         progress_callback(7, 8, "Finalizing results")
     
-    ragas_results.upload()
+    RAGAS_APP_TOKEN = os.getenv('RAGAS_APP_TOKEN')
+    
+    if RAGAS_APP_TOKEN:
+      print("Uploading results to RAGAS app")
+      ragas_results.upload()
     
     return ragas_results, results_df
 
