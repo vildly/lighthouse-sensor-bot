@@ -1,4 +1,4 @@
-# lighthouse
+# lighthouse bot
 
 ## Overview
 
