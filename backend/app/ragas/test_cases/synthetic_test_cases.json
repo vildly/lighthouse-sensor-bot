@@ -1,10 +1,10 @@
 [
   {
-    "user_input": "Wht is the Ljuster\u00f6leden feri route detals?",
+    "user_input": "What is the total fuel cost for ferry Jupiter in January 2024 assuming that the price per liter is 20 sek?",
     "reference_contexts": [
-      "route_id: 16, route_name: Ljuster\u00f6leden, ferry_name: Jupiter, ferry_id: 345, terminal_departure: Ljuster\u00f6                                          , terminal_arrival: \u00d6stan\u00e5                                            , time_departure: 2024-01-11 13:00:00, cars_outbound: 22, trucks_outbound: 2, trucks_with_trailer_outbound: 0, motorcycles_outbound: 0, exemption_vehicles_outbound: 0, pedestrians_outbound: 2, buses_outbound: 0, vehicles_left_at_terminal_outbound: 0, cars_inbound: 17, trucks_inbound: 3, trucks_with_trailer_inbound: 0, motorcycles_inbound: 0, exemption_vehicles_inbound: 0, pedestrians_inbound: 2, buses_inbound: 0, vehicles_left_at_terminal_inbound: 0, trip_type: ordinary           , passenger_car_equivalent_outbound_and_inbound: 51.5, tailored_trip: 0, full_ferry_outbound: 0, full_ferry_inbound: 0, passenger_car_equivalent_outbound: 27.0, passenger_car_equivalent_inbound: 24.5, fuelcons_outbound_l: nan, distance_outbound_nm: nan, start_time_outbound: nan, end_time_outbound: nan, fuelcons_inbound_l: nan, distance_inbound_nm: nan, start_time_inbound: nan, end_time_inbound: nan"
+      "Total fuel consumption for ferry Jupiter in January 2024: 12709.34 liters"
     ],
-    "reference": "The Ljuster\u00f6leden ferry route, identified by route_id 16, is operated by the ferry named Jupiter with ferry_id 345. It departs from the terminal at Ljuster\u00f6 and arrives at the terminal at \u00d6stan\u00e5. The scheduled departure time is 2024-01-11 at 13:00:00. On the outbound trip, there are 22 cars, 2 trucks, and 2 pedestrians, with no motorcycles, trucks with trailers, exemption vehicles, or buses. No vehicles were left at the terminal outbound. On the inbound trip, there are 17 cars, 3 trucks, and 2 pedestrians, with no motorcycles, trucks with trailers, exemption vehicles, or buses. No vehicles were left at the terminal inbound. The trip type is ordinary, with a passenger car equivalent of 51.5 for both outbound and inbound trips. The ferry was not full on either the outbound or inbound trips.",
+    "reference": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]

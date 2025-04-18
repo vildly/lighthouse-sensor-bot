@@ -9,7 +9,8 @@ import re
 from flask_socketio import emit
 from app.conf.websocket import socketio
 from app.utils.websocket_logger import WebSocketLogHandler
-
+from app.helpers.extract_answer import extract_answer_for_evaluation
+from app.helpers.extract_token_usage import extract_token_usage
 
 def query(data, data_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
@@ -67,6 +68,9 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
         # Run the agent
         response = data_analyst.run(question)
         
+        token_usage = extract_token_usage(response)
+      
+        
         # Remove the log handlers
         logger.removeHandler(log_handler)
         logger.removeHandler(websocket_handler)
@@ -104,49 +108,18 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
                 unique_queries.append(query)
         sql_queries = unique_queries
 
-        fullResponse = response.content
-
-        # Extract the answer section using regex - get the LAST answer section
-        answer_sections = re.findall(
-            r"## Answer\s*(.*?)(?=\s*##|$)", fullResponse, re.DOTALL
-        )
-        if answer_sections:
-            clean_answer = answer_sections[-1].strip()  # Use the last answer section
-        else:
-            # Fallback: Split on the Analysis section header to get just the answer
-            parts = fullResponse.split("## Analysis")
-            clean_answer = parts[0].strip() if parts else fullResponse.strip()
-
-            # If the answer still contains planning steps, try to extract just the actual answer
-            if clean_answer and re.match(r"^\d+\.", clean_answer):
-                # Look for sentences containing "average speed" or similar phrases
-                speed_match = re.search(
-                    r"[^.]*average speed[^.]*\.", clean_answer, re.IGNORECASE
-                )
-                if speed_match:
-                    clean_answer = speed_match.group(0).strip()
-                else:
-                    # Remove numbered planning steps
-                    clean_answer = re.sub(
-                        r"^\d+\.\s+.*?(?=\n\d+\.\s+The|$)",
-                        "",
-                        clean_answer,
-                        flags=re.DOTALL,
-                    )
-                    clean_answer = re.sub(r"^\d+\.\s+", "", clean_answer)
-
-        # If we still don't have a clean answer, look for it in the full response
-        if not clean_answer or clean_answer.isspace():
-            # Look for sentences containing "average speed" in the full response
-            speed_match = re.search(
-                r"[^.]*average speed[^.]*\.", fullResponse, re.IGNORECASE
-            )
-            if speed_match:
-                clean_answer = speed_match.group(0).strip()
-            else:
-                # Generic fallback
-                clean_answer = "Unable to extract a clear answer from the response."
-
+        # Format the full response as markdown
+        fullResponse = "# Query Results\n\n"
+        fullResponse += f"## Question\n{question}\n\n"
+        if sql_queries:
+            fullResponse += "## SQL Queries\n"
+            for sql in sql_queries:
+                fullResponse += f"```sql\n{sql}\n```\n\n"
+        fullResponse += f"## Response\n{response.content}\n\n"
+        
+        # Extract clean answer
+        clean_answer = extract_answer_for_evaluation(response.content)
+        
         # Save the query and response to the database if model ID is provided
         if llm_model_id:
             try:
@@ -156,6 +129,7 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
                     full_response=fullResponse,
                     llm_model_id=llm_model_id,
                     sql_queries=sql_queries,
+                    token_usage=token_usage,
                 )
                 logger.info(f"Query saved to database with model ID: {llm_model_id}")
             except Exception as db_error:
@@ -165,6 +139,7 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
             "content": clean_answer,
             "full_response": fullResponse,
             "sql_queries": sql_queries,
+            "token_usage": token_usage
         }
 
     except Exception as e:

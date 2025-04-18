@@ -52,7 +52,7 @@
 .arc-navbar {
   border-radius: 3rem;
   margin: 1rem 4rem;
-  background-color: black;
+  background-color:rgb(69, 69, 218);
   border: none;
   outline: none;
   position: relative;
@@ -64,16 +64,16 @@
   overflow: visible;
 }
 
-/* Update the card styling to be more transparent */
+
 .transparent-card {
-  background-color: rgba(255, 255, 255, 0.50); /* Reduced opacity from 0.70 to 0.50 */
+  background-color: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
   transition: all 0.2s ease;
   width: 100%;
   flex: 1;
-  min-width: 0; /* Prevents flex items from growing beyond their container */
+  min-width: 0; 
 }
 
 .transparent-card:hover {
@@ -274,10 +274,8 @@ select:hover,
   background-color: rgba(255, 255, 255, 0.35); /* More transparent background */
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 0.75rem;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important; /* Prevents content from causing container to expand */
-  flex-shrink: 0 !important;
+  width: 100%; /* Let it fill its grid column */
+  max-width: 100%;
 }
 
 /* Card text color updates */
@@ -326,7 +324,6 @@ select:hover,
 .active-analysis-container h2,
 .active-analysis-container h3 {
   color: rgba(0, 0, 0, 0.8);
-  background-color: rgba(255, 255, 255, 0.4);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   margin: -0.25rem -0.25rem 0.5rem -0.25rem;
@@ -493,7 +490,6 @@ header {
   flex-direction: column;
 }
 
-/* Fix for SQL queries display */
 .tab-pane {
   display: none;
   height: 100%;
@@ -506,7 +502,6 @@ header {
   flex-direction: column;
 }
 
-/* Fix for SyntaxHighlighter component */
 pre {
   width: 100% !important;
   max-width: 100% !important;
@@ -555,13 +550,13 @@ pre {
   font-family: monospace;
 }
 
-.prose pre {
+/* .prose pre {
   background-color: rgba(0, 0, 0, 0.05);
   padding: 0.75rem;
   border-radius: 0.25rem;
   overflow-x: auto;
   margin-bottom: 0.75rem;
-}
+} */
 
 .prose strong {
   font-weight: 700;
@@ -595,35 +590,90 @@ pre {
   font-weight: 600;
 }
 
-/* Add styling for markdown in the full response tab */
 #full-response-content .prose {
-  color: white;
+  color: #000000 !important; 
 }
 
 #full-response-content .prose h1,
 #full-response-content .prose h2,
-#full-response-content .prose h3 {
-  color: white;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding-bottom: 0.5rem;
-  margin-top: 1.5rem;
+#full-response-content .prose h3,
+#full-response-content .prose h4,
+#full-response-content .prose h5,
+#full-response-content .prose h6,
+#full-response-content .prose p,
+#full-response-content .prose ul,
+#full-response-content .prose ol,
+#full-response-content .prose li {
+  color: #000000 !important; 
 }
+
 
 #full-response-content .prose code {
   background-color: rgba(0, 0, 0, 0.3);
   color: #f8f8f8;
-  padding: 0.2rem 0.4rem;
-  border-radius: 0.25rem;
+  /* padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem; */
 }
 
-#full-response-content .prose pre {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 0.25rem;
-  padding: 1rem;
-  margin: 1rem 0;
+@keyframes progress-bar-stripes {
+  from { background-position: 1rem 0; }
+  to { background-position: 0 0; }
 }
 
-#full-response-content .prose strong {
-  color: #4ade80;
-  font-weight: 700;
+.progress-bar-animated {
+  animation: progress-bar-stripes 1s linear infinite;
+}
+
+.progress-bar-striped {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+}
+
+/* History page specific styles */
+.history-table th {
+  position: relative;
+}
+
+.history-table th:after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.history-table th.sort-asc:after {
+  content: '↑';
+}
+
+.history-table th.sort-desc:after {
+  content: '↓';
+}
+
+/* Modal backdrop animation */
+.modal-backdrop {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal-content {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 } 

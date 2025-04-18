@@ -1,5 +1,5 @@
 import nltk
-from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import typing as t
 from dataclasses import dataclass, field
 from ragas.dataset_schema import SingleTurnSample
@@ -34,7 +34,13 @@ class BleuScore(SingleTurnMetric):
         reference_tokens = [sample.reference.split()]
         response_tokens = sample.response.split()
         
-        # Calculate BLEU score
-        score = sentence_bleu(reference_tokens, response_tokens)
+        # Use smoothing function to handle cases with zero n-gram overlaps
+        smoothing = SmoothingFunction().method1
+        
+        # Calculate BLEU score with smoothing
+        # Using weights for 1-gram, 2-gram, 3-gram, and 4-gram (equal weights)
+        score = sentence_bleu(reference_tokens, response_tokens, 
+                             weights=(0.25, 0.25, 0.25, 0.25),
+                             smoothing_function=smoothing)
         
         return float(score) # type: ignore
