@@ -56,3 +56,15 @@ The frontend will be available at http://localhost:3000.
 To evaluate a model, click the "Evaluate" button. This will run predefined queries and evaluate the model's performance using RAGAS metrics. You cannot submit your own queries when evaluating, due to the nature of the RAGAS evaluation requring a ground truth and reference context. 
 
 In the Evaluation tab, you can see the average RAGAS scores for each model with graphs.
+
+## Troubleshooting
+
+If you encounter any issues, please do the following:
+
+1. Ensure that the Docker containers are running properly.
+2. Check the logs for any error messages.
+3. Ensure that the environment variables are correctly set.
+
+## Known issues
+
+Every now and then a model will try to use a tool that doesn't exist or other errors from the LLMwill occur. Currently this results in a 500 status code as response. We are working on a more graceful solution.
