@@ -48,7 +48,7 @@ if not output_dir.exists():
 # --- Database Initialization ---
 from app.conf.postgres import init_db
 
-init_db()
+# init_db()
 
 # --- Register Routes ---
 from app.routes.api import api_bp

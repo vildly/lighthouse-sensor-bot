@@ -24,14 +24,24 @@ SET row_security = off;
 -- Name: refresh_full_query_data(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.refresh_full_query_data() RETURNS trigger
+-- ***** MODIFIED FUNCTION START *****
+CREATE OR REPLACE FUNCTION public.refresh_full_query_data() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW full_query_data;
-    RETURN NULL;
+    -- Check if the core driving table has any data. If not, exit early.
+    IF NOT EXISTS (SELECT 1 FROM public.query_result LIMIT 1) THEN
+        RAISE NOTICE 'Trigger % on table %: Skipping refresh of full_query_data as query_result table appears empty.', TG_NAME, TG_TABLE_NAME;
+        RETURN NULL; -- Exit without attempting refresh
+    END IF;
+
+    -- If data exists, proceed with the refresh
+    RAISE NOTICE 'Trigger % on table %: Refreshing materialized view full_query_data.', TG_NAME, TG_TABLE_NAME;
+    REFRESH MATERIALIZED VIEW public.full_query_data;
+    RETURN NULL; -- Important for AFTER triggers
 END;
 $$;
+-- ***** MODIFIED FUNCTION END *****
 
 
 ALTER FUNCTION public.refresh_full_query_data() OWNER TO postgres;
@@ -41,22 +51,38 @@ ALTER FUNCTION public.refresh_full_query_data() OWNER TO postgres;
 -- Name: refresh_model_performance_metrics(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.refresh_model_performance_metrics() RETURNS trigger
+-- ***** MODIFIED FUNCTION START *****
+CREATE OR REPLACE FUNCTION public.refresh_model_performance_metrics() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY model_performance_metrics;
-    RETURN NULL;
-EXCEPTION WHEN OTHERS THEN
-    RAISE WARNING 'Could not refresh materialized view model_performance_metrics concurrently: %', SQLERRM;
+    -- Check if the core driving table has any data. If not, exit early.
+    -- We check query_result as model performance metrics depend on evaluated queries.
+    IF NOT EXISTS (SELECT 1 FROM public.query_result LIMIT 1) THEN
+        RAISE NOTICE 'Trigger % on table %: Skipping refresh of model_performance_metrics as query_result table appears empty.', TG_NAME, TG_TABLE_NAME;
+        RETURN NULL; -- Exit without attempting refresh
+    END IF;
+
+    -- If data exists, proceed with the refresh attempts
+    RAISE NOTICE 'Trigger % on table %: Attempting concurrent refresh of materialized view model_performance_metrics.', TG_NAME, TG_TABLE_NAME;
     BEGIN
-        REFRESH MATERIALIZED VIEW model_performance_metrics;
+        REFRESH MATERIALIZED VIEW CONCURRENTLY public.model_performance_metrics;
+        RAISE NOTICE 'Trigger % on table %: Concurrent refresh successful.', TG_NAME, TG_TABLE_NAME;
     EXCEPTION WHEN OTHERS THEN
-        RAISE WARNING 'Could not refresh materialized view model_performance_metrics: %', SQLERRM;
+        RAISE WARNING 'Trigger % on table %: Could not refresh materialized view model_performance_metrics concurrently: %', TG_NAME, TG_TABLE_NAME, SQLERRM;
+        BEGIN
+            RAISE NOTICE 'Trigger % on table %: Attempting non-concurrent refresh of materialized view model_performance_metrics.', TG_NAME, TG_TABLE_NAME;
+            REFRESH MATERIALIZED VIEW public.model_performance_metrics;
+             RAISE NOTICE 'Trigger % on table %: Non-concurrent refresh successful.', TG_NAME, TG_TABLE_NAME;
+        EXCEPTION WHEN OTHERS THEN
+            RAISE WARNING 'Trigger % on table %: Could not refresh materialized view model_performance_metrics (non-concurrently): %', TG_NAME, TG_TABLE_NAME, SQLERRM;
+        END;
     END;
-    RETURN NULL;
+
+    RETURN NULL; -- Important for AFTER triggers
 END;
 $$;
+-- ***** MODIFIED FUNCTION END *****
 
 
 ALTER FUNCTION public.refresh_model_performance_metrics() OWNER TO postgres;
@@ -574,4 +600,3 @@ ALTER TABLE ONLY public.token_usage
 --
 -- PostgreSQL database dump complete
 --
-
