@@ -29,13 +29,17 @@ Create a `.env` file in the backend directory.
 
 Copy the backend-example.env file to .env and update the variables.
 
-For the frontend, create a `.env.development.local` file. (This can be omitted if you don't want to run the frontend in development mode.)
+For the frontend, create a `.env.development.local` file. (This can be omitted if you don't want to run the frontend in development mode from terminal.)
 
 Copy the frontend-example.env.development.local file to .env.development.local and update the variable if needed.
 
 Create a `.env` file in the root directory.
 
 Copy the root-example.env file to .env and update the variables.
+
+### 1.1 For ARM64 architecture
+
+Change the Dockerfile in the backend directory to use the arm64 python image.
 
 ### 2. Start the Application
 
