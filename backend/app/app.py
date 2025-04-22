@@ -39,11 +39,6 @@ data_dir = cwd.parent.joinpath("data")  # Directory for data files
 if not data_dir.exists():
     data_dir.mkdir(parents=True)
 
-# Create output directory for saving query results
-output_dir = cwd.parent.joinpath("output")
-if not output_dir.exists():
-    output_dir.mkdir(parents=True)
-
 
 # --- Database Initialization ---
 from app.conf.postgres import init_db
@@ -60,7 +55,7 @@ app.register_blueprint(api_bp)
 # app.config['DATA_ANALYST'] = data_analyst
 app.config['SEMANTIC_MODEL'] = load_json_from_file(data_dir.joinpath("semantic_model.json"))
 app.config['DATA_DIR'] = data_dir
-app.config['OUTPUT_DIR'] = output_dir
+# app.config['OUTPUT_DIR'] = output_dir
 
 # Setup websocket routes
 from app.routes.websocket import setup_websocket_routes

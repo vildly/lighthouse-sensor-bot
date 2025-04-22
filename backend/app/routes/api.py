@@ -27,8 +27,6 @@ def query_endpoint():
 
     # Get the necessary objects from app config
     data_dir = current_app.config["DATA_DIR"]
-    output_dir = current_app.config["OUTPUT_DIR"]
-
     # Get source_file from request if provided
     source_file = data.get("source_file")
 
