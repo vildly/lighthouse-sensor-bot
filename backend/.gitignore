@@ -2,3 +2,5 @@
 output/
 
 tmp.txt
+
+failed_tests/

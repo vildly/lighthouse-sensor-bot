@@ -84,7 +84,7 @@ def save_query_with_eval_to_db(
 
     required_keys = {
         "retrieved_contexts": (str, type(None)),
-        "reference": (str, type(None)),
+        "ground_truth": (str, type(None)),
         "factual_correctness": (float, int, type(None)),
         "semantic_similarity": (float, int, type(None)),
         "context_recall": (float, int, type(None)),
@@ -134,12 +134,12 @@ def save_query_with_eval_to_db(
             cursor.execute(
                 """
                 INSERT INTO query_evaluation (
-                    retrieved_contexts, reference, query_result_id, evaluation_metrics_id
+                    retrieved_contexts, ground_truth, query_result_id, evaluation_metrics_id
                 ) VALUES (%s, %s, %s, %s) RETURNING id
                 """,
                 (
                     evaluation_results.get("retrieved_contexts"),
-                    evaluation_results.get("reference"),
+                    evaluation_results.get("ground_truth"),
                     query_result_id,
                     evaluation_metrics_id,
                 ),

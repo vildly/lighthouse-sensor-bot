@@ -180,9 +180,9 @@ def get_test_cases():
         ordered_test_cases = []
         for test_case in test_cases:
             ordered_test_case = OrderedDict()
-            ordered_test_case["user_input"] = test_case["user_input"]
+            ordered_test_case["query"] = test_case["query"]
             ordered_test_case["reference_contexts"] = test_case["reference_contexts"]
-            ordered_test_case["reference"] = test_case["reference"]
+            ordered_test_case["ground_truth"] = test_case["ground_truth"]
             ordered_test_case["synthesizer_name"] = test_case["synthesizer_name"]
             ordered_test_cases.append(ordered_test_case)
 

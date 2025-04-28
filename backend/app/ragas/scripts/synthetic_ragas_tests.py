@@ -50,7 +50,7 @@ if not DEEPSEEK_API_KEY:
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 
-def run_test_case(query, ground_truth, llm_model_id, test_no=None):
+def run_test_case(query, llm_model_id, test_no=None):
     """Run a single test case through the API"""
 
     # Simulate a 500 error for test case number 1
@@ -190,8 +190,8 @@ def evaluate_single_test(
         # Create single test dataset
         test_data = pd.DataFrame(
             {
-                "user_input": [test_case["user_input"]],
-                "reference": [test_case["reference"]],
+                "user_input": [test_case["query"]],
+                "reference": [test_case["ground_truth"]],
                 "response": [response],
                 "retrieved_contexts": [reference_contexts],
             }
@@ -260,13 +260,12 @@ def run_synthetic_evaluation(
                 i, len(test_cases), f"Processing test {i+1}/{len(test_cases)}"
             )
 
-        query = test_case["user_input"]
-        ground_truth = test_case["reference"]
+        query = test_case["query"]
         logger.info(f"Processing test case {test_case['test_no']}: {query[:50]}...")
 
         # Run the API call
         response, context, api_call_success, token_usage = run_test_case(
-            query, ground_truth, llm_model_id, test_case.get("test_no")
+            query, llm_model_id, test_case.get("test_no")
         )
         logger.info(f"API call success: {api_call_success}")
 
@@ -283,8 +282,8 @@ def run_synthetic_evaluation(
             # Common test result data
             test_result = {
                 "test_no": test_case["test_no"],
-                "user_input": query,
-                "reference": ground_truth,
+                "query": query,
+                "ground_truth": test_case["ground_truth"],
                 "response": response,
                 "context": context,
                 "reference_contexts": test_case["reference_contexts"],
@@ -315,8 +314,8 @@ def run_synthetic_evaluation(
             api_failed_tests.append(
                 {
                     "test_no": test_case["test_no"],
-                    "user_input": query,
-                    "reference": ground_truth,
+                    "query": query,
+                    "ground_truth": test_case["ground_truth"],
                     "error": str(response),
                     "saved_path": filepath,
                     "api_call_success": False,

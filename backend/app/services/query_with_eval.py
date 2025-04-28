@@ -113,7 +113,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                     logger.error(f"Error emitting row progress: {e}")
                 
                 # Handle different possible column names for the question
-                query = row.get('user_input')
+                query = row.get('query')
                 if query is None:
                     logger.error(f"No question/query column found in row. Available columns: {row.index.tolist()}")
                     continue
@@ -173,8 +173,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         full_response_data = []
         for _, row in df.iterrows():
             full_response_data.append({
-                "question": row.get('user_input', ''),
-                "reference": row.get('reference', ''),
+                "query": row.get('query', ''),
+                "ground_truth": row.get('ground_truth', ''),
                 "response": row.get('response', ''),
                 "context": row.get('context', '')
             })
@@ -183,11 +183,11 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         full_response_md = "# Evaluation Results\n\n"
         for i, item in enumerate(full_response_data):
             full_response_md += f"## Test Case {i+1}\n\n"
-            full_response_md += f"### Question\n{item['question']}\n\n"
-            full_response_md += f"### Reference Answer\n{item['reference']}\n\n"
+            full_response_md += f"### Question\n{item['query']}\n\n"
+            full_response_md += f"### Ground Truth\n{item['ground_truth']}\n\n"
             full_response_md += f"### Model Response\n{item['response']}\n\n"
             if item['context']:
-                full_response_md += f"### Context\n{item['context']}\n\n"
+                full_response_md += f"### Full response\n{item['context']}\n\n"
             full_response_md += "---\n\n"
         
         # Emit completion progress update

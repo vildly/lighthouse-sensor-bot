@@ -161,7 +161,7 @@ CREATE TABLE public.query_evaluation (
     query_result_id integer,
     evaluation_metrics_id integer,
     retrieved_contexts text,
-    reference text
+    ground_truth text
 );
 
 

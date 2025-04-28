@@ -1,47 +1,47 @@
 [
   {
     "test_no": 1,
-    "user_input": "What is the total fuel cost for ferry Jupiter in January 2024 assuming that the price per liter is 20 sek?",
+    "query": "What is the total fuel cost for ferry Jupiter in January 2024 assuming that the price per liter is 20 sek?",
     "reference_contexts": [
       "Total fuel consumption for ferry Jupiter in January 2024: 12709.34 liters"
     ],
-    "reference": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
+    "ground_truth": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
     "test_no": 2,
-    "user_input": "What is the average speed of ferry Jupiter? (in km/h)",
+    "query": "What is the average speed of ferry Jupiter? (in km/h)",
     "reference_contexts": [
       "The average speed of ferry Jupiter is: 6.23 knots. Average speed in km/h: 11.55 km/h. Average speed in mph: 7.17 mph"
     ],
-    "reference": "Average speed in km/h is 11.55 km/h",
+    "ground_truth": "Average speed in km/h is 11.55 km/h",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
     "test_no": 3,
-    "user_input": "Which route has the highest average distance travelled, considering both outbound and inbound directions?",
+    "query": "Which route has the highest average distance travelled, considering both outbound and inbound directions?",
     "reference_contexts": [
       "The route with the highest average distance travelled is: Aspöleden with an average distance of 3.22 NM."
     ],
-    "reference": "The route with the highest average distance travelled is Aspöleden with an average distance of 3.22 NM",
+    "ground_truth": "The route with the highest average distance travelled is Aspöleden with an average distance of 3.22 NM",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
     "test_no": 4,
-    "user_input": "What's the average number of vehicles left at terminals in July 2023 in Ljusterö terminal?",
+    "query": "What's the average number of vehicles left at terminals in July 2023 in Ljusterö terminal?",
     "reference_contexts": [
       "Average Vehicles Left at Terminals Per Month: Ljusterö terminal in July 2023 (2023-07) had 23.353470 total vehicles outbound"
     ],
-    "reference": "The average number of vehicles left at Ljusterö terminal in July 2023 was 23.35 vehicles",
+    "ground_truth": "The average number of vehicles left at Ljusterö terminal in July 2023 was 23.35 vehicles",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
     "test_no": 5,
-    "user_input": "Which route has the highest vehicle throughput per day?",
+    "query": "Which route has the highest vehicle throughput per day?",
     "reference_contexts": [
       "Route(s) with the overall highest daily throughput: Ljusteröleden with 1840 vehicles. All routes with their highest daily throughput: Aspöleden: 351, Furusundsleden: 1794, Ljusteröleden: 1840, Oxdjupsleden: 841, Vaxholmsleden: 1387"
     ],
-    "reference": "The route with the highest vehicle throughput per day is Ljusteröleden with 1840 vehicles",
+    "ground_truth": "The route with the highest vehicle throughput per day is Ljusteröleden with 1840 vehicles",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]

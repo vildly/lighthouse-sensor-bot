@@ -13,9 +13,9 @@ def convert_synthetic_to_json():
         reference_contexts = eval(row['reference_contexts'])
         
         test_case = {
-            "user_input": row['user_input'],
+            "query": row['user_input'],
             "reference_contexts": reference_contexts,
-            "reference": row['reference'],
+            "ground_truth": row['reference'],
             "synthesizer_name": row['synthesizer_name']
         }
         test_cases.append(test_case)
