@@ -138,7 +138,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 evaluation_data = {
                     # Convert reference_contexts to a string if it's a list
                     "retrieved_contexts": str(row.get('reference_contexts', [])) if isinstance(row.get('reference_contexts'), list) else str(row.get('reference_contexts', [])),
-                    "reference": row.get('reference'),
+                    "ground_truth": row.get('ground_truth'),
                 }
                 
                 # Map the metrics using our mapping dictionary
