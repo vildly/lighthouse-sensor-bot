@@ -52,7 +52,7 @@ evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 def run_test_case(query, llm_model_id, test_no=None):
     """Run a single test case through the API"""
-    
+
     api_url = f"{API_URL}/api/query"
     try:
         response = requests.post(
@@ -201,6 +201,12 @@ def evaluate_single_test(
         # Run evaluation on single test
         result = evaluate(eval_dataset, metrics, llm=evaluator_llm)
 
+        RAGAS_APP_TOKEN = os.getenv("RAGAS_APP_TOKEN")
+
+        if RAGAS_APP_TOKEN:
+            print("Uploading results to RAGAS app")
+            result.upload()
+
         # Return success with results
         return True, result, None
 
@@ -332,20 +338,36 @@ def run_synthetic_evaluation(
 
         # If there are multiple results, try to combine them
         if len(all_ragas_results) > 1:
-            for i in range(1, len(all_ragas_results)):
-                try:
-                    for metric_key in combined_ragas_results.keys():
-                        if metric_key in all_ragas_results[i]:
+            try:
+                for i in range(1, len(all_ragas_results)):
+                    # Convert EvaluationResult to dictionary if needed
+                    current_result = all_ragas_results[i]
+                    if hasattr(current_result, '__dict__'):
+                        current_result = current_result.__dict__
+                    elif hasattr(current_result, 'to_dict'):
+                        current_result = current_result.to_dict()
+                    
+                    # Get keys from combined_ragas_results
+                    if hasattr(combined_ragas_results, '__dict__'):
+                        combined_dict = combined_ragas_results.__dict__
+                    elif hasattr(combined_ragas_results, 'to_dict'):
+                        combined_dict = combined_ragas_results.to_dict()
+                    else:
+                        combined_dict = combined_ragas_results
+                        
+                    for metric_key in combined_dict:
+                        if metric_key in current_result:
                             # Average the values for each metric
-                            combined_ragas_results[metric_key] = (
-                                combined_ragas_results[metric_key]
-                                + all_ragas_results[i][metric_key]
+                            combined_dict[metric_key] = (
+                                combined_dict[metric_key] + current_result[metric_key]
                             ) / 2
-                except Exception as e:
-                    logger.error(f"Error combining RAGAS results: {e}")
+                            
+                    # Update combined_ragas_results
+                    combined_ragas_results = combined_dict
+            except Exception as e:
+                logger.error(f"Error combining RAGAS results: {e}")
 
         return combined_ragas_results, all_tests_df
     else:
         # No successful RAGAS evaluations
         return None, all_tests_df
-

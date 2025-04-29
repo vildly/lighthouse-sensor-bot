@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Tuple
 import ast
 import logging
+import math
 from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation
 from app.helpers.save_query_to_db import save_query_with_eval_to_db
 from flask_socketio import emit
@@ -91,8 +92,8 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             'string_present': 'string_present'
         }
         
-        print(f"DataFrame shape: {df.shape}")
-        print(f"DataFrame columns: {df.columns.tolist()}")
+        logger.info(f"DataFrame shape: {df.shape}")
+        logger.info(f"DataFrame columns: {df.columns.tolist()}")
         
         # For each test case in df, save the query and evaluation results to the database
         total_rows = len(df)
@@ -143,7 +144,12 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 
                 # Map the metrics using our mapping dictionary
                 for ragas_key, our_key in metric_mapping.items():
-                    evaluation_data[our_key] = results_dict.get(ragas_key) 
+                    value = results_dict.get(ragas_key)
+                    # Check if value is NaN and replace with None
+                    if isinstance(value, float) and math.isnan(value):
+                        evaluation_data[our_key] = None
+                    else:
+                        evaluation_data[our_key] = value
                 
                 # Save the query with evaluation results
                 save_query_with_eval_to_db(
