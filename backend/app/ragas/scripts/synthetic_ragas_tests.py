@@ -52,21 +52,7 @@ evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 def run_test_case(query, llm_model_id, test_no=None):
     """Run a single test case through the API"""
-
-    # Simulate a 500 error for test case number 1
-    if test_no == 1:
-        print(f"Simulating 500 error for test #{test_no}")
-        mock_response = type(
-            "MockResponse",
-            (),
-            {
-                "status_code": 500,
-                "text": "Internal Server Error (Simulated)",
-                "__str__": lambda self: f"500 Internal Server Error (Simulated)",
-            },
-        )()
-        return mock_response, None, False, None
-
+    
     api_url = f"{API_URL}/api/query"
     try:
         response = requests.post(
