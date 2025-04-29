@@ -24,7 +24,10 @@ from typing import Callable, Optional
 import re
 from app.helpers.extract_answer import extract_answer_for_evaluation
 import logging
-
+from app.conf.postgres import get_cursor
+from .test_run_manager import create_test_run, update_test_run_status
+import ast
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -235,16 +238,21 @@ def run_synthetic_evaluation(
         logger.error("No test cases loaded - returning None")
         return None, None
 
-    # Create categories for tests
-    api_success_ragas_success = []  # API call success + RAGAS evaluation success
-    api_success_ragas_failed = []  # API call success + RAGAS evaluation failure
-    api_failed_tests = []  # API call failure
-
-    # Store RAGAS results
+    # Initialize counters
+    successful = 0
+    api_failed = 0
+    ragas_failed = 0
+    
+    # Create collections for results
+    api_success_ragas_success = []
+    api_success_ragas_failed = []
+    api_failed_tests = []
     all_ragas_results = []
-
-    logger.info(f"Number of test cases: {len(test_cases)}")
-
+    
+    # Create a test run record
+    test_run_id = create_test_run(llm_model_id, len(test_cases))
+    logger.info(f"Created test run with ID: {test_run_id}")
+    
     # Process each test case
     for i, test_case in enumerate(test_cases):
         if progress_callback:
@@ -285,36 +293,36 @@ def run_synthetic_evaluation(
 
             if ragas_success:
                 # API call and RAGAS both successful
+                successful += 1
                 test_result["ragas_evaluated"] = True
                 test_result["ragas_results"] = ragas_result
                 api_success_ragas_success.append(test_result)
                 all_ragas_results.append(ragas_result)
             else:
                 # API call success but RAGAS failed
+                ragas_failed += 1
                 test_result["ragas_evaluated"] = False
                 test_result["ragas_error"] = ragas_error
                 api_success_ragas_failed.append(test_result)
         else:
             # API call failed
-            logger.warning(f"Test {test_case['test_no']} failed with error: {response}")
-            print(f"Test {test_case['test_no']} failed with error: {response}")
-
-            # Save failed test
-            filepath = save_failed_test(test_case, llm_model_id, response)
-
-            # Add to API failed tests list
-            api_failed_tests.append(
-                {
-                    "test_no": test_case["test_no"],
-                    "query": query,
-                    "ground_truth": test_case["ground_truth"],
-                    "error": str(response),
-                    "saved_path": filepath,
-                    "api_call_success": False,
-                    "ragas_evaluated": False,
-                }
-            )
-
+            api_failed += 1
+            
+            # Create test result entry
+            api_failed_tests.append({
+                "test_no": test_case["test_no"],
+                "query": query,
+                "ground_truth": test_case.get("ground_truth", ""),
+                "error": str(response),
+                "saved_path": None,
+                "api_call_success": False,
+                "ragas_evaluated": False,
+                "reference_contexts": test_case.get("reference_contexts", [])
+            })
+    
+    # Update test run completion status
+    update_test_run_status(test_run_id, successful, api_failed, ragas_failed)
+    
     # Report on counts for each category
     logger.info(
         f"Tests completed: {len(api_success_ragas_success)} successful + evaluated, "
@@ -330,44 +338,61 @@ def run_synthetic_evaluation(
 
     # Create final DataFrame
     all_tests_df = pd.DataFrame(results)
+    
+    # Return the DataFrame of all individual test results and the test run ID
+    return all_tests_df, test_run_id
 
-    # Check if we have any successful RAGAS evaluations
-    if all_ragas_results:
-        # Combine all successful RAGAS results
-        combined_ragas_results = all_ragas_results[0]
 
-        # If there are multiple results, try to combine them
-        if len(all_ragas_results) > 1:
-            try:
-                for i in range(1, len(all_ragas_results)):
-                    # Convert EvaluationResult to dictionary if needed
-                    current_result = all_ragas_results[i]
-                    if hasattr(current_result, '__dict__'):
-                        current_result = current_result.__dict__
-                    elif hasattr(current_result, 'to_dict'):
-                        current_result = current_result.to_dict()
-                    
-                    # Get keys from combined_ragas_results
-                    if hasattr(combined_ragas_results, '__dict__'):
-                        combined_dict = combined_ragas_results.__dict__
-                    elif hasattr(combined_ragas_results, 'to_dict'):
-                        combined_dict = combined_ragas_results.to_dict()
-                    else:
-                        combined_dict = combined_ragas_results
-                        
-                    for metric_key in combined_dict:
-                        if metric_key in current_result:
-                            # Average the values for each metric
-                            combined_dict[metric_key] = (
-                                combined_dict[metric_key] + current_result[metric_key]
-                            ) / 2
-                            
-                    # Update combined_ragas_results
-                    combined_ragas_results = combined_dict
-            except Exception as e:
-                logger.error(f"Error combining RAGAS results: {e}")
-
-        return combined_ragas_results, all_tests_df
+def process_ragas_results(ragas_result, test_case):
+    """Process RAGAS results into a consistent dictionary format"""
+    # Map RAGAS metric names to our expected names
+    metric_mapping = {
+        'lenient_factual_correctness': 'factual_correctness',
+        'semantic_similarity': 'semantic_similarity',
+        'context_recall': 'context_recall',
+        'faithfulness': 'faithfulness',
+        'bleu_score': 'bleu_score',
+        'non_llm_string_similarity': 'non_llm_string_similarity',
+        'rouge_score(mode=fmeasure)': 'rogue_score',
+        'string_present': 'string_present'
+    }
+    
+    # Create evaluation results dictionary
+    evaluation_data = {
+        "retrieved_contexts": str(test_case["reference_contexts"]),
+        "ground_truth": test_case["ground_truth"],
+    }
+    
+    # Process RAGAS results - handle EvaluationResult object
+    if hasattr(ragas_result, 'to_pandas'):
+        # Convert to pandas DataFrame and then to dict
+        df = ragas_result.to_pandas()
+        if not df.empty:
+            # Get the first row as a dictionary
+            results_dict = df.iloc[0].to_dict()
+        else:
+            results_dict = {}
+    elif isinstance(ragas_result, dict):
+        results_dict = ragas_result
     else:
-        # No successful RAGAS evaluations
-        return None, all_tests_df
+        # Convert to dictionary if it's not already
+        results_str = str(ragas_result)
+        if '{' in results_str and '}' in results_str:
+            dict_part = results_str[results_str.find('{'): results_str.rfind('}')+1]
+            try:
+                import ast
+                results_dict = ast.literal_eval(dict_part)
+            except:
+                results_dict = {"raw_results": results_str}
+        else:
+            results_dict = {"raw_results": results_str}
+    
+    # Map the metrics
+    for ragas_key, our_key in metric_mapping.items():
+        value = results_dict.get(ragas_key)
+        if isinstance(value, float) and math.isnan(value):
+            evaluation_data[our_key] = None
+        else:
+            evaluation_data[our_key] = value
+            
+    return evaluation_data
