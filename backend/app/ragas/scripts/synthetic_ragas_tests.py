@@ -24,7 +24,6 @@ from typing import Callable, Optional
 import re
 from app.helpers.extract_answer import extract_answer_for_evaluation
 import logging
-from app.conf.postgres import get_cursor
 from .test_run_manager import create_test_run, update_test_run_status, ensure_experiment_runs_populated, mark_run_as_running, update_experiment_run_status
 import ast
 import math
@@ -58,37 +57,50 @@ def run_test_case(query, llm_model_id, test_no=None):
 
     api_url = f"{API_URL}/api/query"
     try:
-        response = requests.post(
-            api_url,
-            json={
-                "question": query,
-                "source_file": "ferry_trips_data.csv",
-                "llm_model_id": llm_model_id,
-            },
-        )
-        response.raise_for_status()
+        # --- Simulate 500 Error ---
+        # Create a mock response object
+        mock_response = requests.Response()
+        mock_response.status_code = 500
+        mock_response.reason = "Internal Server Error"
+        mock_response.url = api_url
+        # Raise an HTTPError like requests would for a 5xx status
+        mock_response.raise_for_status() 
+        # --- End Simulation ---
 
-        response_data = response.json()
-        agent_response = response_data.get("content")
-        full_response = response_data.get("full_response")
-        sql_queries = response_data.get("sql_queries", [])
-        token_usage = response_data.get("token_usage")
-
-        if agent_response is None:
-            print(
-                f"Error: No 'content' key found in the API response for query: {query}"
-            )
-            return None, None, False, None
-
-        # Format contexts including SQL queries and full response
-        contexts = []
-        for sql in sql_queries:
-            contexts.append(f"SQL Query: {sql}")
-        contexts.append(f"Agent Reasoning and Response: {full_response}")
-
-        return agent_response, contexts, True, token_usage
+        # --- Original Code (Commented out for simulation) ---
+        # response = requests.post(
+        #     api_url,
+        #     json={
+        #         "question": query,
+        #         "source_file": "ferry_trips_data.csv",
+        #         "llm_model_id": llm_model_id,
+        #     },
+        # )
+        # response.raise_for_status()
+        # 
+        # response_data = response.json()
+        # agent_response = response_data.get("content")
+        # full_response = response_data.get("full_response")
+        # sql_queries = response_data.get("sql_queries", [])
+        # token_usage = response_data.get("token_usage")
+        # 
+        # if agent_response is None:
+        #     print(
+        #         f"Error: No 'content' key found in the API response for query: {query}"
+        #     )
+        #     return None, None, False, None
+        # 
+        # # Format contexts including SQL queries and full response
+        # contexts = []
+        # for sql in sql_queries:
+        #     contexts.append(f"SQL Query: {sql}")
+        # contexts.append(f"Agent Reasoning and Response: {full_response}")
+        # 
+        # return agent_response, contexts, True, token_usage
+        # --- End Original Code ---
 
     except requests.exceptions.RequestException as e:
+        # This block will now catch the simulated HTTPError
         print(f"Error calling API for query: {query}: {e}")
         return None, None, False, None
     except json.JSONDecodeError as e:
@@ -230,6 +242,9 @@ def run_synthetic_evaluation(
     run_number: int = 1
 ):
     """Run evaluation using the synthetic test cases"""
+    # Import moved here:
+    from .test_run_manager import mark_run_as_running, update_experiment_run_status
+
     logger.info(f"Starting run_synthetic_evaluation (run #{run_number})...")
 
     # Load synthetic test cases
@@ -310,12 +325,28 @@ def run_synthetic_evaluation(
                     test_result["ragas_results"] = ragas_result
                     api_success_ragas_success.append(test_result)
                     all_ragas_results.append(ragas_result)
+                    update_experiment_run_status(
+                        model_id=llm_model_id, 
+                        test_case_id=test_case_id, 
+                        run_number=run_number, 
+                        status='success', 
+                        error_message=None,
+                        query_evaluation_id=test_id
+                    )
                 else:
                     # API call success but RAGAS failed
                     ragas_failed += 1
                     test_result["ragas_evaluated"] = False
                     test_result["ragas_error"] = ragas_error
                     api_success_ragas_failed.append(test_result)
+                    update_experiment_run_status(
+                        model_id=llm_model_id, 
+                        test_case_id=test_case_id, 
+                        run_number=run_number, 
+                        status='failed', 
+                        error_message="RAGAS evaluation failed",
+                        query_evaluation_id=test_id
+                    )
             else:
                 # API call failed
                 api_failed += 1
