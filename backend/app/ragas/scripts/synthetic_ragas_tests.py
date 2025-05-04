@@ -24,7 +24,6 @@ from typing import Callable, Optional
 import re
 from app.helpers.extract_answer import extract_answer_for_evaluation
 import logging
-from .test_run_manager import create_test_run, update_test_run_status, ensure_experiment_runs_populated, mark_run_as_running, update_experiment_run_status
 import ast
 import math
 
@@ -320,7 +319,6 @@ def run_synthetic_evaluation(
                         run_number=run_number, 
                         status='success', 
                         error_message=None,
-                        query_evaluation_id=test_id
                     )
                 else:
                     # API call success but RAGAS failed
@@ -334,7 +332,6 @@ def run_synthetic_evaluation(
                         run_number=run_number, 
                         status='failed', 
                         error_message="RAGAS evaluation failed",
-                        query_evaluation_id=test_id
                     )
             else:
                 # API call failed

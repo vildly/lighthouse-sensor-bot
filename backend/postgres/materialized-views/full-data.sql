@@ -11,6 +11,7 @@ DROP MATERIALIZED VIEW IF EXISTS full_query_data;
 CREATE MATERIALIZED VIEW full_query_data AS
 SELECT
     qr.id AS query_result_id,
+    qe.id AS query_evaluation_id,
     qr.query,
     qr.direct_response,
     qr.full_response,
