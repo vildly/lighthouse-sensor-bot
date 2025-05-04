@@ -168,12 +168,10 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
                 # Get test_no for experiment tracking
                 test_id = str(row.get('test_no', ''))
                 
-                # Update experiment run status based on the results
+                # Store status in the results but DON'T update experiment run status here
+    
                 status = 'success' if row.get('ragas_evaluated', False) else 'failed'
                 error_msg = row.get('ragas_error') if status == 'failed' else None
-                
-                # Update experiment tracking tables
-                update_experiment_run_status(model_id, test_id, run_number, status, error_msg)
                 
                 row_ragas_results = row.get('ragas_results')
                 if row_ragas_results:

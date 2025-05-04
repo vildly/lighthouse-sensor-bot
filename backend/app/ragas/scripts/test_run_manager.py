@@ -90,29 +90,70 @@ def update_experiment_run_status(model_id: str, test_id: str, run_number: int,
     """Update status in experiment_runs and add entry to run_attempt_history"""
     try:
         with get_cursor() as cursor:
-            # Update experiment_runs with latest status
+            # Check if an attempt already exists with pending or running status
             cursor.execute(
                 """
-                UPDATE experiment_runs
-                SET status = %s, last_error = %s, last_attempt_timestamp = NOW()
-                WHERE model_id = %s AND test_case_id = %s AND run_number = %s;
+                SELECT attempt_id FROM run_attempt_history 
+                WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                AND attempt_status IN ('pending', 'running')
+                ORDER BY attempt_timestamp DESC
+                LIMIT 1
                 """,
-                (status, error_msg, model_id, test_id, run_number)
+                (model_id, test_id, run_number)
             )
             
-            # Log attempt to history table
-            cursor.execute(
-                """
-                INSERT INTO run_attempt_history
-                (model_id, test_case_id, run_number, attempt_status, error_message)
-                VALUES (%s, %s, %s, %s, %s);
-                """,
-                (model_id, test_id, run_number, status, error_msg)
-            )
+            existing_attempt = cursor.fetchone()
             
-            return True
+            if existing_attempt:
+                # Update existing attempt instead of creating a new one
+                cursor.execute(
+                    """
+                    UPDATE run_attempt_history
+                    SET attempt_status = %s, error_message = %s, attempt_timestamp = NOW()
+                    WHERE attempt_id = %s
+                    """,
+                    (status, error_msg, existing_attempt[0])
+                )
+                
+                # Update experiment_runs with latest status
+                cursor.execute(
+                    """
+                    UPDATE experiment_runs
+                    SET status = %s, last_error = %s, last_attempt_timestamp = NOW()
+                    WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                    """,
+                    (status, error_msg, model_id, test_id, run_number)
+                )
+                
+                logger.info(f"Updated existing attempt {existing_attempt[0]} with status '{status}'")
+            else:
+                # No pending/running attempt exists, create a new history entry
+                cursor.execute(
+                    """
+                    INSERT INTO run_attempt_history (model_id, test_case_id, run_number, attempt_status, error_message)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING attempt_id
+                    """,
+                    (model_id, test_id, run_number, status, error_msg)
+                )
+                
+                attempt_id = cursor.fetchone()[0]
+                
+                # Update experiment_runs with latest status
+                cursor.execute(
+                    """
+                    UPDATE experiment_runs
+                    SET status = %s, last_error = %s, last_attempt_timestamp = NOW()
+                    WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                    """,
+                    (status, error_msg, model_id, test_id, run_number)
+                )
+                
+                logger.info(f"Created new attempt {attempt_id} with status '{status}'")
+                
+        return True
     except Exception as e:
-        logger.error(f"Error updating experiment run status: {e}")
+        logger.error(f"Error updating experiment status: {e}")
         return False
 
 def get_pending_experiments(batch_size=5, filter_model=None):
@@ -147,6 +188,7 @@ def mark_run_as_running(model_id, test_case_id, run_number):
     """Mark an experiment run as 'running'"""
     try:
         with get_cursor() as cursor:
+            # Update experiment_runs table
             cursor.execute(
                 """
                 UPDATE experiment_runs
@@ -155,6 +197,45 @@ def mark_run_as_running(model_id, test_case_id, run_number):
                 """,
                 (model_id, test_case_id, run_number)
             )
+            
+            # Check if a pending entry exists in the history
+            cursor.execute(
+                """
+                SELECT attempt_id FROM run_attempt_history 
+                WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                AND attempt_status = 'pending'
+                ORDER BY attempt_timestamp DESC
+                LIMIT 1
+                """,
+                (model_id, test_case_id, run_number)
+            )
+            
+            existing_attempt = cursor.fetchone()
+            
+            if existing_attempt:
+                # Update existing attempt to running
+                cursor.execute(
+                    """
+                    UPDATE run_attempt_history
+                    SET attempt_status = 'running', attempt_timestamp = NOW()
+                    WHERE attempt_id = %s
+                    """,
+                    (existing_attempt[0],)
+                )
+                logger.info(f"Updated existing attempt {existing_attempt[0]} to running status")
+            else:
+                # Create a new history entry with running status
+                cursor.execute(
+                    """
+                    INSERT INTO run_attempt_history (model_id, test_case_id, run_number, attempt_status)
+                    VALUES (%s, %s, %s, 'running')
+                    RETURNING attempt_id
+                    """,
+                    (model_id, test_case_id, run_number)
+                )
+                attempt_id = cursor.fetchone()[0]
+                logger.info(f"Created new running attempt with ID {attempt_id}")
+                
         return True
     except Exception as e:
         logger.error(f"Error marking run as running: {e}")
@@ -345,9 +426,11 @@ def start_evaluation_run(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[s
     # Start background thread for remaining runs if needed
     if number_of_runs > 1:
         def run_remaining():
-            run_batch_experiments(
+            # Use the modified run_batch_experiments with result tracking
+            run_batch_experiments_with_updates(
                 batch_size=number_of_runs-1,  # Exclude the first run
-                filter_model=model_id
+                filter_model=model_id,
+                initial_results=results  # Pass the initial results to append to
             )
             
         thread = threading.Thread(target=run_remaining)
@@ -355,3 +438,121 @@ def start_evaluation_run(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[s
         thread.start()
         
     return results, status_code
+
+def run_batch_experiments_with_updates(batch_size=5, wait_time=5, max_retries=3, 
+                                      filter_model: Optional[str] = None,
+                                      initial_results: Optional[Dict] = None):
+    """
+    Run batch experiments with progress updates via websocket.
+    Appends each new test result to the existing results.
+    """
+    from app.services.query_with_eval import query_with_eval
+    from flask_socketio import emit
+    from app.conf.websocket import socketio
+    
+    total_processed = 0
+    retries = 0
+    accumulated_results = initial_results or {"results": {}, "full_response": "# Evaluation Results\n\n"}
+    
+    logger.info(f"Starting batch run with batch size: {batch_size}")
+    
+    while total_processed < batch_size and retries < max_retries:
+        # Get pending experiments
+        pending_runs = get_pending_experiments(batch_size, filter_model)
+        
+        if not pending_runs:
+            logger.info("No pending experiments found.")
+            retries += 1
+            time.sleep(wait_time)
+            continue
+        
+        retries = 0  # Reset retries when we find pending experiments
+        logger.info(f"Found {len(pending_runs)} pending experiments")
+        
+        for model_id, test_case_id, run_number in pending_runs:
+            logger.info(f"Running experiment: Model={model_id}, Test={test_case_id}, Run={run_number}")
+            
+            # Mark as running
+            mark_run_as_running(model_id, test_case_id, run_number)
+            
+            try:
+                # Run the evaluation
+                result, status_code = query_with_eval(model_id, run_number)
+                
+                # Log completion
+                if status_code == 200:
+                    logger.info(f"✅ Experiment completed successfully")
+                    # Update status to success
+                    update_experiment_run_status(model_id, test_case_id, run_number, 'success')
+                    
+                    # Update the accumulated results
+                    if "results" in result and "results" in accumulated_results:
+                        # Merge metric results - average with existing values
+                        for metric, value in result["results"].items():
+                            if metric in accumulated_results["results"]:
+                                # Average the values
+                                accumulated_results["results"][metric] = (
+                                    accumulated_results["results"][metric] + value
+                                ) / 2
+                            else:
+                                accumulated_results["results"][metric] = value
+                    
+                    # Append this test's results to the full response
+                    if "full_response" in result:
+                        # Extract just the last test case from the new result
+                        new_test_content = extract_last_test(result["full_response"])
+                        if new_test_content:
+                            # Append it to the accumulated full response
+                            accumulated_results["full_response"] += new_test_content
+                    
+                    # Emit updated results via websocket
+                    try:
+                        socketio.emit('evaluation_update', {
+                            'updated_results': accumulated_results,
+                            'run_number': run_number,
+                            'status': 'success'
+                        }, namespace='/query')
+                    except Exception as e:
+                        logger.error(f"Error emitting updated results: {e}")
+                    
+                else:
+                    logger.warning(f"⚠️ Experiment returned status code: {status_code}")
+                    # Update status to failed
+                    update_experiment_run_status(
+                        model_id, 
+                        test_case_id, 
+                        run_number, 
+                        'failed', 
+                        f"API returned status code: {status_code}"
+                    )
+                
+                total_processed += 1
+                
+            except Exception as e:
+                logger.error(f"❌ Error running experiment: {e}")
+                # Update status to failed
+                update_experiment_run_status(
+                    model_id, 
+                    test_case_id, 
+                    run_number, 
+                    'failed', 
+                    str(e)
+                )
+        
+        # Wait before processing next batch
+        if pending_runs:
+            logger.info(f"Waiting {wait_time} seconds before next batch...")
+            time.sleep(wait_time)
+    
+    return total_processed
+
+def extract_last_test(full_response):
+    """Extract the last test case from a full response markdown string"""
+    import re
+    
+    # Look for the last test case section
+    test_sections = re.split(r'## Test Case \d+', full_response)
+    if len(test_sections) > 1:
+        # Return the last section with its header
+        return f"## Test Case {len(test_sections)}{test_sections[-1]}"
+    return ""
