@@ -118,50 +118,39 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
                 if values:
                     average_metrics[metric] = sum(values) / len(values)
         
-        # For each test case in df, save the query and evaluation results to the database
-        total_rows = len(df)
-        for i, row in df.iterrows():
+        # Loop through each row and save to the database with error handling
+        for i, (_, row) in enumerate(df.iterrows()):
             try:
-                # Calculate progress percentage for this row
-                row_progress = int(50 + ((i + 1) / total_rows) * 40)  # Scale to 50-90% range
+                # Extract data
+                query = row.get('query', '')
                 
-                # Update progress for each row
-                try:
-                    socketio.emit('evaluation_progress', {
-                        'progress': row_progress,
-                        'total': 100,
-                        'percent': row_progress,
-                        'message': f'Processing test case {i+1} of {total_rows}...'
-                    }, namespace='/query')
-                except Exception as e:
-                    logger.error(f"Error emitting row progress: {e}")
-                
-                # Handle different possible column names for the question
-                query = row.get('query')
-                if query is None:
-                    logger.error(f"No question/query column found in row. Available columns: {row.index.tolist()}")
-                    continue
+                # Handle failed API calls differently
+                if not row.get('api_call_success', True):
+                    # Extract test_id and error message
+                    test_id = str(row.get('test_no', ''))
+                    error_msg = row.get('error', 'API call failed')
                     
-                response = row.get('response')
-                if response is None:
-                    logger.error(f"No response column found in row. Available columns: {row.index.tolist()}")
-                    continue
+                    # Update experiment run status to failed
+                    update_experiment_run_status(model_id, test_id, run_number, 'failed', error_msg, None)
+                    continue  # Skip to next row
+                    
+                # For successful API calls, continue with normal flow
+                response = row.get('response', '')
                 
-                # Extract SQL queries from context
+                # Get SQL queries if they exist
                 sql_queries = []
-                if row.get('context'):
-                    for item in row.get('context', []):
-                        if isinstance(item, str) and item.startswith("SQL Query: "):
-                            sql_query = item.replace("SQL Query: ", "", 1)
-                            sql_queries.append(sql_query)
+                if 'sql_query' in row:
+                    sql_query = row.get('sql_query')
+                    if sql_query:
+                        sql_queries = [sql_query]
                 
-                # Get token_usage directly from the row
-                token_usage = row.get('token_usage')
-
+                # Get token usage if available
+                token_usage = row.get('token_usage', {})
+                
                 # Create evaluation results dictionary 
                 evaluation_data = {
                     # Convert reference_contexts to a string if it's a list
-                    "retrieved_contexts": str(row.get('reference_contexts', [])) if isinstance(row.get('reference_contexts'), list) else str(row.get('reference_contexts', [])),
+                    "retrieved_contexts": str(row.get('reference_contexts', [])) if isinstance(row.get('reference_contexts'), list) else str(row.get('reference_contexts', '')),
                     "ground_truth": row.get('ground_truth'),
                 }
                 
@@ -169,7 +158,6 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
                 test_id = str(row.get('test_no', ''))
                 
                 # Store status in the results but DON'T update experiment run status here
-    
                 status = 'success' if row.get('ragas_evaluated', False) else 'failed'
                 error_msg = row.get('ragas_error') if status == 'failed' else None
                 
@@ -216,12 +204,15 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
                     token_usage=token_usage
                 )
 
+                # Update experiment run status with query_evaluation_id reference
+                update_experiment_run_status(model_id, test_id, run_number, status, error_msg, query_result_id)
+
             except Exception as e:
-                logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
+                logger.error(f"Error saving evaluation for query {i+1}/{len(df)}: {e}")
                 
                 # Update experiment run status to failed if there was an error saving
                 test_id = str(row.get('test_no', ''))
-                update_experiment_run_status(model_id, test_id, run_number, 'failed', str(e))
+                update_experiment_run_status(model_id, test_id, run_number, 'failed', str(e), None)
         
         # Emit progress update for database saving
         try:
