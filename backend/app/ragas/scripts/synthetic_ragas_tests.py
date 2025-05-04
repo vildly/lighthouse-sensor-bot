@@ -57,47 +57,36 @@ def run_test_case(query, llm_model_id, test_no=None):
 
     api_url = f"{API_URL}/api/query"
     try:
-        # --- Simulate 500 Error ---
-        # Create a mock response object
-        mock_response = requests.Response()
-        mock_response.status_code = 500
-        mock_response.reason = "Internal Server Error"
-        mock_response.url = api_url
-        # Raise an HTTPError like requests would for a 5xx status
-        mock_response.raise_for_status() 
-        # --- End Simulation ---
+        response = requests.post(
+            api_url,
+            json={
+                "question": query,
+                "source_file": "ferry_trips_data.csv",
+                "llm_model_id": llm_model_id,
+            },
+        )
+        response.raise_for_status()
 
-        # --- Original Code (Commented out for simulation) ---
-        # response = requests.post(
-        #     api_url,
-        #     json={
-        #         "question": query,
-        #         "source_file": "ferry_trips_data.csv",
-        #         "llm_model_id": llm_model_id,
-        #     },
-        # )
-        # response.raise_for_status()
-        # 
-        # response_data = response.json()
-        # agent_response = response_data.get("content")
-        # full_response = response_data.get("full_response")
-        # sql_queries = response_data.get("sql_queries", [])
-        # token_usage = response_data.get("token_usage")
-        # 
-        # if agent_response is None:
-        #     print(
-        #         f"Error: No 'content' key found in the API response for query: {query}"
-        #     )
-        #     return None, None, False, None
-        # 
-        # # Format contexts including SQL queries and full response
-        # contexts = []
-        # for sql in sql_queries:
-        #     contexts.append(f"SQL Query: {sql}")
-        # contexts.append(f"Agent Reasoning and Response: {full_response}")
-        # 
-        # return agent_response, contexts, True, token_usage
-        # --- End Original Code ---
+        response_data = response.json()
+        agent_response = response_data.get("content")
+        full_response = response_data.get("full_response")
+        sql_queries = response_data.get("sql_queries", [])
+        token_usage = response_data.get("token_usage")
+
+        if agent_response is None:
+            print(
+                f"Error: No 'content' key found in the API response for query: {query}"
+            )
+            return None, None, False, None
+
+        # Format contexts including SQL queries and full response
+        contexts = []
+        for sql in sql_queries:
+            contexts.append(f"SQL Query: {sql}")
+        contexts.append(f"Agent Reasoning and Response: {full_response}")
+
+        return agent_response, contexts, True, token_usage
+
 
     except requests.exceptions.RequestException as e:
         # This block will now catch the simulated HTTPError
