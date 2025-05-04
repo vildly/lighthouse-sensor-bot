@@ -3,20 +3,23 @@ import ast
 import logging
 import math
 from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation, process_ragas_results
-from app.helpers.save_query_to_db import save_query_with_eval_to_db, save_test_to_evaluation
+from app.helpers.save_query_to_db import save_query_with_eval_to_db
 from flask_socketio import emit
 from app.conf.websocket import socketio
 import re
+from app.conf.postgres import get_cursor
+from app.ragas.scripts.test_run_manager import ensure_experiment_runs_populated, update_experiment_run_status
 
 
 logger = logging.getLogger(__name__)
 
-def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
+def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any], int]:
     """
     Run evaluation tests for a specific model and save results to the database.
     
     Args:
         model_id: The ID of the LLM model to evaluate
+        run_number: The experiment run number (default: 1)
         
     Returns:
         Tuple containing results dictionary and HTTP status code
@@ -27,7 +30,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             socketio.emit('evaluation_progress', {
                 'progress': 0,
                 'total': 100,
-                'message': 'Starting evaluation...'
+                'message': f'Starting evaluation run #{run_number}...'
             }, namespace='/query')
         except Exception as e:
             logger.error(f"Error emitting initial progress: {e}")
@@ -45,9 +48,12 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 }, namespace='/query')
             except Exception as e:
                 logger.error(f"Error emitting progress update: {e}")
+      
         
-        logger.info("Starting synthetic evaluation...")
-        df, test_run_id = run_synthetic_evaluation(model_id, progress_callback)
+        logger.info(f"Starting synthetic evaluation run #{run_number}...")
+        
+        # Pass run_number to run_synthetic_evaluation
+        df, test_run_id = run_synthetic_evaluation(model_id, progress_callback, run_number)
         logger.info(f"Evaluation complete. DataFrame shape: {df.shape if df is not None else 'None'}")
         logger.info(f"DataFrame columns: {df.columns.tolist() if df is not None else 'None'}")
 
@@ -150,7 +156,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                             sql_queries.append(sql_query)
                 
                 # Get token_usage directly from the row
-                token_usage = row.get('token_usage') 
+                token_usage = row.get('token_usage')
 
                 # Create evaluation results dictionary 
                 evaluation_data = {
@@ -158,6 +164,16 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                     "retrieved_contexts": str(row.get('reference_contexts', [])) if isinstance(row.get('reference_contexts'), list) else str(row.get('reference_contexts', [])),
                     "ground_truth": row.get('ground_truth'),
                 }
+                
+                # Get test_no for experiment tracking
+                test_id = str(row.get('test_no', ''))
+                
+                # Update experiment run status based on the results
+                status = 'success' if row.get('ragas_evaluated', False) else 'failed'
+                error_msg = row.get('ragas_error') if status == 'failed' else None
+                
+                # Update experiment tracking tables
+                update_experiment_run_status(model_id, test_id, run_number, status, error_msg)
                 
                 row_ragas_results = row.get('ragas_results')
                 if row_ragas_results:
@@ -202,15 +218,12 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                     token_usage=token_usage
                 )
 
-                # Add this after saving to update the test info
-                save_test_to_evaluation(
-                    query_result_id, 
-                    test_run_id, 
-                    row.get('test_no'), 
-                    "success" if row.get('ragas_evaluated', False) else "ragas_failed"
-                )
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
+                
+                # Update experiment run status to failed if there was an error saving
+                test_id = str(row.get('test_no', ''))
+                update_experiment_run_status(model_id, test_id, run_number, 'failed', str(e))
         
         # Emit progress update for database saving
         try:
