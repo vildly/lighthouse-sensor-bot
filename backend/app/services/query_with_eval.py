@@ -169,15 +169,15 @@ def query_with_eval(model_id: str, number_of_runs: int = 1, max_retries: int = 3
                 
                 # Save the query with evaluation results directly using save_query_with_eval_to_db
                 # No need to manage existing_query_result_id as the function handles this internally
-                save_query_with_eval_to_db(
-                    query=query,
-                    direct_response=response,
-                    full_response=row.get('context', ''),
-                    llm_model_id=model_id,
-                    evaluation_results=evaluation_data,
-                    sql_queries=sql_queries,
-                    token_usage=token_usage
-                )
+                # save_query_with_eval_to_db(
+                #     query=query,
+                #     direct_response=response,
+                #     full_response=row.get('context', ''),
+                #     llm_model_id=model_id,
+                #     evaluation_results=evaluation_data,
+                #     sql_queries=sql_queries,
+                #     token_usage=token_usage
+                # )
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
         
@@ -344,20 +344,20 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
         
         # Save the query and response to the database if requested
         query_result_id = None
-        if save_to_db and llm_model_id:
-            try:
-                query_result_id = save_query_to_db(
-                    query=question,
-                    direct_response=clean_answer,
-                    full_response=fullResponse,
-                    llm_model_id=llm_model_id,
-                    sql_queries=sql_queries,
-                    token_usage=token_usage,
-                )
-                logger.info(f"Query saved to database with model ID: {llm_model_id}, query_result_id: {query_result_id}")
-            except Exception as db_error:
-                logger.error(f"Failed to save query to database: {str(db_error)}")
-                # Don't raise here, just log the error and continue
+        # if save_to_db and llm_model_id:
+        #     try:
+        #         query_result_id = save_query_to_db(
+        #             query=question,
+        #             direct_response=clean_answer,
+        #             full_response=fullResponse,
+        #             llm_model_id=llm_model_id,
+        #             sql_queries=sql_queries,
+        #             token_usage=token_usage,
+        #         )
+        #         logger.info(f"Query saved to database with model ID: {llm_model_id}, query_result_id: {query_result_id}")
+        #     except Exception as db_error:
+        #         logger.error(f"Failed to save query to database: {str(db_error)}")
+        #         # Don't raise here, just log the error and continue
 
         # Return the results
         return {
