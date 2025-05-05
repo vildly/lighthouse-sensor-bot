@@ -92,19 +92,9 @@ def update_experiment_run_status(model_id: str, test_case_id: str, run_number: i
             else:
                  logger.warning(f"Could not find run to update: Model={model_id}, Test={test_case_id}, Run={run_number}")
 
-            # Check if we already have a history entry for this run in the last 500ms
-            cursor.execute("""
-                SELECT id FROM run_attempt_history
-                WHERE model_id = %s AND test_case_id = %s AND run_number = %s
-                AND attempt_timestamp > NOW() - INTERVAL '100 milliseconds'
-            """, (model_id, test_case_id, run_number))
-            
-            recent_entry = cursor.fetchone()
-            
-            # Only record in run_attempt_history if:
-            # 1. We don't have a recent entry AND
-            # 2. (It's not a success status OR we have a query_evaluation_id)
-            if not recent_entry and (status != 'success' or query_evaluation_id is not None):
+            # Only record in run_attempt_history if we have a query_evaluation_id or it's not a success status
+            # This prevents duplicate entries for successful runs
+            if status != 'success' or query_evaluation_id is not None:
                 try:
                     history_sql = """
                     INSERT INTO run_attempt_history 
