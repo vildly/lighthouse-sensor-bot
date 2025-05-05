@@ -216,18 +216,8 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
                     token_usage=token_usage
                 )
 
-                with get_cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT retry_count FROM experiment_runs
-                        WHERE model_id = %s AND test_case_id = %s AND run_number = %s
-                        """,
-                        (model_id, test_id, run_number)
-                    )
-                    result = cursor.fetchone()
-                    current_retry_count = result[0] if result and result[0] is not None else None
-
-                update_experiment_run_status(model_id, test_id, run_number, status, error_msg, query_result_id, current_retry_count)
+                # Update experiment run status with query_evaluation_id reference
+                update_experiment_run_status(model_id, test_id, run_number, status, error_msg, query_result_id)
 
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{len(df)}: {e}")
