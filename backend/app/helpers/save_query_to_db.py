@@ -77,8 +77,12 @@ def save_query_with_eval_to_db(
     evaluation_results: Dict[str, Union[str, float, int, bool, None]],
     sql_queries: Optional[List[str]] = None,
     token_usage: Optional[Dict[str, int]] = None,
-) -> None:
-    """Save the query and response to the database with evaluation results."""
+) -> int:
+    """Save the query and response to the database with evaluation results.
+    
+    Returns:
+        int: The ID of the inserted query_evaluation record
+    """
     if not isinstance(evaluation_results, dict):
       raise ValueError("Evaluation results must be a dictionary")
 
@@ -144,6 +148,8 @@ def save_query_with_eval_to_db(
                     evaluation_metrics_id,
                 ),
             )
+            query_evaluation_id = cursor.fetchone()[0]
+            return query_evaluation_id
         except Exception as e:
             logger.error(f"Error saving evaluation results to database: {e}")
             raise

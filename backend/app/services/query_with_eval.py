@@ -7,16 +7,18 @@ from app.helpers.save_query_to_db import save_query_with_eval_to_db
 from flask_socketio import emit
 from app.conf.websocket import socketio
 import re
+from app.ragas.scripts.test_run_manager import execute_test_runs
 
 
 logger = logging.getLogger(__name__)
 
-def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
+def query_with_eval(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[str, Any], int]:
     """
-    Run evaluation tests for a specific model and save results to the database.
+    Run evaluation tests for a specific model with retry logic.
     
     Args:
         model_id: The ID of the LLM model to evaluate
+        number_of_runs: Number of times each test should run successfully
         
     Returns:
         Tuple containing results dictionary and HTTP status code
@@ -32,8 +34,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         except Exception as e:
             logger.error(f"Error emitting initial progress: {e}")
         
-        # Get the evaluation results using the synthetic tests
-        # Pass a progress callback function to report progress
+        # Define progress callback
         def progress_callback(current, total, message="Evaluating"):
             try:
                 percent = int((current / total) * 100)
@@ -46,8 +47,15 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
             except Exception as e:
                 logger.error(f"Error emitting progress update: {e}")
         
-        logger.info("Starting synthetic evaluation...")
-        ragas_results, df = run_synthetic_evaluation(model_id, progress_callback)
+        # Use the new execute_test_runs function
+        logger.info("Starting synthetic evaluation with retry logic...")
+        ragas_results, df = execute_test_runs(
+            model_id, 
+            number_of_runs=number_of_runs, 
+            max_retries=3,
+            progress_callback=progress_callback
+        )
+        
         logger.info(f"Evaluation complete. DataFrame shape: {df.shape if df is not None else 'None'}")
         logger.info(f"DataFrame columns: {df.columns.tolist() if df is not None else 'None'}")
 
