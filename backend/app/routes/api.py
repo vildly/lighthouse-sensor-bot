@@ -83,13 +83,18 @@ def test_connection():
 def evaluate_endpoint():
     data = request.get_json()
     model_id = data.get("model_id")
+    number_of_runs = data.get("number_of_runs", 1)
+    max_retries = data.get("max_retries", 3) 
 
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
 
-    results, status_code = query_with_eval(model_id)
+    results, status_code = query_with_eval(
+        model_id, 
+        number_of_runs=number_of_runs,
+        max_retries=max_retries
+    )
     return jsonify(results), status_code
-    # return jsonify({"error": "Internal Server Error"}), 500
 
 
 @api_bp.route("/model-performance", methods=["GET"])

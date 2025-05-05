@@ -12,13 +12,14 @@ from app.ragas.scripts.test_run_manager import execute_test_runs
 
 logger = logging.getLogger(__name__)
 
-def query_with_eval(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[str, Any], int]:
+def query_with_eval(model_id: str, number_of_runs: int = 1, max_retries: int = 3) -> Tuple[Dict[str, Any], int]:
     """
     Run evaluation tests for a specific model with retry logic.
     
     Args:
         model_id: The ID of the LLM model to evaluate
         number_of_runs: Number of times each test should run successfully
+        max_retries: Maximum number of retry attempts for failed tests
         
     Returns:
         Tuple containing results dictionary and HTTP status code
@@ -47,12 +48,12 @@ def query_with_eval(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[str, A
             except Exception as e:
                 logger.error(f"Error emitting progress update: {e}")
         
-        # Use the new execute_test_runs function
-        logger.info("Starting synthetic evaluation with retry logic...")
+        # Use the new execute_test_runs function with custom max_retries
+        logger.info(f"Starting synthetic evaluation with retry logic (max_retries={max_retries})...")
         ragas_results, df = execute_test_runs(
             model_id, 
             number_of_runs=number_of_runs, 
-            max_retries=3,
+            max_retries=max_retries,
             progress_callback=progress_callback
         )
         
