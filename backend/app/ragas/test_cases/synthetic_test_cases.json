@@ -7,14 +7,5 @@
     ],
     "ground_truth": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
-  },
-  {
-    "test_no": 2,
-    "query": "What is the average speed of ferry Jupiter? (in km/h)",
-    "reference_contexts": [
-      "The average speed of ferry Jupiter is: 6.23 knots. Average speed in km/h: 11.55 km/h. Average speed in mph: 7.17 mph"
-    ],
-    "ground_truth": "Average speed in km/h is 11.55 km/h",
-    "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]

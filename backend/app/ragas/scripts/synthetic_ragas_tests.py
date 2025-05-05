@@ -51,29 +51,27 @@ evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 
 def run_test_case(query, llm_model_id, test_no=None):
-    """Run a single test case through the API"""
-
-    api_url = f"{API_URL}/api/query"
+    """Run a single test case directly without making an API call"""
+    # Import process_query_internal inside the function to avoid circular imports
+    from app.services.query_with_eval import process_query_internal
+    
     try:
-        response = requests.post(
-            api_url,
-            json={
-                "question": query,
-                "source_file": "ferry_trips_data.csv",
-                "llm_model_id": llm_model_id,
-            },
+        # Directly call the internal processing function instead of making an API call
+        result = process_query_internal(
+            question=query,
+            source_file="ferry_trips_data.csv", 
+            llm_model_id=llm_model_id,
+            save_to_db=False  # Don't save this to DB, we'll do it ourselves later
         )
-        response.raise_for_status()
-
-        response_data = response.json()
-        agent_response = response_data.get("content")
-        full_response = response_data.get("full_response")
-        sql_queries = response_data.get("sql_queries", [])
-        token_usage = response_data.get("token_usage")
+        
+        agent_response = result.get("content")
+        full_response = result.get("full_response")
+        sql_queries = result.get("sql_queries", [])
+        token_usage = result.get("token_usage")
 
         if agent_response is None:
             print(
-                f"Error: No 'content' key found in the API response for query: {query}"
+                f"Error: No 'content' key found in the result for query: {query}"
             )
             return None, None, False, None
 
@@ -85,11 +83,8 @@ def run_test_case(query, llm_model_id, test_no=None):
 
         return agent_response, contexts, True, token_usage
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling API for query: {query}: {e}")
-        return None, None, False, None
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON response for query: {query}: {e}")
+    except Exception as e:
+        print(f"Error processing query for test: {query}: {e}")
         return None, None, False, None
 
 

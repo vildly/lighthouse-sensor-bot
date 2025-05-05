@@ -2,8 +2,7 @@ from typing import Dict, Optional, List, Union, Tuple, Any
 from agno.utils.log import logger
 from app.conf.postgres import get_cursor
 import ast
-
-
+import json
 
 
 def get_model_id(llm_model_name: str) -> int:
@@ -23,50 +22,87 @@ def save_query_to_db(
     sql_queries: Optional[List[str]] = None,
     token_usage: Optional[Dict[str, int]] = None,
 ) -> int:
-    """Save the query and response to the database."""
+    """Save the query and response to the database.
+    
+    Returns:
+        int: The ID of the inserted query_result record
+    """
+    # Convert Python structures to JSON strings for PostgreSQL
+    
+    # Get numeric model ID from name
+    model_id = get_model_id(llm_model_id)
+    
     with get_cursor() as cursor:
         try:
             cursor.execute(
                 """
-                INSERT INTO query_result (
-                    query, direct_response, full_response, sql_queries, llm_model_id
-                ) VALUES (%s, %s, %s, %s, %s) RETURNING id
+                INSERT INTO query_result (query, direct_response, full_response, llm_model_id, sql_queries)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
                 """,
-                (
-                    query,
-                    direct_response,
-                    full_response,
-                    sql_queries,
-                    get_model_id(llm_model_id),
-                ),
+                (query, direct_response, full_response, model_id, sql_queries),
             )
-            result = cursor.fetchone()
-            if result is None:
-                raise ValueError("Failed to save query: No ID returned")
-            query_result_id = result[0]
             
-            # Save token usage in the separate table if provided
+            # Get the ID of the inserted record
+            query_result_id = cursor.fetchone()[0]
+            
+            # If token usage is provided, insert into token_usage table
             if token_usage:
+                prompt_tokens = token_usage.get("prompt_tokens")
+                completion_tokens = token_usage.get("completion_tokens")
+                total_tokens = token_usage.get("total_tokens")
+                
                 cursor.execute(
                     """
-                    INSERT INTO token_usage (
-                        query_result_id, prompt_tokens, completion_tokens, total_tokens
-                    ) VALUES (%s, %s, %s, %s)
+                    INSERT INTO token_usage (prompt_tokens, completion_tokens, total_tokens, query_result_id)
+                    VALUES (%s, %s, %s, %s)
                     """,
-                    (
-                        query_result_id,
-                        token_usage.get('prompt_tokens'),
-                        token_usage.get('completion_tokens'),
-                        token_usage.get('total_tokens'),
-                    ),
+                    (prompt_tokens, completion_tokens, total_tokens, query_result_id),
                 )
             
             return query_result_id
+            
         except Exception as e:
             logger.error(f"Error saving query to database: {e}")
             raise
-          
 
+
+def create_query_result_for_eval(
+    query: str,
+    direct_response: str,
+    full_response: str,
+    llm_model_id: str,
+    sql_queries: Optional[List[str]] = None,
+) -> int:
+    """Create a query_result record for evaluation purposes.
+    
+    Returns:
+        int: The ID of the inserted query_result record
+    """
+    # Convert Python structures to JSON strings for PostgreSQL
+    sql_queries_json = json.dumps(sql_queries) if sql_queries else None
+    
+    # Get numeric model ID from name
+    model_id = get_model_id(llm_model_id)
+    
+    with get_cursor() as cursor:
+        try:
+            cursor.execute(
+                """
+                INSERT INTO query_result (query, direct_response, full_response, llm_model_id, sql_queries)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (query, direct_response, full_response, model_id, sql_queries_json),
+            )
+            
+            # Get the ID of the inserted record
+            query_result_id = cursor.fetchone()[0]
+            return query_result_id
+            
+        except Exception as e:
+            logger.error(f"Error creating query_result record: {e}")
+            raise
 
 
 def save_query_with_eval_to_db(
@@ -77,8 +113,9 @@ def save_query_with_eval_to_db(
     evaluation_results: Dict[str, Union[str, float, int, bool, None]],
     sql_queries: Optional[List[str]] = None,
     token_usage: Optional[Dict[str, int]] = None,
+    existing_query_result_id: Optional[int] = None
 ) -> int:
-    """Save the query and response to the database with evaluation results.
+    """Save the query evaluation results to the database.
     
     Returns:
         int: The ID of the inserted query_evaluation record
@@ -106,13 +143,16 @@ def save_query_with_eval_to_db(
                 f"Invalid type for {key}: expected {expected_types}, got {type(value)}"
             )
 
-    # First save the query to get query_result_id
-    query_result_id = save_query_to_db(
-        query, direct_response, full_response, llm_model_id, sql_queries, token_usage
-    )
+    # Use existing query_result_id if provided, otherwise create a new record
+    query_result_id = existing_query_result_id
+    if query_result_id is None:
+        query_result_id = create_query_result_for_eval(
+            query, direct_response, full_response, llm_model_id, sql_queries
+        )
 
     with get_cursor() as cursor:
         try:
+            # Insert evaluation metrics record
             cursor.execute(
                 """
                 INSERT INTO evaluation_metrics (
@@ -134,7 +174,7 @@ def save_query_with_eval_to_db(
             )
             evaluation_metrics_id = cursor.fetchone()[0]
             
-            # Then insert into query_evaluation with reference to evaluation_metrics
+            # Then insert into query_evaluation (which doesn't have token_usage column)
             cursor.execute(
                 """
                 INSERT INTO query_evaluation (
@@ -149,6 +189,21 @@ def save_query_with_eval_to_db(
                 ),
             )
             query_evaluation_id = cursor.fetchone()[0]
+            
+            # If token usage is provided, insert into the separate token_usage table
+            if token_usage:
+                prompt_tokens = token_usage.get("prompt_tokens")
+                completion_tokens = token_usage.get("completion_tokens")
+                total_tokens = token_usage.get("total_tokens")
+                
+                cursor.execute(
+                    """
+                    INSERT INTO token_usage (prompt_tokens, completion_tokens, total_tokens, query_result_id)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (prompt_tokens, completion_tokens, total_tokens, query_result_id),
+                )
+                
             return query_evaluation_id
         except Exception as e:
             logger.error(f"Error saving evaluation results to database: {e}")
