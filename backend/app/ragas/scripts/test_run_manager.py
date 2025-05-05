@@ -67,7 +67,6 @@ def update_experiment_run_status(model_id: str, test_case_id: str, run_number: i
     """Updates the status and error of an experiment run using get_cursor."""
     try:
         with get_cursor() as cursor:
-            # Update the experiment_runs table
             sql = """
             UPDATE experiment_runs
             SET status = %s,
@@ -92,18 +91,16 @@ def update_experiment_run_status(model_id: str, test_case_id: str, run_number: i
             else:
                  logger.warning(f"Could not find run to update: Model={model_id}, Test={test_case_id}, Run={run_number}")
 
-            # Only record in run_attempt_history if we have a query_evaluation_id or it's not a success status
-            # This prevents duplicate entries for successful runs
-            if status != 'success' or query_evaluation_id is not None:
-                try:
-                    history_sql = """
-                    INSERT INTO run_attempt_history 
-                    (model_id, test_case_id, run_number, attempt_timestamp, attempt_status, error_message, query_evaluation_id)
-                    VALUES (%s, %s, %s, NOW(), %s, %s, %s)
-                    """
-                    cursor.execute(history_sql, (model_id, test_case_id, run_number, status, error_message, query_evaluation_id))
-                except Exception as e:
-                    logger.error(f"Error recording attempt history: {e}")
+            # Also record this update in run_attempt_history
+            try:
+                history_sql = """
+                INSERT INTO run_attempt_history 
+                (model_id, test_case_id, run_number, attempt_timestamp, attempt_status, error_message, query_evaluation_id)
+                VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+                """
+                cursor.execute(history_sql, (model_id, test_case_id, run_number, status, error_message, query_evaluation_id))
+            except Exception as e:
+                logger.error(f"Error recording attempt history: {e}")
 
     except Exception as e:
         logger.error(f"Error updating experiment run status: {e}")
