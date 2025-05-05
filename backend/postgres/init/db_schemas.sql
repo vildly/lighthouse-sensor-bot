@@ -3,9 +3,9 @@
 --
 
 -- Dumped from database version 17.2 (Debian 17.2-1.pgdg120+1)
--- Dumped by pg_dump version 17.4
+-- Dumped by pg_dump version 17.2
 
--- Started on 2025-05-04 20:58:07
+-- Started on 2025-04-15 13:51:58 UTC
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -20,9 +20,10 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 430 (class 1255 OID 98439)
+-- TOC entry 245 (class 1255 OID 50151)
 -- Name: refresh_full_query_data(); Type: FUNCTION; Schema: public; Owner: postgres
 --
+
 -- ***** MODIFIED FUNCTION START *****
 CREATE OR REPLACE FUNCTION public.refresh_full_query_data() RETURNS trigger
     LANGUAGE plpgsql
@@ -83,6 +84,7 @@ END;
 $$;
 -- ***** MODIFIED FUNCTION END *****
 
+
 ALTER FUNCTION public.refresh_model_performance_metrics() OWNER TO postgres;
 
 SET default_tablespace = '';
@@ -90,7 +92,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- TOC entry 422 (class 1259 OID 24620)
+-- TOC entry 240 (class 1259 OID 24620)
 -- Name: evaluation_metrics; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -110,7 +112,7 @@ CREATE TABLE public.evaluation_metrics (
 ALTER TABLE public.evaluation_metrics OWNER TO postgres;
 
 --
--- TOC entry 421 (class 1259 OID 24619)
+-- TOC entry 239 (class 1259 OID 24619)
 -- Name: evaluation_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -126,8 +128,8 @@ CREATE SEQUENCE public.evaluation_metrics_id_seq
 ALTER SEQUENCE public.evaluation_metrics_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3642 (class 0 OID 0)
--- Dependencies: 421
+-- TOC entry 3442 (class 0 OID 0)
+-- Dependencies: 239
 -- Name: evaluation_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -135,25 +137,7 @@ ALTER SEQUENCE public.evaluation_metrics_id_seq OWNED BY public.evaluation_metri
 
 
 --
--- TOC entry 426 (class 1259 OID 82475)
--- Name: experiment_runs; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.experiment_runs (
-    model_id text NOT NULL,
-    test_case_id text NOT NULL,
-    run_number integer NOT NULL,
-    status text DEFAULT 'pending'::text,
-    last_error text,
-    last_attempt_timestamp timestamp with time zone,
-    retry_count integer DEFAULT 0
-);
-
-
-ALTER TABLE public.experiment_runs OWNER TO postgres;
-
---
--- TOC entry 416 (class 1259 OID 24578)
+-- TOC entry 234 (class 1259 OID 24578)
 -- Name: llm_models; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -168,7 +152,7 @@ CREATE TABLE public.llm_models (
 ALTER TABLE public.llm_models OWNER TO postgres;
 
 --
--- TOC entry 420 (class 1259 OID 24601)
+-- TOC entry 238 (class 1259 OID 24601)
 -- Name: query_evaluation; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -184,7 +168,7 @@ CREATE TABLE public.query_evaluation (
 ALTER TABLE public.query_evaluation OWNER TO postgres;
 
 --
--- TOC entry 418 (class 1259 OID 24592)
+-- TOC entry 236 (class 1259 OID 24592)
 -- Name: query_result; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -202,7 +186,7 @@ CREATE TABLE public.query_result (
 ALTER TABLE public.query_result OWNER TO postgres;
 
 --
--- TOC entry 423 (class 1259 OID 49976)
+-- TOC entry 241 (class 1259 OID 49976)
 -- Name: token_usage; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -218,13 +202,12 @@ CREATE TABLE public.token_usage (
 ALTER TABLE public.token_usage OWNER TO postgres;
 
 --
--- TOC entry 429 (class 1259 OID 98367)
+-- TOC entry 243 (class 1259 OID 50111)
 -- Name: full_query_data; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
 --
 
 CREATE MATERIALIZED VIEW public.full_query_data AS
  SELECT qr.id AS query_result_id,
-    qe.id AS query_evaluation_id,
     qr.query,
     qr.direct_response,
     qr.full_response,
@@ -255,7 +238,7 @@ CREATE MATERIALIZED VIEW public.full_query_data AS
 ALTER MATERIALIZED VIEW public.full_query_data OWNER TO postgres;
 
 --
--- TOC entry 415 (class 1259 OID 24577)
+-- TOC entry 233 (class 1259 OID 24577)
 -- Name: llm_models_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -271,8 +254,8 @@ CREATE SEQUENCE public.llm_models_id_seq
 ALTER SEQUENCE public.llm_models_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3643 (class 0 OID 0)
--- Dependencies: 415
+-- TOC entry 3443 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: llm_models_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -280,7 +263,7 @@ ALTER SEQUENCE public.llm_models_id_seq OWNED BY public.llm_models.id;
 
 
 --
--- TOC entry 425 (class 1259 OID 50912)
+-- TOC entry 244 (class 1259 OID 50912)
 -- Name: model_performance_metrics; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
 --
 
@@ -320,7 +303,7 @@ CREATE MATERIALIZED VIEW public.model_performance_metrics AS
 ALTER MATERIALIZED VIEW public.model_performance_metrics OWNER TO postgres;
 
 --
--- TOC entry 419 (class 1259 OID 24600)
+-- TOC entry 237 (class 1259 OID 24600)
 -- Name: query_evaluation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -336,8 +319,8 @@ CREATE SEQUENCE public.query_evaluation_id_seq
 ALTER SEQUENCE public.query_evaluation_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3644 (class 0 OID 0)
--- Dependencies: 419
+-- TOC entry 3444 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: query_evaluation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -345,7 +328,7 @@ ALTER SEQUENCE public.query_evaluation_id_seq OWNED BY public.query_evaluation.i
 
 
 --
--- TOC entry 417 (class 1259 OID 24591)
+-- TOC entry 235 (class 1259 OID 24591)
 -- Name: query_result_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -361,8 +344,8 @@ CREATE SEQUENCE public.query_result_id_seq
 ALTER SEQUENCE public.query_result_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3645 (class 0 OID 0)
--- Dependencies: 417
+-- TOC entry 3445 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: query_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -370,51 +353,7 @@ ALTER SEQUENCE public.query_result_id_seq OWNED BY public.query_result.id;
 
 
 --
--- TOC entry 428 (class 1259 OID 82484)
--- Name: run_attempt_history; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.run_attempt_history (
-    attempt_id integer NOT NULL,
-    model_id text NOT NULL,
-    test_case_id text NOT NULL,
-    run_number integer NOT NULL,
-    attempt_timestamp timestamp with time zone DEFAULT now(),
-    attempt_status text NOT NULL,
-    error_message text,
-    query_evaluation_id integer
-);
-
-
-ALTER TABLE public.run_attempt_history OWNER TO postgres;
-
---
--- TOC entry 427 (class 1259 OID 82483)
--- Name: run_attempt_history_attempt_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.run_attempt_history_attempt_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.run_attempt_history_attempt_id_seq OWNER TO postgres;
-
---
--- TOC entry 3646 (class 0 OID 0)
--- Dependencies: 427
--- Name: run_attempt_history_attempt_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.run_attempt_history_attempt_id_seq OWNED BY public.run_attempt_history.attempt_id;
-
-
---
--- TOC entry 424 (class 1259 OID 50024)
+-- TOC entry 242 (class 1259 OID 50024)
 -- Name: token_usage_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -430,8 +369,8 @@ CREATE SEQUENCE public.token_usage_id_seq
 ALTER SEQUENCE public.token_usage_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3647 (class 0 OID 0)
--- Dependencies: 424
+-- TOC entry 3446 (class 0 OID 0)
+-- Dependencies: 242
 -- Name: token_usage_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -439,7 +378,7 @@ ALTER SEQUENCE public.token_usage_id_seq OWNED BY public.token_usage.id;
 
 
 --
--- TOC entry 3451 (class 2604 OID 24623)
+-- TOC entry 3260 (class 2604 OID 24623)
 -- Name: evaluation_metrics id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -447,7 +386,7 @@ ALTER TABLE ONLY public.evaluation_metrics ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
--- TOC entry 3447 (class 2604 OID 24581)
+-- TOC entry 3256 (class 2604 OID 24581)
 -- Name: llm_models id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -455,7 +394,7 @@ ALTER TABLE ONLY public.llm_models ALTER COLUMN id SET DEFAULT nextval('public.l
 
 
 --
--- TOC entry 3450 (class 2604 OID 24604)
+-- TOC entry 3259 (class 2604 OID 24604)
 -- Name: query_evaluation id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -463,7 +402,7 @@ ALTER TABLE ONLY public.query_evaluation ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3448 (class 2604 OID 24595)
+-- TOC entry 3257 (class 2604 OID 24595)
 -- Name: query_result id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -471,15 +410,7 @@ ALTER TABLE ONLY public.query_result ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3455 (class 2604 OID 82487)
--- Name: run_attempt_history attempt_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.run_attempt_history ALTER COLUMN attempt_id SET DEFAULT nextval('public.run_attempt_history_attempt_id_seq'::regclass);
-
-
---
--- TOC entry 3452 (class 2604 OID 50025)
+-- TOC entry 3261 (class 2604 OID 50025)
 -- Name: token_usage id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -487,7 +418,7 @@ ALTER TABLE ONLY public.token_usage ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3467 (class 2606 OID 24627)
+-- TOC entry 3272 (class 2606 OID 24627)
 -- Name: evaluation_metrics evaluation_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -496,16 +427,7 @@ ALTER TABLE ONLY public.evaluation_metrics
 
 
 --
--- TOC entry 3472 (class 2606 OID 82482)
--- Name: experiment_runs experiment_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.experiment_runs
-    ADD CONSTRAINT experiment_runs_pkey PRIMARY KEY (model_id, test_case_id, run_number);
-
-
---
--- TOC entry 3459 (class 2606 OID 24583)
+-- TOC entry 3264 (class 2606 OID 24583)
 -- Name: llm_models llm_models_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -514,7 +436,7 @@ ALTER TABLE ONLY public.llm_models
 
 
 --
--- TOC entry 3465 (class 2606 OID 24608)
+-- TOC entry 3270 (class 2606 OID 24608)
 -- Name: query_evaluation query_evaluation_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -523,7 +445,7 @@ ALTER TABLE ONLY public.query_evaluation
 
 
 --
--- TOC entry 3463 (class 2606 OID 24599)
+-- TOC entry 3268 (class 2606 OID 24599)
 -- Name: query_result query_result_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -532,16 +454,7 @@ ALTER TABLE ONLY public.query_result
 
 
 --
--- TOC entry 3474 (class 2606 OID 82492)
--- Name: run_attempt_history run_attempt_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.run_attempt_history
-    ADD CONSTRAINT run_attempt_history_pkey PRIMARY KEY (attempt_id);
-
-
---
--- TOC entry 3469 (class 2606 OID 50032)
+-- TOC entry 3274 (class 2606 OID 50032)
 -- Name: token_usage token_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -550,7 +463,7 @@ ALTER TABLE ONLY public.token_usage
 
 
 --
--- TOC entry 3461 (class 2606 OID 24590)
+-- TOC entry 3266 (class 2606 OID 24590)
 -- Name: llm_models unique_name; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -559,7 +472,7 @@ ALTER TABLE ONLY public.llm_models
 
 
 --
--- TOC entry 3475 (class 1259 OID 98445)
+-- TOC entry 3275 (class 1259 OID 50157)
 -- Name: idx_full_query_data_timestamp; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -567,7 +480,7 @@ CREATE INDEX idx_full_query_data_timestamp ON public.full_query_data USING btree
 
 
 --
--- TOC entry 3470 (class 1259 OID 50924)
+-- TOC entry 3276 (class 1259 OID 50924)
 -- Name: model_performance_metrics_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -575,7 +488,7 @@ CREATE UNIQUE INDEX model_performance_metrics_idx ON public.model_performance_me
 
 
 --
--- TOC entry 3486 (class 2620 OID 98442)
+-- TOC entry 3286 (class 2620 OID 50154)
 -- Name: evaluation_metrics refresh_full_query_data_trigger_em; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -583,7 +496,7 @@ CREATE TRIGGER refresh_full_query_data_trigger_em AFTER INSERT OR DELETE OR UPDA
 
 
 --
--- TOC entry 3481 (class 2620 OID 98443)
+-- TOC entry 3281 (class 2620 OID 50155)
 -- Name: llm_models refresh_full_query_data_trigger_lm; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -591,7 +504,7 @@ CREATE TRIGGER refresh_full_query_data_trigger_lm AFTER INSERT OR DELETE OR UPDA
 
 
 --
--- TOC entry 3484 (class 2620 OID 98440)
+-- TOC entry 3284 (class 2620 OID 50152)
 -- Name: query_evaluation refresh_full_query_data_trigger_qe; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -599,7 +512,7 @@ CREATE TRIGGER refresh_full_query_data_trigger_qe AFTER INSERT OR DELETE OR UPDA
 
 
 --
--- TOC entry 3483 (class 2620 OID 98441)
+-- TOC entry 3283 (class 2620 OID 50153)
 -- Name: query_result refresh_full_query_data_trigger_qr; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -607,7 +520,7 @@ CREATE TRIGGER refresh_full_query_data_trigger_qr AFTER INSERT OR DELETE OR UPDA
 
 
 --
--- TOC entry 3488 (class 2620 OID 98444)
+-- TOC entry 3288 (class 2620 OID 50156)
 -- Name: token_usage refresh_full_query_data_trigger_tu; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -615,7 +528,7 @@ CREATE TRIGGER refresh_full_query_data_trigger_tu AFTER INSERT OR DELETE OR UPDA
 
 
 --
--- TOC entry 3487 (class 2620 OID 50928)
+-- TOC entry 3287 (class 2620 OID 50928)
 -- Name: evaluation_metrics refresh_model_performance_metrics_on_evaluation_metrics; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -623,7 +536,7 @@ CREATE TRIGGER refresh_model_performance_metrics_on_evaluation_metrics AFTER INS
 
 
 --
--- TOC entry 3482 (class 2620 OID 50927)
+-- TOC entry 3282 (class 2620 OID 50927)
 -- Name: llm_models refresh_model_performance_metrics_on_llm_models; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -631,7 +544,7 @@ CREATE TRIGGER refresh_model_performance_metrics_on_llm_models AFTER INSERT OR D
 
 
 --
--- TOC entry 3485 (class 2620 OID 50926)
+-- TOC entry 3285 (class 2620 OID 50926)
 -- Name: query_evaluation refresh_model_performance_metrics_on_query_evaluation; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -639,7 +552,7 @@ CREATE TRIGGER refresh_model_performance_metrics_on_query_evaluation AFTER INSER
 
 
 --
--- TOC entry 3489 (class 2620 OID 50929)
+-- TOC entry 3289 (class 2620 OID 50929)
 -- Name: token_usage refresh_model_performance_metrics_on_token_usage; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -647,7 +560,7 @@ CREATE TRIGGER refresh_model_performance_metrics_on_token_usage AFTER INSERT OR 
 
 
 --
--- TOC entry 3477 (class 2606 OID 24628)
+-- TOC entry 3278 (class 2606 OID 24628)
 -- Name: query_evaluation fk_query_evaluation_evaluation_metrics_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -656,7 +569,7 @@ ALTER TABLE ONLY public.query_evaluation
 
 
 --
--- TOC entry 3478 (class 2606 OID 24609)
+-- TOC entry 3279 (class 2606 OID 24609)
 -- Name: query_evaluation fk_query_evaluation_query_result_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -665,7 +578,7 @@ ALTER TABLE ONLY public.query_evaluation
 
 
 --
--- TOC entry 3476 (class 2606 OID 24614)
+-- TOC entry 3277 (class 2606 OID 24614)
 -- Name: query_result fk_query_result_llm_model_id_llm_models_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -674,16 +587,7 @@ ALTER TABLE ONLY public.query_result
 
 
 --
--- TOC entry 3480 (class 2606 OID 92278)
--- Name: run_attempt_history run_attempt_history_query_evaluation_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.run_attempt_history
-    ADD CONSTRAINT run_attempt_history_query_evaluation_fk FOREIGN KEY (query_evaluation_id) REFERENCES public.query_evaluation(id) NOT VALID;
-
-
---
--- TOC entry 3479 (class 2606 OID 49985)
+-- TOC entry 3280 (class 2606 OID 49985)
 -- Name: token_usage token_usage_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -691,9 +595,8 @@ ALTER TABLE ONLY public.token_usage
     ADD CONSTRAINT token_usage_fk FOREIGN KEY (query_result_id) REFERENCES public.query_result(id) NOT VALID;
 
 
--- Completed on 2025-05-04 20:58:07
+-- Completed on 2025-04-15 13:51:58 UTC
 
 --
 -- PostgreSQL database dump complete
 --
-
