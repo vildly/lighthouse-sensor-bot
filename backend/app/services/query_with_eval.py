@@ -130,8 +130,20 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
                     test_id = str(row.get('test_no', ''))
                     error_msg = row.get('error', 'API call failed')
                     
-                    # Update experiment run status to failed
-                    update_experiment_run_status(model_id, test_id, run_number, 'failed', error_msg, None)
+                    # Get the current retry count first
+                    with get_cursor() as cursor:
+                        cursor.execute(
+                            """
+                            SELECT retry_count FROM experiment_runs
+                            WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                            """,
+                            (model_id, test_id, run_number)
+                        )
+                        result = cursor.fetchone()
+                        current_retry_count = result[0] if result and result[0] is not None else None
+
+                    # Then pass it to update_experiment_run_status
+                    update_experiment_run_status(model_id, test_id, run_number, 'failed', error_msg, None, current_retry_count)
                     continue  # Skip to next row
                     
                 # For successful API calls, continue with normal flow
@@ -210,9 +222,27 @@ def query_with_eval(model_id: str, run_number: int = 1) -> Tuple[Dict[str, Any],
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{len(df)}: {e}")
                 
-                # Update experiment run status to failed if there was an error saving
+                # Only update experiment run status if the row wasn't already marked as failed
                 test_id = str(row.get('test_no', ''))
-                update_experiment_run_status(model_id, test_id, run_number, 'failed', str(e), None)
+                if not row.get('api_call_success', True):
+                    # Skip updating status since we already marked it as failed above (line 134)
+                    logger.info(f"Skipping duplicate status update for already failed test {test_id}")
+                else:
+                    # Only update if it wasn't already marked as failed
+                    # Get the current retry count first
+                    with get_cursor() as cursor:
+                        cursor.execute(
+                            """
+                            SELECT retry_count FROM experiment_runs
+                            WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                            """,
+                            (model_id, test_id, run_number)
+                        )
+                        result = cursor.fetchone()
+                        current_retry_count = result[0] if result and result[0] is not None else None
+
+                    # Then pass it to update_experiment_run_status
+                    update_experiment_run_status(model_id, test_id, run_number, 'failed', str(e), None, current_retry_count)
         
         # Emit progress update for database saving
         try:
