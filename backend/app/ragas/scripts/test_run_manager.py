@@ -144,7 +144,7 @@ def get_pending_experiments(batch_size=5, filter_model=None):
                 params.append(filter_model)
                 
             query += """
-            ORDER BY last_attempt_timestamp ASC
+            ORDER BY created_at ASC
             LIMIT %s
             """
             params.append(batch_size)
@@ -492,80 +492,95 @@ def extract_last_test(full_response):
         return f"## Test Case {len(test_sections)}{test_sections[-1]}"
     return ""
 
-def retry_failed_experiment_runs(batch_size=5, max_retries=3, wait_time=10, filter_model=None):
-    """Retry failed experiment runs up to a maximum number of retries."""
-    logger.info(f"Starting retry process: batch_size={batch_size}, max_retries={max_retries}, wait_time={wait_time}")
+def retry_failed_experiment_runs(batch_size=5, wait_time=5, max_retries=3, filter_model=None):
+    """
+    Retry failed experiment runs.
+    
+    Args:
+        batch_size: Number of runs to process in each batch
+        wait_time: Seconds to wait between batches
+        max_retries: Maximum number of retry attempts
+        filter_model: Optional model ID to filter by
+        
+    Returns:
+        Total number of runs processed
+    """
+    from app.services.query_with_eval import query_with_eval
+    from app.ragas.scripts.synthetic_ragas_tests import load_synthetic_test_cases
+    
+    logger.info(f"Starting retry of failed experiment runs with batch_size={batch_size}, max_retries={max_retries}")
     
     total_processed = 0
     total_retried_successfully = 0
     
+    # Load test cases for reference
+    test_cases = load_synthetic_test_cases()
+    if not test_cases:
+        logger.error("No test cases loaded - cannot retry")
+        return 0
+        
+    # Create a dictionary for faster lookup
+    test_case_dict = {str(tc.get('test_no', '')): tc for tc in test_cases if 'test_no' in tc}
+    
     while True:
-        # Get a batch of failed runs
+        # Get failed runs that haven't reached max retries
         failed_runs_data = get_failed_runs_for_retry(batch_size, max_retries, filter_model)
         
         if not failed_runs_data:
-            logger.info("No more failed runs eligible for retry.")
+            logger.info("No failed runs found for retry.")
             break
             
-        logger.info(f"Found {len(failed_runs_data)} runs to retry in this batch.")
+        logger.info(f"Found {len(failed_runs_data)} failed runs to retry")
         
-        for run_data in failed_runs_data:
-            model_id, test_case_id, run_number, current_retry_count = run_data
+        for model_id, test_case_id, run_number, current_retry_count in failed_runs_data:
             next_retry = (current_retry_count or 0) + 1
             
-            logger.info(f"Retrying: Model={model_id}, Test={test_case_id}, Run={run_number}, Attempt={next_retry}/{max_retries}")
+            logger.info(f"Retrying: Model={model_id}, Test={test_case_id}, Run={run_number}, Attempt={next_retry}")
+            
+            # Get test case details
+            test_case = test_case_dict.get(str(test_case_id))
+            if not test_case:
+                logger.error(f"Cannot find test case details for test_id={test_case_id}. Skipping retry.")
+                update_experiment_run_status(
+                    model_id=model_id, 
+                    test_case_id=test_case_id, 
+                    run_number=run_number, 
+                    status='failed', 
+                    error_message="Test case details not found.",
+                    retry_count=next_retry # Increment retry count even if skipped
+                )
+                
+                continue
             
             # Mark as running
             mark_run_as_running(model_id=model_id, test_case_id=test_case_id, run_number=run_number)
             
-            final_status = 'failed' # Default to failed unless confirmed success
-            error_msg_for_update = f"Retry attempt {next_retry} did not result in success."
-            from app.services.query_with_eval import query_with_eval
-
             try:
-                # Call query_with_eval - it handles its own internal status updates per test case
-                # We ignore the returned result/status code here as it reflects the whole batch
-                query_with_eval(model_id, run_number) 
+                # Use query_with_eval which handles all the evaluation and saving logic
+                result, status_code = query_with_eval(model_id, run_number)
                 
-                # Check the ACTUAL status of THIS specific run after query_with_eval
-                with get_cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT status, last_error FROM experiment_runs
-                        WHERE model_id = %s AND test_case_id = %s AND run_number = %s
-                        """,
-                        (model_id, test_case_id, run_number)
-                    )
-                    result = cursor.fetchone()
-                    if result:
-                        final_status = result[0]
-                        error_msg_for_update = result[1] # Use the error message from the last update
-                        if final_status == 'success':
-                            logger.info(f"✅ Successfully retried and processed Test={test_case_id}.")
-                            total_retried_successfully += 1
-                        else:
-                             logger.warning(f"⚠️ Retry attempt {next_retry} for Test={test_case_id} finished with status: {final_status}.")
-                    else:
-                        logger.error(f"Could not find run {model_id}/{test_case_id}/{run_number} after retry attempt.")
-                        final_status = 'failed' # Treat as failed if record disappears
-                        error_msg_for_update = "Run record not found after retry attempt."
-
-                # If the status is still failed after the attempt, ensure retry count is updated
-                if final_status != 'success':
-                    update_experiment_run_status(
-                        model_id=model_id,
-                        test_case_id=test_case_id,
-                        run_number=run_number,
-                        status='failed',
-                        error_message=error_msg_for_update,
-                        retry_count=next_retry
-                    )
-
+                # Log completion based on status code
+                if status_code == 200:
+                    logger.info(f"✅ Successfully retried and processed Test={test_case_id}.")
+                    total_retried_successfully += 1
+                else:
+                    logger.warning(f"⚠️ Retry returned status code: {status_code} for Test={test_case_id} on attempt {next_retry}.")
+                    
+                    # Update retry count (query_with_eval already updates the status)
+                    with get_cursor() as cursor:
+                        cursor.execute(
+                            """
+                            UPDATE experiment_runs
+                            SET retry_count = %s
+                            WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                            """,
+                            (next_retry, model_id, test_case_id, run_number)
+                        )
+            
             except Exception as e:
-                # Catch errors during the retry call itself (e.g., network issues calling query_with_eval)
+                # Catch errors during retry
                 error_msg = f"Error during retry attempt {next_retry}: {str(e)[:500]}" # Truncate long errors
                 logger.error(f"❌ {error_msg}")
-                final_status = 'failed' # Ensure status is marked failed
                 
                 # Update experiment run status to failed with incremented retry count
                 update_experiment_run_status(
