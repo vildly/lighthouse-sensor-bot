@@ -89,6 +89,7 @@ def evaluate_endpoint():
 
     results, status_code = query_with_eval(model_id)
     return jsonify(results), status_code
+    # return jsonify({"error": "Internal Server Error"}), 500
 
 
 @api_bp.route("/model-performance", methods=["GET"])
@@ -168,6 +169,7 @@ def query_data():
         logger.error(f"Error fetching model performance: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @api_bp.route("/test-cases", methods=["GET"])
 def get_test_cases():
     try:
@@ -187,10 +189,9 @@ def get_test_cases():
             ordered_test_cases.append(ordered_test_case)
 
         response_data = {"test_cases": ordered_test_cases}
-        
+
         return Response(
-            json.dumps(response_data, indent=2),
-            mimetype="application/json"
+            json.dumps(response_data, indent=2), mimetype="application/json"
         )
     except Exception as e:
         logger.error(f"Error fetching test cases: {e}")

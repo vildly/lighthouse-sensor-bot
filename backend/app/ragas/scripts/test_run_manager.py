@@ -1,11 +1,30 @@
 import logging
+import sys
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import time
 from enum import Enum
 from app.conf.postgres import get_cursor
 
+# Create and configure logger with a direct stream handler
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Check if handlers already exist to avoid duplicates
+if not logger.handlers:
+    # Create console handler and set level
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    
+    # Create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    
+    # Add handler to logger
+    logger.addHandler(console_handler)
+    
+    # Ensure our logger doesn't propagate to parent
+    logger.propagate = False
 
 class TestStatus(Enum):
     PENDING = "pending"
@@ -271,13 +290,19 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     Returns:
         Tuple of (combined_ragas_results, all_tests_df)
     """
+    # Ensure this message is printed directly as well as logged
+    startup_msg = f"STARTING TEST RUNS for model {model_id} with {number_of_runs} runs per test"
+    print(startup_msg)
+    logger.info(startup_msg)
+    
+    # Import here to avoid circular imports
+    import pandas as pd
     from app.ragas.scripts.synthetic_ragas_tests import (
         load_synthetic_test_cases, 
         run_test_case, 
         evaluate_single_test
     )
     from app.helpers.save_query_to_db import save_query_with_eval_to_db
-    import pandas as pd
     
     # Load test cases
     test_cases = load_synthetic_test_cases()
@@ -324,9 +349,22 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
             )
             
             if not api_call_success:
-                # API call failed
+                # API call failed - just mark as failed and log in history
                 error_msg = "API call failed" if not response else str(response)
                 run_manager.mark_test_failed(test_id, run_number, error_msg)
+                
+                # Add minimal information to test results for reporting
+                test_result = {
+                    "test_no": test_case["test_no"],
+                    "run_number": run_number,
+                    "query": query,
+                    "ground_truth": test_case.get("ground_truth", ""),
+                    "response": str(response) if response else "API call failed",
+                    "api_call_success": False,
+                    "ragas_evaluated": False,
+                    "token_usage": token_usage
+                }
+                all_test_results.append(test_result)
                 continue
             
             # API call succeeded, run RAGAS evaluation
@@ -339,10 +377,25 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
             )
             
             if not ragas_success:
-                # RAGAS evaluation failed
-                run_manager.mark_test_failed(
-                    test_id, run_number, f"RAGAS evaluation failed: {ragas_error}"
-                )
+                # RAGAS evaluation failed - mark as failed and log in history
+                error_msg = f"RAGAS evaluation failed: {ragas_error}"
+                run_manager.mark_test_failed(test_id, run_number, error_msg)
+                
+                # Add to results for reporting
+                test_result = {
+                    "test_no": test_case["test_no"],
+                    "run_number": run_number,
+                    "query": query,
+                    "ground_truth": test_case.get("ground_truth", ""),
+                    "response": response,
+                    "context": context,
+                    "reference_contexts": test_case.get("reference_contexts", []),
+                    "api_call_success": True,
+                    "ragas_evaluated": False,
+                    "ragas_error": ragas_error,
+                    "token_usage": token_usage
+                }
+                all_test_results.append(test_result)
                 continue
             
             # Everything succeeded - save to database
