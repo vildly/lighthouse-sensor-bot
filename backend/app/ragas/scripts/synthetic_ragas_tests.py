@@ -25,7 +25,7 @@ import re
 from app.helpers.extract_answer import extract_answer_for_evaluation
 import logging
 from app.conf.postgres import get_cursor
-from .test_run_manager import create_test_run, update_test_run_status, ensure_experiment_runs_populated, mark_run_as_running, update_experiment_run_status
+from .test_run_manager import create_test_run, update_test_run_status
 import ast
 import math
 
@@ -225,12 +225,10 @@ def evaluate_single_test(
 
 
 def run_synthetic_evaluation(
-    llm_model_id, 
-    progress_callback: Optional[Callable] = None,
-    run_number: int = 1
+    llm_model_id, progress_callback: Optional[Callable] = None
 ):
     """Run evaluation using the synthetic test cases"""
-    logger.info(f"Starting run_synthetic_evaluation (run #{run_number})...")
+    logger.info("Starting run_synthetic_evaluation...")
 
     # Load synthetic test cases
     test_cases = load_synthetic_test_cases()
@@ -251,100 +249,81 @@ def run_synthetic_evaluation(
     api_failed_tests = []
     all_ragas_results = []
     
-    # REMOVE the create_test_run call - we'll use experiment_runs instead
-    test_run_id = None  # Set to None instead of calling create_test_run
-    logger.info("Using experiment_runs table for tracking")
-    
-    # For progress reporting
-    total_test_cases = len(test_cases)
+    # Create a test run record
+    test_run_id = create_test_run(llm_model_id, len(test_cases))
+    logger.info(f"Created test run with ID: {test_run_id}")
     
     # Process each test case
     for i, test_case in enumerate(test_cases):
-        try:
-            # Report progress
-            if progress_callback:
-                progress_callback(i, total_test_cases, f"Processing test case {i+1} of {total_test_cases}")
-            
-            # Extract values
-            test_case_id = str(test_case.get("test_no", ""))
-            query = test_case["query"]
-            
-            # Mark experiment run as running 
-            mark_run_as_running(llm_model_id, test_case_id, run_number)
-            
-            # Run the API call
-            response, context, api_call_success, token_usage = run_test_case(
-                query, llm_model_id, test_case.get("test_no")
+        if progress_callback:
+            progress_callback(
+                i, len(test_cases), f"Processing test {i+1}/{len(test_cases)}"
             )
-            logger.info(f"API call success: {api_call_success}")
 
-            # Store test_id for experiment tracking
-            test_id = str(test_case.get('test_no', ''))
+        query = test_case["query"]
+        logger.info(f"Processing test case {test_case['test_no']}: {query[:50]}...")
 
-            if api_call_success:
-                # Run RAGAS evaluation on this single test
-                ragas_success, ragas_result, ragas_error = evaluate_single_test(
-                    test_case,
-                    response,
-                    context,
-                    test_case["reference_contexts"],
-                    llm_model_id,
-                )
+        # Run the API call
+        response, context, api_call_success, token_usage = run_test_case(
+            query, llm_model_id, test_case.get("test_no")
+        )
+        logger.info(f"API call success: {api_call_success}")
 
-                # Common test result data
-                test_result = {
-                    "test_no": test_case["test_no"],
-                    "query": query,
-                    "ground_truth": test_case["ground_truth"],
-                    "response": response,
-                    "context": context,
-                    "reference_contexts": test_case["reference_contexts"],
-                    "api_call_success": True,
-                    "token_usage": token_usage,
-                }
+        if api_call_success:
+            # Run RAGAS evaluation on this single test
+            ragas_success, ragas_result, ragas_error = evaluate_single_test(
+                test_case,
+                response,
+                context,
+                test_case["reference_contexts"],
+                llm_model_id,
+            )
 
-                if ragas_success:
-                    # API call and RAGAS both successful
-                    successful += 1
-                    test_result["ragas_evaluated"] = True
-                    test_result["ragas_results"] = ragas_result
-                    api_success_ragas_success.append(test_result)
-                    all_ragas_results.append(ragas_result)
-                else:
-                    # API call success but RAGAS failed
-                    ragas_failed += 1
-                    test_result["ragas_evaluated"] = False
-                    test_result["ragas_error"] = ragas_error
-                    api_success_ragas_failed.append(test_result)
+            # Common test result data
+            test_result = {
+                "test_no": test_case["test_no"],
+                "query": query,
+                "ground_truth": test_case["ground_truth"],
+                "response": response,
+                "context": context,
+                "reference_contexts": test_case["reference_contexts"],
+                "api_call_success": True,
+                "token_usage": token_usage,
+            }
+
+            if ragas_success:
+                # API call and RAGAS both successful
+                successful += 1
+                test_result["ragas_evaluated"] = True
+                test_result["ragas_results"] = ragas_result
+                api_success_ragas_success.append(test_result)
+                all_ragas_results.append(ragas_result)
             else:
-                # API call failed
-                api_failed += 1
-                
-                # Create test result entry
-                api_failed_tests.append({
-                    "test_no": test_case["test_no"],
-                    "query": query,
-                    "ground_truth": test_case.get("ground_truth", ""),
-                    "error": str(response),
-                    "saved_path": None,
-                    "api_call_success": False,
-                    "ragas_evaluated": False,
-                    "reference_contexts": test_case.get("reference_contexts", [])
-                })
+                # API call success but RAGAS failed
+                ragas_failed += 1
+                test_result["ragas_evaluated"] = False
+                test_result["ragas_error"] = ragas_error
+                api_success_ragas_failed.append(test_result)
+        else:
+            # API call failed
+            api_failed += 1
             
-            # Update experiment run status based on result
-            if api_call_success and ragas_success:
-                update_experiment_run_status(llm_model_id, test_case_id, run_number, 'success')
-            else:
-                error_msg = "API call failed" if not api_call_success else "RAGAS evaluation failed"
-                update_experiment_run_status(llm_model_id, test_case_id, run_number, 'failed', error_msg)
-        except Exception as e:
-            logger.error(f"Error processing test case {test_case['test_no']}: {e}")
-            print(f"Error processing test case {test_case['test_no']}: {e}")
-
-    # Update the end of the function
-    # We're not updating test_run status since we're not using that table
-    # Just log completion
+            # Create test result entry
+            api_failed_tests.append({
+                "test_no": test_case["test_no"],
+                "query": query,
+                "ground_truth": test_case.get("ground_truth", ""),
+                "error": str(response),
+                "saved_path": None,
+                "api_call_success": False,
+                "ragas_evaluated": False,
+                "reference_contexts": test_case.get("reference_contexts", [])
+            })
+    
+    # Update test run completion status
+    update_test_run_status(test_run_id, successful, api_failed, ragas_failed)
+    
+    # Report on counts for each category
     logger.info(
         f"Tests completed: {len(api_success_ragas_success)} successful + evaluated, "
         + f"{len(api_success_ragas_failed)} successful but RAGAS failed, "
@@ -360,8 +339,8 @@ def run_synthetic_evaluation(
     # Create final DataFrame
     all_tests_df = pd.DataFrame(results)
     
-    # Return the DataFrame of all individual test results and None for test_run_id
-    return all_tests_df, None
+    # Return the DataFrame of all individual test results and the test run ID
+    return all_tests_df, test_run_id
 
 
 def process_ragas_results(ragas_result, test_case):

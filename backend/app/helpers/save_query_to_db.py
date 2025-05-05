@@ -148,19 +148,19 @@ def save_query_with_eval_to_db(
             logger.error(f"Error saving evaluation results to database: {e}")
             raise
 
-# def save_test_to_evaluation(query_result_id, test_run_id, test_no, test_status):
-#     """Add test info to an existing query_evaluation record"""
-#     try:
-#         with get_cursor() as cursor:
-#             cursor.execute(
-#                 """
-#                 UPDATE query_evaluation
-#                 SET test_run_id = %s,
-#                     test_no = %s,
-#                     test_status = %s
-#                 WHERE query_result_id = %s
-#                 """,
-#                 (test_run_id, test_no, test_status, query_result_id)
-#             )
-#     except Exception as e:
-#         logger.error(f"Error updating query_evaluation with test info: {e}")
+def save_test_to_evaluation(query_result_id, test_run_id, test_no, test_status):
+    """Add test info to an existing query_evaluation record"""
+    try:
+        with get_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE query_evaluation
+                SET test_run_id = %s,
+                    test_no = %s,
+                    test_status = %s
+                WHERE query_result_id = %s
+                """,
+                (test_run_id, test_no, test_status, query_result_id)
+            )
+    except Exception as e:
+        logger.error(f"Error updating query_evaluation with test info: {e}")

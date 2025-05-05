@@ -11,8 +11,6 @@ import logging
 from pathlib import Path
 from collections import OrderedDict
 import datetime
-from app.ragas.scripts.test_run_manager import start_evaluation_run
-    
 
 load_dotenv()
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -86,13 +84,11 @@ def test_connection():
 def evaluate_endpoint():
     data = request.get_json()
     model_id = data.get("model_id")
-    number_of_runs = int(data.get("number_of_runs", 1))
-    
+
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
-    
-    results, status_code = start_evaluation_run(model_id, number_of_runs)
-    
+
+    results, status_code = query_with_eval(model_id)
     return jsonify(results), status_code
 
 
@@ -199,4 +195,48 @@ def get_test_cases():
         )
     except Exception as e:
         logger.error(f"Error fetching test cases: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route("/test-runs", methods=["GET"])
+def get_test_runs():
+    """Get list of all test runs."""
+    try:
+        model_name = request.args.get("model_id")
+        status = request.args.get("status")
+        
+        with get_cursor() as cursor:
+            query = """
+            SELECT tr.id, lm.name as model_name, tr.started_at, tr.completed_at, 
+                   tr.total_tests, tr.successful_tests, tr.failed_api_tests, 
+                   tr.failed_ragas_tests, tr.status
+            FROM test_runs tr
+            JOIN llm_models lm ON tr.model_id = lm.id
+            WHERE 1=1
+            """
+            
+            params = []
+            
+            if model_name:
+                query += " AND lm.name = %s"
+                params.append(model_name)
+                
+            if status:
+                query += " AND tr.status = %s"
+                params.append(status)
+                
+            query += " ORDER BY tr.started_at DESC"
+            
+            cursor.execute(query, params)
+            columns = [desc[0] for desc in cursor.description]
+            test_runs = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            # Convert timestamps to strings
+            for run in test_runs:
+                for ts_field in ['started_at', 'completed_at']:
+                    if isinstance(run.get(ts_field), datetime.datetime):
+                        run[ts_field] = run[ts_field].isoformat()
+                    
+            return jsonify({"test_runs": test_runs})
+    except Exception as e:
+        logger.error(f"Error fetching test runs: {e}")
         return jsonify({"error": str(e)}), 500
