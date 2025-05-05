@@ -2,8 +2,8 @@ from typing import Dict, Any, List, Tuple
 import ast
 import logging
 import math
-from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation, process_ragas_results
-from app.helpers.save_query_to_db import save_query_with_eval_to_db, save_test_to_evaluation
+from app.ragas.scripts.synthetic_ragas_tests import run_synthetic_evaluation
+from app.helpers.save_query_to_db import save_query_with_eval_to_db
 from flask_socketio import emit
 from app.conf.websocket import socketio
 import re
@@ -47,7 +47,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                 logger.error(f"Error emitting progress update: {e}")
         
         logger.info("Starting synthetic evaluation...")
-        df, test_run_id = run_synthetic_evaluation(model_id, progress_callback)
+        ragas_results, df = run_synthetic_evaluation(model_id, progress_callback)
         logger.info(f"Evaluation complete. DataFrame shape: {df.shape if df is not None else 'None'}")
         logger.info(f"DataFrame columns: {df.columns.tolist() if df is not None else 'None'}")
 
@@ -58,6 +58,27 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         # Configure logger to ensure it's displaying
         logging.basicConfig(level=logging.INFO)
         logger.setLevel(logging.INFO)
+        
+        # Process RAGAS results into a consistent dictionary format
+        results_dict = {}
+        if isinstance(ragas_results, dict):
+            results_dict = ragas_results
+
+        else:
+            # Try to convert to string and parse
+            results_str = str(ragas_results)
+
+            if '{' in results_str and '}' in results_str:
+                dict_part = results_str[results_str.find('{'): results_str.rfind('}')+1]
+                try:
+                    parsed_dict = ast.literal_eval(dict_part)
+                    for k, v in parsed_dict.items():
+                        if isinstance(v, (int, float)):
+                            results_dict[k] = float(v)
+                        else:
+                            results_dict[k] = v
+                except (SyntaxError, ValueError):
+                    results_dict["raw_results"] = results_str
         
         # Map RAGAS metric names to our expected names
         metric_mapping = {
@@ -73,44 +94,6 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         
         logger.info(f"DataFrame shape: {df.shape}")
         logger.info(f"DataFrame columns: {df.columns.tolist()}")
-        
-        # Calculate average metrics from successful tests
-        metrics_to_average = [
-            'factual_correctness', 
-            'semantic_similarity', 
-            'context_recall', 
-            'faithfulness', 
-            'bleu_score', 
-            'non_llm_string_similarity', 
-            'rogue_score', 
-            'string_present'
-        ]
-        
-        # Initialize results dictionary
-        average_metrics = {}
-        
-        # Process rows with successful RAGAS evaluations
-        successful_rows = df[df['ragas_evaluated'] == True]
-        
-        if len(successful_rows) > 0:
-            # Extract and process RAGAS results from each successful row
-            all_metrics = []
-            
-            for _, row in successful_rows.iterrows():
-                row_ragas_results = row.get('ragas_results')
-                if row_ragas_results:
-                    # Process the RAGAS results
-                    processed_results = process_ragas_results(row_ragas_results, {
-                        "reference_contexts": row.get('reference_contexts', []),
-                        "ground_truth": row.get('ground_truth', "")
-                    })
-                    all_metrics.append(processed_results)
-            
-            # Calculate averages for each metric
-            for metric in metrics_to_average:
-                values = [m.get(metric) for m in all_metrics if m.get(metric) is not None]
-                if values:
-                    average_metrics[metric] = sum(values) / len(values)
         
         # For each test case in df, save the query and evaluation results to the database
         total_rows = len(df)
@@ -159,55 +142,24 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
                     "ground_truth": row.get('ground_truth'),
                 }
                 
-                row_ragas_results = row.get('ragas_results')
-                if row_ragas_results:
-                    # Process the RAGAS results for this specific row
-                    row_results_dict = {}
-                    
-                    # Handle different types of RAGAS results
-                    if hasattr(row_ragas_results, 'to_pandas'):
-                        # Convert to pandas DataFrame and then to dict
-                        df_result = row_ragas_results.to_pandas()
-                        if not df_result.empty:
-                            row_results_dict = df_result.iloc[0].to_dict()
-                    elif isinstance(row_ragas_results, dict):
-                        row_results_dict = row_ragas_results
+                # Map the metrics using our mapping dictionary
+                for ragas_key, our_key in metric_mapping.items():
+                    value = results_dict.get(ragas_key)
+                    # Check if value is NaN and replace with None
+                    if isinstance(value, float) and math.isnan(value):
+                        evaluation_data[our_key] = None
                     else:
-                        # Try to convert string representation to dict
-                        results_str = str(row_ragas_results)
-                        if '{' in results_str and '}' in results_str:
-                            dict_part = results_str[results_str.find('{'): results_str.rfind('}')+1]
-                            try:
-                                row_results_dict = ast.literal_eval(dict_part)
-                            except:
-                                row_results_dict = {}
-                    
-                    # Map the metrics using our mapping dictionary
-                    for ragas_key, our_key in metric_mapping.items():
-                        value = row_results_dict.get(ragas_key)
-                        # Check if value is NaN and replace with None
-                        if isinstance(value, float) and math.isnan(value):
-                            evaluation_data[our_key] = None
-                        else:
-                            evaluation_data[our_key] = value
+                        evaluation_data[our_key] = value
                 
                 # Save the query with evaluation results
-                query_result_id = save_query_with_eval_to_db(
+                save_query_with_eval_to_db(
                     query=query,
                     direct_response=response,
                     full_response=row.get('context', ''),
                     llm_model_id=model_id,
                     evaluation_results=evaluation_data,
                     sql_queries=sql_queries,
-                    token_usage=token_usage
-                )
-
-                # Add this after saving to update the test info
-                save_test_to_evaluation(
-                    query_result_id, 
-                    test_run_id, 
-                    row.get('test_no'), 
-                    "success" if row.get('ragas_evaluated', False) else "ragas_failed"
+                    token_usage=token_usage # <-- Pass the token_usage from the row
                 )
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
@@ -257,7 +209,7 @@ def query_with_eval(model_id: str) -> Tuple[Dict[str, Any], int]:
         
         # Return both the results and the full response
         return {
-            "results": average_metrics,
+            "results": results_dict,
             "full_response": full_response_md
         }, 200
         
