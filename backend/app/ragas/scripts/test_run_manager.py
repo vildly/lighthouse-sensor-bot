@@ -3,10 +3,6 @@ from app.conf.postgres import get_cursor
 from typing import List, Dict, Optional, Callable, Tuple, Any
 import time
 import pandas as pd
-import requests
-import json
-from datetime import datetime
-from app.helpers.save_query_to_db import save_query_with_eval_to_db
 
 logger = logging.getLogger(__name__)
 
@@ -42,141 +38,134 @@ def update_test_run_status(test_run_id, successful, api_failed, ragas_failed):
     """Update test run with completion status"""
     try:
         with get_cursor() as cursor:
-            # Calculate total tests
-            total = successful + api_failed + ragas_failed
-            
-            # Calculate success percentage
-            success_percent = (successful / total) * 100 if total > 0 else 0
-            
             cursor.execute(
                 """
                 UPDATE test_runs
-                SET status = 'completed',
+                SET status = %s,
                     successful_tests = %s,
-                    api_failed = %s,
-                    ragas_failed = %s,
-                    success_percent = %s,
+                    failed_api_tests = %s,
+                    failed_ragas_tests = %s,
                     completed_at = NOW()
                 WHERE id = %s
                 """,
-                (successful, api_failed, ragas_failed, success_percent, test_run_id)
+                ('completed', successful, api_failed, ragas_failed, test_run_id)
             )
-            logger.info(f"Updated test run {test_run_id} status: {successful} successful, {api_failed} API failed, {ragas_failed} RAGAS failed")
-            return True
+        return True
     except Exception as e:
         logger.error(f"Error updating test run status: {e}")
         return False
 
-def ensure_experiment_runs_populated(model_id, test_cases, num_runs=1):
-    """Ensure experiment_runs table has entries for all test cases for this model"""
-    if not test_cases:
-        logger.error("No test cases provided to populate experiment runs")
-        return 0
-        
+def ensure_experiment_runs_populated(model_id: str, test_cases: List[Dict], num_runs: int = 10):
+    """Ensure experiment_runs table is populated with all required test runs"""
     try:
         with get_cursor() as cursor:
-            # Get existing runs for this model to avoid duplicates
-            cursor.execute(
-                """
-                SELECT test_case_id, run_number 
-                FROM experiment_runs 
-                WHERE model_id = %s
-                """, 
-                (model_id,)
-            )
-            existing_runs = set((row[0], row[1]) for row in cursor.fetchall())
-            
-            # Count how many we'll insert
-            to_insert = []
+            runs_to_insert = []
             for test_case in test_cases:
                 test_id = str(test_case.get('test_no', ''))
-                if not test_id:
-                    continue
-                    
-                for run_num in range(1, num_runs + 1):
-                    if (test_id, run_num) not in existing_runs:
-                        to_insert.append((model_id, test_id, run_num))
+                for i in range(1, num_runs + 1):
+                    runs_to_insert.append((model_id, test_id, i))
             
-            # Bulk insert if we have any
-            if to_insert:
-                # Insert model_id, test_case_id, run_number. Status defaults to 'pending'.
-                args = ','.join(cursor.mogrify("(%s,%s,%s)", row).decode('utf-8') for row in to_insert)
-                cursor.execute(
-                    f"""
-                    INSERT INTO experiment_runs (model_id, test_case_id, run_number)
-                    VALUES {args}
-                    """
-                )
-                logger.info(f"Populated {len(to_insert)} experiment runs for model {model_id}")
-            else:
-                logger.info(f"No new experiment runs needed for model {model_id}")
+            # Use a more efficient batch insert approach with UNNEST
+            if runs_to_insert:
+                # Extract the columns of data for UNNEST
+                model_ids, test_ids, run_numbers = zip(*runs_to_insert)
                 
-            return len(to_insert)
-    except Exception as e:
-        logger.error(f"Error populating experiment runs: {e}")
-        return 0
-
-def update_experiment_run_status(model_id: str, test_case_id: str, run_number: int, 
-                                 status: str, error_message: Optional[str] = None, 
-                                 query_evaluation_id: Optional[int] = None,
-                                 retry_count: Optional[int] = None):
-    """Updates the status and error of an experiment run using get_cursor."""
-    try:
-        with get_cursor() as cursor:
-            sql = """
-            UPDATE experiment_runs
-            SET status = %s,
-                last_error = %s,
-                last_attempt_timestamp = NOW()
-            """
-            params = [status, error_message]
-
-            if retry_count is not None:
-                sql += ", retry_count = %s"
-                params.append(retry_count)
-
-            sql += """
-            WHERE model_id = %s AND test_case_id = %s AND run_number = %s
-            """
-            params.extend([model_id, test_case_id, run_number])
-
-            cursor.execute(sql, tuple(params))
+                cursor.execute(
+                    """
+                    INSERT INTO experiment_runs (model_id, test_case_id, run_number)
+                    SELECT m, t, r 
+                    FROM UNNEST(%s::text[], %s::text[], %s::int[]) AS u(m, t, r)
+                    ON CONFLICT (model_id, test_case_id, run_number) DO NOTHING;
+                    """,
+                    (list(model_ids), list(test_ids), list(run_numbers))
+                )
             
-            if cursor.rowcount > 0:
-                 logger.info(f"Updated run: Model={model_id}, Test={test_case_id}, Run={run_number} to Status='{status}', RetryCount={retry_count}")
-            else:
-                 logger.warning(f"Could not find run to update: Model={model_id}, Test={test_case_id}, Run={run_number}")
-
+            return True
     except Exception as e:
-        logger.error(f"Error updating experiment run status: {e}")
+        logger.error(f"Error populating experiment_runs table: {e}")
+        return False
 
-def mark_run_as_running(model_id: str, test_case_id: str, run_number: int):
-    """Marks a specific experiment run as 'running' using get_cursor."""
+def update_experiment_run_status(model_id: str, test_id: str, run_number: int, 
+                                status: str, error_msg: Optional[str] = None,
+                                query_evaluation_id: Optional[int] = None):
+    """Update status in experiment_runs and add entry to run_attempt_history"""
     try:
         with get_cursor() as cursor:
+            # Check if an attempt already exists with pending or running status
             cursor.execute(
                 """
-                UPDATE experiment_runs
-                SET status = 'running', last_attempt_timestamp = NOW()
+                SELECT attempt_id FROM run_attempt_history 
                 WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                AND attempt_status IN ('pending', 'running')
+                ORDER BY attempt_timestamp DESC
+                LIMIT 1
                 """,
-                (model_id, test_case_id, run_number)
+                (model_id, test_id, run_number)
             )
-            if cursor.rowcount > 0:
-                logger.info(f"Marked run as running: Model={model_id}, Test={test_case_id}, Run={run_number}")
+            
+            existing_attempt = cursor.fetchone()
+            
+            if existing_attempt:
+                # Update existing attempt instead of creating a new one
+                cursor.execute(
+                    """
+                    UPDATE run_attempt_history
+                    SET attempt_status = %s, error_message = %s, attempt_timestamp = NOW(),
+                    query_evaluation_id = %s
+                    WHERE attempt_id = %s
+                    """,
+                    (status, error_msg, query_evaluation_id, existing_attempt[0])
+                )
+                
+                # Update experiment_runs with latest status
+                cursor.execute(
+                    """
+                    UPDATE experiment_runs
+                    SET status = %s, last_error = %s, last_attempt_timestamp = NOW()
+                    WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                    """,
+                    (status, error_msg, model_id, test_id, run_number)
+                )
+                
+                logger.info(f"Updated existing attempt {existing_attempt[0]} with status '{status}'")
             else:
-                 logger.warning(f"Could not find run to mark as running: Model={model_id}, Test={test_case_id}, Run={run_number}")
+                # No pending/running attempt exists, create a new history entry
+                cursor.execute(
+                    """
+                    INSERT INTO run_attempt_history (model_id, test_case_id, run_number, attempt_status, error_message, query_evaluation_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING attempt_id
+                    """,
+                    (model_id, test_id, run_number, status, error_msg, query_evaluation_id)
+                )
+                
+                attempt_id = cursor.fetchone()[0]
+                
+                # Update experiment_runs with latest status
+                cursor.execute(
+                    """
+                    UPDATE experiment_runs
+                    SET status = %s, last_error = %s, last_attempt_timestamp = NOW()
+                    WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                    """,
+                    (status, error_msg, model_id, test_id, run_number)
+                )
+                
+                logger.info(f"Created new attempt {attempt_id} with status '{status}'")
+                
+        return True
     except Exception as e:
-        logger.error(f"Error marking run as running: {e}")
+        logger.error(f"Error updating experiment status: {e}")
+        return False
 
 def get_pending_experiments(batch_size=5, filter_model=None):
-    """Get a batch of pending experiments to process"""
+    """Get a batch of pending or failed experiment runs"""
     try:
         with get_cursor() as cursor:
             query = """
             SELECT model_id, test_case_id, run_number
             FROM experiment_runs
-            WHERE status = 'pending'
+            WHERE (status = 'pending' OR status = 'failed')
             """
             
             params = []
@@ -186,110 +175,154 @@ def get_pending_experiments(batch_size=5, filter_model=None):
                 params.append(filter_model)
                 
             query += """
-            ORDER BY created_at ASC
+            ORDER BY last_attempt_timestamp ASC NULLS FIRST
             LIMIT %s
             """
             params.append(batch_size)
             
-            cursor.execute(query, tuple(params))
+            cursor.execute(query, params)
             return cursor.fetchall()
     except Exception as e:
         logger.error(f"Error fetching pending experiments: {e}")
         return []
 
-def get_models():
-    """Get list of available models"""
+def mark_run_as_running(model_id, test_case_id, run_number):
+    """Mark an experiment run as 'running'"""
     try:
         with get_cursor() as cursor:
-            cursor.execute("SELECT name FROM llm_models ORDER BY name")
-            return [row[0] for row in cursor.fetchall()]
+            # Update experiment_runs table
+            cursor.execute(
+                """
+                UPDATE experiment_runs
+                SET status = 'running', last_attempt_timestamp = NOW()
+                WHERE model_id = %s AND test_case_id = %s AND run_number = %s;
+                """,
+                (model_id, test_case_id, run_number)
+            )
+            
+            # Check if a pending entry exists in the history
+            cursor.execute(
+                """
+                SELECT attempt_id FROM run_attempt_history 
+                WHERE model_id = %s AND test_case_id = %s AND run_number = %s
+                AND attempt_status = 'pending'
+                ORDER BY attempt_timestamp DESC
+                LIMIT 1
+                """,
+                (model_id, test_case_id, run_number)
+            )
+            
+            existing_attempt = cursor.fetchone()
+            
+            if existing_attempt:
+                # Update existing attempt to running
+                cursor.execute(
+                    """
+                    UPDATE run_attempt_history
+                    SET attempt_status = 'running', attempt_timestamp = NOW()
+                    WHERE attempt_id = %s
+                    """,
+                    (existing_attempt[0],)
+                )
+                logger.info(f"Updated existing attempt {existing_attempt[0]} to running status")
+            else:
+                # Create a new history entry with running status
+                cursor.execute(
+                    """
+                    INSERT INTO run_attempt_history (model_id, test_case_id, run_number, attempt_status)
+                    VALUES (%s, %s, %s, 'running')
+                    RETURNING attempt_id
+                    """,
+                    (model_id, test_case_id, run_number)
+                )
+                attempt_id = cursor.fetchone()[0]
+                logger.info(f"Created new running attempt with ID {attempt_id}")
+                
+        return True
+    except Exception as e:
+        logger.error(f"Error marking run as running: {e}")
+        return False
+
+def get_models():
+    """Get all available models from the database"""
+    try:
+        with get_cursor() as cursor:
+            cursor.execute("SELECT name FROM llm_models")
+            models = [row[0] for row in cursor.fetchall()]
+            return models
     except Exception as e:
         logger.error(f"Error fetching models: {e}")
         return []
 
-def run_batch_experiments(batch_size=5, wait_time=5, max_retries=3, filter_model=None):
-    """Run batch experiments from the experiment_runs table"""
+def run_batch_experiments(batch_size=5, wait_time=5, max_retries=3, 
+                         filter_model: Optional[str] = None):
+    """
+    Run a batch of pending experiments
+    
+    Args:
+        batch_size: Number of experiments to process in one batch
+        wait_time: Seconds to wait between batches
+        max_retries: Maximum number of retry attempts for failed runs
+        filter_model: Optional model name to filter experiments
+    """
     from app.services.query_with_eval import query_with_eval
-
+    
     total_processed = 0
-    retries = 0
-
-    logger.info(f"Starting initial batch run with batch size: {batch_size}")
-
-    # --- Initial Processing Loop ---
-    while total_processed < batch_size and retries < max_retries:
-        # Get pending experiments
+    
+    while True:
+        # Get pending runs (with filter if specified)
         pending_runs = get_pending_experiments(batch_size, filter_model)
-
+        
         if not pending_runs:
-            logger.info("No pending experiments found in initial run.")
-            retries += 1
-            time.sleep(wait_time)
-            continue
-
-        retries = 0  # Reset retries when we find pending experiments
-        logger.info(f"Found {len(pending_runs)} pending experiments for initial processing")
-
+            logger.info("No more pending experiments found.")
+            break
+        
+        logger.info(f"Running batch of {len(pending_runs)} experiments")
+        
         for model_id, test_case_id, run_number in pending_runs:
-            logger.info(f"Running initial experiment: Model={model_id}, Test={test_case_id}, Run={run_number}")
-
+            logger.info(f"Running experiment: Model={model_id}, Test={test_case_id}, Run={run_number}")
+            
             # Mark as running
             mark_run_as_running(model_id, test_case_id, run_number)
-
+            
             try:
                 # Run the evaluation
                 result, status_code = query_with_eval(model_id, run_number)
-
+                
                 # Log completion
                 if status_code == 200:
-                    logger.info(f"✅ Initial experiment completed successfully")
+                    logger.info(f"✅ Experiment completed successfully")
                     # Update status to success
                     update_experiment_run_status(model_id, test_case_id, run_number, 'success')
                 else:
-                    logger.warning(f"⚠️ Initial experiment returned status code: {status_code}")
+                    logger.warning(f"⚠️ Experiment returned status code: {status_code}")
                     # Update status to failed
                     update_experiment_run_status(
-                        model_id,
-                        test_case_id,
-                        run_number,
-                        'failed',
+                        model_id, 
+                        test_case_id, 
+                        run_number, 
+                        'failed', 
                         f"API returned status code: {status_code}"
                     )
-
+                
                 total_processed += 1
-
+                
             except Exception as e:
-                logger.error(f"❌ Error running initial experiment: {e}")
+                logger.error(f"❌ Error running experiment: {e}")
                 # Update status to failed
                 update_experiment_run_status(
-                    model_id,
-                    test_case_id,
-                    run_number,
-                    'failed',
+                    model_id, 
+                    test_case_id, 
+                    run_number, 
+                    'failed', 
                     str(e)
                 )
-
-        # Wait before processing next batch (if any more pending runs exist within the initial batch size limit)
-        if pending_runs and total_processed < batch_size:
-            logger.info(f"Waiting {wait_time} seconds before next initial batch...")
+        
+        # Wait before processing next batch
+        if pending_runs:
+            logger.info(f"Waiting {wait_time} seconds before next batch...")
             time.sleep(wait_time)
-    # --- End Initial Processing Loop ---
-
-    logger.info(f"Initial processing loop completed. Processed {total_processed} runs.")
-
-    # --- Automatic Retry Phase ---
-    logger.info("Initiating automatic retry phase for any failed runs...")
-    # Call the function to automatically retry all failed runs until none are left
-    # Use the same max_retries, batch_size, and wait_time for consistency, or adjust as needed
-    total_retried = auto_retry_all_failed_runs(
-        max_retries=max_retries,
-        batch_size=batch_size,
-        wait_time=wait_time
-    )
-    logger.info(f"Automatic retry phase completed. Retried {total_retried} runs.")
-    # --- End Automatic Retry Phase ---
-
-    # Return the total processed in the initial phase (or potentially combined total if needed)
+    
     return total_processed
 
 def display_experiment_status():
@@ -392,10 +425,6 @@ def start_evaluation_run(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[s
     # Run first evaluation synchronously and get results to return
     results, status_code = query_with_eval(model_id, run_number=1)
     
-    # Automatically retry any failed runs from the first evaluation
-    logger.info("Starting automatic retry for any failed runs from initial evaluation...")
-    auto_retry_all_failed_runs(max_retries=3, batch_size=5, wait_time=3)
-    
     # Start background thread for remaining runs if needed
     if number_of_runs > 1:
         def run_remaining():
@@ -405,10 +434,6 @@ def start_evaluation_run(model_id: str, number_of_runs: int = 1) -> Tuple[Dict[s
                 filter_model=model_id,
                 initial_results=results  # Pass the initial results to append to
             )
-            
-            # After all runs complete, automatically retry any failed runs
-            logger.info("Starting automatic retry for any failed runs from background processing...")
-            auto_retry_all_failed_runs(max_retries=3, batch_size=5, wait_time=3)
             
         thread = threading.Thread(target=run_remaining)
         thread.daemon = True
@@ -533,255 +558,3 @@ def extract_last_test(full_response):
         # Return the last section with its header
         return f"## Test Case {len(test_sections)}{test_sections[-1]}"
     return ""
-
-def retry_failed_experiment_runs(batch_size=5, wait_time=5, max_retries=3, filter_model=None):
-    """Retry failed experiment runs that haven't exceeded max retry attempts using get_cursor."""
-    from app.ragas.scripts.synthetic_ragas_tests import run_test_case, evaluate_single_test, load_synthetic_test_cases
-    
-    logger.info(f"Starting retry process for failed experiment runs (Max Retries: {max_retries})...")
-    
-    # Load all test cases for lookup
-    test_cases = load_synthetic_test_cases()
-    if not test_cases:
-        logger.error("Cannot proceed with retries: Failed to load synthetic test cases")
-        return 0
-        
-    # Create lookup dictionary
-    test_case_dict = {str(tc['test_no']): tc for tc in test_cases}
-    
-    total_processed = 0
-    total_retried_successfully = 0
-    
-    while True:
-        # Get failed runs to retry using get_cursor
-        failed_runs_data = []
-        try:
-            with get_cursor() as cursor:
-                query = """
-                SELECT model_id, test_case_id, run_number, COALESCE(retry_count, 0) as retry_count
-                FROM experiment_runs
-                WHERE status = 'failed'
-                AND COALESCE(retry_count, 0) < %s
-                """
-                params = [max_retries]
-                
-                if filter_model:
-                    query += " AND model_id = %s"
-                    params.append(filter_model)
-                    
-                query += """
-                ORDER BY last_attempt_timestamp ASC NULLS FIRST
-                LIMIT %s
-                """
-                params.append(batch_size)
-                
-                cursor.execute(query, tuple(params))
-                # Fetch as dictionaries for easier access
-                columns = [desc[0] for desc in cursor.description]
-                failed_runs_data = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        except Exception as e:
-            logger.error(f"Error fetching failed experiments: {e}")
-            break # Stop if we can't fetch runs
-
-        if not failed_runs_data:
-            logger.info("No more failed runs found to retry")
-            break
-            
-        logger.info(f"Found {len(failed_runs_data)} failed runs to retry")
-        
-        for run_data in failed_runs_data:
-            model_id = run_data['model_id']
-            test_case_id = run_data['test_case_id']
-            run_number = run_data['run_number']
-            current_retry = run_data['retry_count']
-            next_retry = current_retry + 1
-            
-            logger.info(f"Retrying: Model={model_id}, Test={test_case_id}, Run={run_number}, Attempt={next_retry}")
-            
-            # Get test case details
-            test_case = test_case_dict.get(str(test_case_id))
-            if not test_case:
-                logger.error(f"Cannot find test case details for test_id={test_case_id}. Skipping retry.")
-                update_experiment_run_status(
-                    model_id=model_id, 
-                    test_case_id=test_case_id, 
-                    run_number=run_number, 
-                    status='failed', 
-                    error_message="Test case details not found.",
-                    retry_count=next_retry # Increment retry count even if skipped
-                )
-                
-                continue
-
-            query = test_case.get('query')
-            ground_truth = test_case.get('ground_truth')
-            
-            # Mark as running
-            mark_run_as_running(model_id=model_id, test_case_id=test_case_id, run_number=run_number)
-            
-            try:
-                # --- Execute the single test case ---
-                agent_response, contexts, api_call_success, token_usage = run_test_case(
-                    query=query, 
-                    llm_model_id=model_id, 
-                    test_no=test_case_id
-                )
-                # --- End Execute Test Case ---
-
-                if api_call_success:
-                    # --- Evaluate RAGAS ---
-                    ragas_results = evaluate_single_test(agent_response, contexts, ground_truth)
-                    # --- End Evaluate RAGAS ---
-
-                    # --- Save Results ---
-                    query_eval_id = save_query_with_eval_to_db(
-                        query=query, 
-                        response=agent_response, 
-                        contexts=contexts, 
-                        evaluation_results=ragas_results, 
-                        model_id=model_id, 
-                        token_usage=token_usage,
-                        test_case_id=test_case_id
-                    )
-                    # --- End Saving Results ---
-
-                    # --- Record successful attempt in run_attempt_history ---
-                    try:
-                        with get_cursor() as cursor:
-                            cursor.execute(
-                                """
-                                INSERT INTO run_attempt_history 
-                                (model_id, test_case_id, run_number, attempt_timestamp, status, query_evaluation_id)
-                                VALUES (%s, %s, %s, NOW(), %s, %s)
-                                """,
-                                (model_id, test_case_id, run_number, 'success', query_eval_id)
-                            )
-                    except Exception as e:
-                        logger.error(f"Error recording successful attempt history: {e}")
-                    # --- End Recording History ---
-
-                    # --- Update ExperimentRun status to success ---
-                    update_experiment_run_status(
-                        model_id=model_id, 
-                        test_case_id=test_case_id, 
-                        run_number=run_number, 
-                        status='success', 
-                        error_message=None,
-                        retry_count=next_retry # Record the successful retry attempt number
-                    )
-                    total_retried_successfully += 1
-                    logger.info(f"✅ Successfully retried and processed Test={test_case_id}.")
-                    # --- End Update Status ---
-
-                else:
-                    # API call failed again
-                    error_msg = f"Retry attempt {next_retry} failed: API call error." 
-                    logger.warning(f"⚠️ API call failed again for Test={test_case_id} on attempt {next_retry}.")
-                    
-                    # --- Record failed API attempt in run_attempt_history ---
-                    try:
-                        with get_cursor() as cursor:
-                            cursor.execute(
-                                """
-                                INSERT INTO run_attempt_history 
-                                (model_id, test_case_id, run_number, attempt_timestamp, status, error_message)
-                                VALUES (%s, %s, %s, NOW(), %s, %s)
-                                """,
-                                (model_id, test_case_id, run_number, 'failed', error_msg)
-                            )
-                    except Exception as e:
-                        logger.error(f"Error recording failed API attempt history: {e}")
-                    # --- End Recording History ---
-                    
-                    update_experiment_run_status(
-                        model_id=model_id, 
-                        test_case_id=test_case_id, 
-                        run_number=run_number, 
-                        status='failed', 
-                        error_message=error_msg,
-                        retry_count=next_retry
-                    )
-
-            except Exception as e:
-                # Catch errors during run_test_case, evaluation, or saving
-                error_msg = f"Error during retry attempt {next_retry}: {str(e)[:500]}" # Truncate long errors
-                logger.error(f"❌ {error_msg}")
-                
-                # --- Record error attempt in run_attempt_history ---
-                try:
-                    with get_cursor() as cursor:
-                        cursor.execute(
-                            """
-                            INSERT INTO run_attempt_history 
-                            (model_id, test_case_id, run_number, attempt_timestamp, status, error_message)
-                            VALUES (%s, %s, %s, NOW(), %s, %s)
-                            """,
-                            (model_id, test_case_id, run_number, 'failed', error_msg)
-                        )
-                except Exception as hist_err:
-                    logger.error(f"Error recording error attempt history: {hist_err}")
-                # --- End Recording History ---
-                
-                update_experiment_run_status(
-                    model_id=model_id, 
-                    test_case_id=test_case_id, 
-                    run_number=run_number, 
-                    status='failed', 
-                    error_message=error_msg,
-                    retry_count=next_retry
-                )
-            
-            total_processed += 1
-            
-        # Wait between batches if we processed a full batch
-        if len(failed_runs_data) == batch_size:
-            logger.info(f"Waiting {wait_time} seconds before next batch...")
-            time.sleep(wait_time)
-        else:
-            # If we processed less than a full batch, we're done
-            break
-    
-    logger.info(f"Retry process finished. Total runs processed: {total_processed}, Successfully retried: {total_retried_successfully}")
-    return total_processed
-
-def auto_retry_all_failed_runs(max_retries=3, batch_size=5, wait_time=5):
-    """
-    Automatically retry all failed experiment runs until there are no more failed runs
-    or until all runs have reached the maximum retry count.
-    
-    Args:
-        max_retries: Maximum number of retry attempts per run
-        batch_size: Number of runs to process in each batch
-        wait_time: Seconds to wait between batches
-        
-    Returns:
-        Total number of runs processed during retries
-    """
-    logger.info("Starting automatic retry of ALL failed experiment runs...")
-    
-    total_processed_retries = 0
-    total_batches = 0
-    
-    while True:
-        # Run a batch of retries using the existing retry function
-        processed_in_batch = retry_failed_experiment_runs(
-            batch_size=batch_size,
-            wait_time=wait_time,
-            max_retries=max_retries
-        )
-        
-        # If no runs were processed in this batch, we're done
-        if processed_in_batch == 0:
-            logger.info("No more failed runs to retry - all runs have either succeeded or reached max retries")
-            break
-            
-        total_processed_retries += processed_in_batch
-        total_batches += 1
-        
-        logger.info(f"Completed retry batch {total_batches}, processed {processed_in_batch} runs in this batch")
-        
-        # Optional: Add a small delay between full retry cycles if needed
-        # time.sleep(1) 
-    
-    logger.info(f"Auto-retry completed. Total runs processed across {total_batches} retry batches: {total_processed_retries}")
-    return total_processed_retries
