@@ -246,7 +246,7 @@ def run_synthetic_evaluation(
     # Get current retry count from database for test 1
     current_retry_count = 0
     try:
-        from backend.app.conf.postgres import get_cursor
+        from app.conf.postgres import get_cursor
         with get_cursor() as cursor:
             cursor.execute(
                 """
