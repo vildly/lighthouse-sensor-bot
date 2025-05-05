@@ -318,6 +318,9 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     all_test_results = []
     all_ragas_results = []
     
+    # Test: Track failed test 1 to ensure it only fails once
+    failed_test1_already = False
+    
     while not run_manager.all_tests_completed():
         # Get next test to run
         next_test = run_manager.get_next_pending_test()
@@ -341,6 +344,12 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
         
         try:
             logger.info(f"Running test {test_id} (run {run_number}/{number_of_runs})")
+            
+            # SIMULATE FAILURE for test #1 on first attempt only
+            # if test_id == "1" and run_number == 1 and not failed_test1_already:
+            #     failed_test1_already = True
+            #     print(f"SIMULATING FAILURE: Test {test_id} run {run_number} will fail and trigger retry")
+            #     raise Exception(f"Simulated failure for test {test_id} on first attempt")
             
             # Run the test case
             query = test_case["query"]
