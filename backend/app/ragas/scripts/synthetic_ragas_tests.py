@@ -260,37 +260,37 @@ def run_synthetic_evaluation(
     except Exception as e:
         logger.error(f"Error getting retry count: {e}")
 
-    # # FORCE FAILURE FOR TEST 1, RUN 1, but only on first attempt (retry_count=0)
-    # if run_number == 1 and current_retry_count == 0:
-    #     for test_case in test_cases:
-    #         if str(test_case.get('test_no')) == '1':
-    #             logger.warning(f"🔥 FORCING FAILURE FOR TEST 1, RUN 1 (INITIAL ATTEMPT) 🔥")
-    #             # Create a failed result for this test
-    #             api_failed_tests = [{
-    #                 "test_no": test_case["test_no"],
-    #                 "query": test_case.get("query", ""),
-    #                 "ground_truth": test_case.get("ground_truth", ""),
-    #                 "error": "Simulated failure for testing retry functionality",
-    #                 "saved_path": None,
-    #                 "api_call_success": False,
-    #                 "ragas_evaluated": False,
-    #                 "reference_contexts": test_case.get("reference_contexts", [])
-    #             }]
+    # FORCE FAILURE FOR TEST 1, RUN 1, but only on first attempt (retry_count=0)
+    if run_number == 1 and current_retry_count == 0:
+        for test_case in test_cases:
+            if str(test_case.get('test_no')) == '1':
+                logger.warning(f"🔥 FORCING FAILURE FOR TEST 1, RUN 1 (INITIAL ATTEMPT) 🔥")
+                # Create a failed result for this test
+                api_failed_tests = [{
+                    "test_no": test_case["test_no"],
+                    "query": test_case.get("query", ""),
+                    "ground_truth": test_case.get("ground_truth", ""),
+                    "error": "Simulated failure for testing retry functionality",
+                    "saved_path": None,
+                    "api_call_success": False,
+                    "ragas_evaluated": False,
+                    "reference_contexts": test_case.get("reference_contexts", [])
+                }]
                 
-    #             # Update the experiment run status in the database
-    #             update_experiment_run_status(
-    #                 model_id=llm_model_id, 
-    #                 test_case_id=str(test_case["test_no"]), 
-    #                 run_number=run_number, 
-    #                 status='failed', 
-    #                 error_message="Simulated failure for testing retry functionality"
-    #             )
+                # Update the experiment run status in the database
+                update_experiment_run_status(
+                    model_id=llm_model_id, 
+                    test_case_id=str(test_case["test_no"]), 
+                    run_number=run_number, 
+                    status='failed', 
+                    error_message="Simulated failure for testing retry functionality"
+                )
                 
-    #             # Return the failed result
-    #             df = pd.DataFrame(api_failed_tests)
-    #             logger.info(f"API call success: {False}")
-    #             logger.info(f"Tests completed: {0} successful + evaluated, {0} successful but RAGAS failed, {1} API call failed")
-    #             return df, None
+                # Return the failed result
+                df = pd.DataFrame(api_failed_tests)
+                logger.info(f"API call success: {False}")
+                logger.info(f"Tests completed: {0} successful + evaluated, {0} successful but RAGAS failed, {1} API call failed")
+                return df, None
 
     # Initialize counters
     successful = 0
