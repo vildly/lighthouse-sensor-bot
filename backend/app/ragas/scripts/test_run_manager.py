@@ -86,8 +86,7 @@ def ensure_experiment_runs_populated(model_id: str, test_cases: List[Dict], num_
         return False
 
 def update_experiment_run_status(model_id: str, test_id: str, run_number: int, 
-                                status: str, error_msg: Optional[str] = None,
-                                query_evaluation_id: Optional[int] = None):
+                                status: str, error_msg: Optional[str] = None):
     """Update status in experiment_runs and add entry to run_attempt_history"""
     try:
         with get_cursor() as cursor:
@@ -110,11 +109,10 @@ def update_experiment_run_status(model_id: str, test_id: str, run_number: int,
                 cursor.execute(
                     """
                     UPDATE run_attempt_history
-                    SET attempt_status = %s, error_message = %s, attempt_timestamp = NOW(),
-                    query_evaluation_id = %s
+                    SET attempt_status = %s, error_message = %s, attempt_timestamp = NOW()
                     WHERE attempt_id = %s
                     """,
-                    (status, error_msg, query_evaluation_id, existing_attempt[0])
+                    (status, error_msg, existing_attempt[0])
                 )
                 
                 # Update experiment_runs with latest status
@@ -132,11 +130,11 @@ def update_experiment_run_status(model_id: str, test_id: str, run_number: int,
                 # No pending/running attempt exists, create a new history entry
                 cursor.execute(
                     """
-                    INSERT INTO run_attempt_history (model_id, test_case_id, run_number, attempt_status, error_message, query_evaluation_id)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO run_attempt_history (model_id, test_case_id, run_number, attempt_status, error_message)
+                    VALUES (%s, %s, %s, %s, %s)
                     RETURNING attempt_id
                     """,
-                    (model_id, test_id, run_number, status, error_msg, query_evaluation_id)
+                    (model_id, test_id, run_number, status, error_msg)
                 )
                 
                 attempt_id = cursor.fetchone()[0]

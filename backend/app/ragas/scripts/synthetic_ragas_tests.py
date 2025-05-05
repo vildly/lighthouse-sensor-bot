@@ -331,6 +331,13 @@ def run_synthetic_evaluation(
                     "ragas_evaluated": False,
                     "reference_contexts": test_case.get("reference_contexts", [])
                 })
+            
+            # Update experiment run status based on result
+            if api_call_success and ragas_success:
+                update_experiment_run_status(llm_model_id, test_case_id, run_number, 'success')
+            else:
+                error_msg = "API call failed" if not api_call_success else "RAGAS evaluation failed"
+                update_experiment_run_status(llm_model_id, test_case_id, run_number, 'failed', error_msg)
         except Exception as e:
             logger.error(f"Error processing test case {test_case['test_no']}: {e}")
             print(f"Error processing test case {test_case['test_no']}: {e}")
