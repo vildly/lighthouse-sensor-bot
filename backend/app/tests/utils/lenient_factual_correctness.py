@@ -56,7 +56,7 @@ def main():
   
     
     # Example 1: Exact match
-    response = "The total cost was 254000 SEK"
+    response = "The total cost was 116000 SEK"
     reference  = "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK"
     query  = "What was the total fuel cost for ferry Jupiter in January 2024?"
     

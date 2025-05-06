@@ -6,6 +6,7 @@
       "Total fuel consumption for ferry Jupiter in January 2024: 12709.34 liters"
     ],
     "ground_truth": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
+    "extracted_true_value": "254186.70",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
@@ -15,6 +16,7 @@
       "The average speed of ferry Jupiter is: 6.23 knots. Average speed in km/h: 11.55 km/h. Average speed in mph: 7.17 mph"
     ],
     "ground_truth": "Average speed in km/h is 11.55 km/h",
+    "extracted_true_value": "11.55",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
@@ -24,6 +26,7 @@
       "The route with the highest average distance travelled is: Aspöleden with an average distance of 3.22 NM."
     ],
     "ground_truth": "The route with the highest average distance travelled is Aspöleden with an average distance of 3.22 NM",
+    "extracted_true_value": "3.22",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
@@ -33,6 +36,7 @@
       "Average Vehicles Left at Terminals Per Month: Ljusterö terminal in July 2023 (2023-07) had 23.353470 total vehicles outbound"
     ],
     "ground_truth": "The average number of vehicles left at Ljusterö terminal in July 2023 was 23.35 vehicles",
+    "extracted_true_value": "23.35",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
@@ -42,6 +46,7 @@
       "Route(s) with the overall highest daily throughput: Ljusteröleden with 1840 vehicles. All routes with their highest daily throughput: Aspöleden: 351, Furusundsleden: 1794, Ljusteröleden: 1840, Oxdjupsleden: 841, Vaxholmsleden: 1387"
     ],
     "ground_truth": "The route with the highest vehicle throughput per day is Ljusteröleden with 1840 vehicles",
+    "extracted_true_value": "1840",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
