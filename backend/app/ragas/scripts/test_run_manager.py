@@ -9,6 +9,8 @@ import ast
 import math
 import pandas as pd
 from app.helpers.save_query_to_db import save_query_with_eval_to_db
+from flask_socketio import emit
+from app.conf.websocket import socketio
 
 # Create and configure logger with a direct stream handler
 logger = logging.getLogger(__name__)
@@ -265,8 +267,8 @@ class TestRunManager:
         logger.info(f"Retry counts: {retry_counts}")
 
 
-def execute_test_runs(model_id: str, number_of_runs: int = 1, 
-                     max_retries: int = 3, progress_callback=None, test_data=None):
+def execute_test_runs(model_id: str, number_of_runs, 
+                     max_retries, progress_callback=None, test_data=None):
     """
     Main function to execute all test runs with retry logic.
     
@@ -313,6 +315,27 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     all_test_results = []
     all_ragas_results = []
     
+    # After test cases are loaded, calculate total tests
+    total_tests = len(test_cases)
+    current_test_index = 0
+    total_runs = total_tests * number_of_runs
+    current_run = 0
+    
+    # Initial progress update
+    try:
+        socketio.emit('evaluation_progress', {
+            'progress': 0,
+            'total': total_runs,
+            'percent': 0,
+            'test_no': 0,
+            'total_tests': total_tests,
+            'iteration': 0,
+            'total_iterations': number_of_runs,
+            'message': f'Starting evaluation of {total_tests} tests with {number_of_runs} runs each'
+        }, namespace='/query')
+    except Exception as e:
+        logger.error(f"Error emitting initial progress: {e}")
+    
     while not run_manager.all_tests_completed():
         # Get next test to run
         next_test = run_manager.get_next_pending_test()
@@ -325,10 +348,15 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
         # Update progress if callback provided
         if progress_callback:
             summary = run_manager.get_summary()
+            completed_tests = summary["successful_tests"] + summary["failed_tests"]
             progress_callback(
-                summary["successful_tests"] + summary["failed_tests"],
+                completed_tests,
                 summary["total_tests"],
-                f"Running test {test_id} (run {run_number}/{number_of_runs})"
+                f"Running test {test_id} (run {run_number}/{number_of_runs})",
+                test_no=test_id,
+                total_tests=summary["total_tests"],
+                iteration=run_number,
+                total_iterations=number_of_runs
             )
         
         # Mark test as running
@@ -336,6 +364,23 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
         
         try:
             logger.info(f"Running test {test_id} (run {run_number}/{number_of_runs})")
+            
+            # Before the loop starts for a specific test
+            current_test_index += 1
+            
+            try:
+                socketio.emit('evaluation_progress', {
+                    'progress': current_run,
+                    'total': total_runs,
+                    'percent': int((current_run / total_runs) * 100),
+                    'test_no': test_id,
+                    'total_tests': total_tests,
+                    'iteration': run_number,
+                    'total_iterations': number_of_runs,
+                    'message': f'Running test {test_id}/{total_tests} iteration {run_number}/{number_of_runs}'
+                }, namespace='/query')
+            except Exception as e:
+                logger.error(f"Error emitting test progress: {e}")
             
             # Run the test case
             query = test_case["query"]
@@ -502,6 +547,25 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
                 # Mark the test as failed
                 run_manager.mark_test_failed(test_id, run_number, f"RAGAS processing error: {e}")
             
+            # After the test completes successfully
+            current_run += 1
+            
+            try:
+                socketio.emit('evaluation_progress', {
+                    'progress': current_run,
+                    'total': total_runs,
+                    'percent': int((current_run / total_runs) * 100),
+                    'test_no': test_id,
+                    'total_tests': total_tests,
+                    'iteration': run_number,
+                    'total_iterations': number_of_runs,
+                    'message': f'Completed test {test_id}/{total_tests}, iteration {run_number}/{number_of_runs}'
+                }, namespace='/query')
+                # Add debug log to confirm emission
+                logger.info(f"Emitted progress update: Test {test_id}/{total_tests}, Iteration {run_number}/{number_of_runs}, Progress {current_run}/{total_runs}")
+            except Exception as e:
+                logger.error(f"Error emitting completion progress: {e}")
+            
         except Exception as e:
             logger.error(f"Error running test {test_id} (run {run_number}): {e}")
             run_manager.mark_test_failed(test_id, run_number, str(e))
@@ -606,3 +670,19 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     formatted_response = format_test_results_for_response(results_dict, serializable_combined_results)
 
     return formatted_response, 200
+
+def update_progress(progress, total, message, test_no=None, total_tests=None, iteration=None, total_iterations=None):
+    """Update progress via WebSocket"""
+    try:
+        socketio.emit('evaluation_progress', {
+            'progress': progress,
+            'total': total,
+            'percent': int((progress / total) * 100) if total > 0 else 0,
+            'message': message,
+            'test_no': test_no if test_no is not None else progress,
+            'total_tests': total_tests if total_tests is not None else total,
+            'iteration': iteration if iteration is not None else 0,
+            'total_iterations': total_iterations if total_iterations is not None else 1
+        }, namespace='/query')
+    except Exception as e:
+        logger.error(f"Error emitting progress update: {e}")
