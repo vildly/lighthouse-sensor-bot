@@ -3,6 +3,7 @@ from agno.utils.log import logger
 from app.conf.postgres import get_cursor
 import ast
 import json
+import logging
 
 
 def get_model_id(llm_model_name: str) -> int:
@@ -123,6 +124,9 @@ def save_query_with_eval_to_db(
     if not isinstance(evaluation_results, dict):
       raise ValueError("Evaluation results must be a dictionary")
 
+    # Log the incoming evaluation results for debugging
+    print(f"DEBUG - Evaluation results before saving: {evaluation_results}")
+
     required_keys = {
         "retrieved_contexts": (str, type(None)),
         "ground_truth": (str, type(None)),
@@ -136,12 +140,30 @@ def save_query_with_eval_to_db(
         "string_present": (float, int, type(None)),
     }
 
+    # Make a copy of evaluation_results to avoid modifying the original
+    processed_results = evaluation_results.copy()
+
+    # Fix any type issues and ensure all required keys exist
     for key, expected_types in required_keys.items():
-        value = evaluation_results.get(key)
-        if value is not None and not isinstance(value, expected_types):
-            raise ValueError(
-                f"Invalid type for {key}: expected {expected_types}, got {type(value)}"
-            )
+        value = processed_results.get(key)
+        
+        # Convert to proper numeric type if needed
+        if value is not None:
+            if not isinstance(value, expected_types):
+                try:
+                    if float in expected_types or int in expected_types:
+                        processed_results[key] = float(value)
+                    elif str in expected_types:
+                        processed_results[key] = str(value)
+                except (ValueError, TypeError):
+                    print(f"DEBUG - Could not convert {key}={value} to expected type {expected_types}")
+                    processed_results[key] = None
+        else:
+            # Ensure the key exists even if the value is None
+            processed_results[key] = None
+
+    # Log the processed evaluation results for debugging
+    print(f"DEBUG - Processed evaluation results for DB: {processed_results}")
 
     # Use existing query_result_id if provided, otherwise create a new record
     query_result_id = existing_query_result_id
@@ -153,6 +175,20 @@ def save_query_with_eval_to_db(
     with get_cursor() as cursor:
         try:
             # Insert evaluation metrics record
+            insert_values = (
+                processed_results.get("factual_correctness"),
+                processed_results.get("semantic_similarity"),
+                processed_results.get("context_recall"),
+                processed_results.get("faithfulness"),
+                processed_results.get("bleu_score"),
+                processed_results.get("non_llm_string_similarity"),
+                processed_results.get("rogue_score"),
+                processed_results.get("string_present"),
+            )
+            
+            # Print actual values being inserted for debugging
+            print(f"DEBUG - DB insert values: {insert_values}")
+            
             cursor.execute(
                 """
                 INSERT INTO evaluation_metrics (
@@ -161,20 +197,11 @@ def save_query_with_eval_to_db(
                     rogue_score, string_present
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
                 """,
-                (
-                    evaluation_results.get("factual_correctness"),
-                    evaluation_results.get("semantic_similarity"),
-                    evaluation_results.get("context_recall"),
-                    evaluation_results.get("faithfulness"),
-                    evaluation_results.get("bleu_score"),
-                    evaluation_results.get("non_llm_string_similarity"),
-                    evaluation_results.get("rogue_score"),
-                    evaluation_results.get("string_present"),
-                ),
+                insert_values
             )
             evaluation_metrics_id = cursor.fetchone()[0]
             
-            # Then insert into query_evaluation (which doesn't have token_usage column)
+            # Then insert into query_evaluation
             cursor.execute(
                 """
                 INSERT INTO query_evaluation (
@@ -182,8 +209,8 @@ def save_query_with_eval_to_db(
                 ) VALUES (%s, %s, %s, %s) RETURNING id
                 """,
                 (
-                    evaluation_results.get("retrieved_contexts"),
-                    evaluation_results.get("ground_truth"),
+                    processed_results.get("retrieved_contexts"),
+                    processed_results.get("ground_truth"),
                     query_result_id,
                     evaluation_metrics_id,
                 ),

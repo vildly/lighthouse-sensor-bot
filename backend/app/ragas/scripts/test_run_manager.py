@@ -5,6 +5,10 @@ from typing import Dict, List, Optional, Any, Tuple
 import time
 from enum import Enum
 from app.conf.postgres import get_cursor
+import ast
+import math
+import pandas as pd
+from app.helpers.save_query_to_db import save_query_with_eval_to_db
 
 # Create and configure logger with a direct stream handler
 logger = logging.getLogger(__name__)
@@ -31,6 +35,7 @@ class TestStatus(Enum):
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
+    MAX_RETRIES_REACHED = "max_retries_reached"
 
 class TestRunManager:
     """
@@ -82,7 +87,7 @@ class TestRunManager:
     
     def get_next_pending_test(self) -> Optional[Tuple[str, int, Dict[str, Any]]]:
         """
-        Get the next pending test case to run.
+        Get the next pending test case that should be run.
         
         Returns:
             Tuple of (test_id, run_number, test_case) or None if no pending tests
@@ -90,83 +95,131 @@ class TestRunManager:
         for test_id, runs in self.test_status.items():
             for run_number, run_info in runs.items():
                 if run_info["status"] == TestStatus.PENDING:
-                    logger.debug(f"Selected pending test {test_id} run {run_number}")
                     return test_id, run_number, run_info["test_case"]
-        
-        # If no pending tests, look for failed tests that can be retried
-        for test_id, runs in self.test_status.items():
-            for run_number, run_info in runs.items():
-                if (run_info["status"] == TestStatus.FAILED and 
-                    run_info["retry_count"] < self.max_retries):
-                    logger.debug(f"Selected failed test {test_id} run {run_number} for retry (attempt {run_info['retry_count'] + 1})")
-                    return test_id, run_number, run_info["test_case"]
-        
-        logger.info("No more pending or retriable tests found")
         return None
     
-    def mark_test_running(self, test_id: str, run_number: int) -> None:
-        """Mark a test as running"""
-        if test_id in self.test_status and run_number in self.test_status[test_id]:
-            prev_status = self.test_status[test_id][run_number]["status"]
-            retry_count = self.test_status[test_id][run_number]["retry_count"]
-            
-            self.test_status[test_id][run_number]["status"] = TestStatus.RUNNING
-            
-            logger.info(f"Test {test_id} run {run_number} status change: {prev_status.value} -> RUNNING (retry {retry_count})")
-            self._log_test_status_summary()
+    def all_tests_completed(self) -> bool:
+        """
+        Check if all tests are completed (either success or max retries reached).
+        
+        Returns:
+            True if all tests are completed, False otherwise
+        """
+        for test_id, runs in self.test_status.items():
+            for run_number, run_info in runs.items():
+                if run_info["status"] not in [TestStatus.SUCCESS, TestStatus.MAX_RETRIES_REACHED]:
+                    return False
+        return True
     
-    def mark_test_success(self, test_id: str, run_number: int, 
-                         query_evaluation_id: Optional[int] = None) -> None:
-        """Mark a test as successful and record in history"""
-        if test_id in self.test_status and run_number in self.test_status[test_id]:
-            run_info = self.test_status[test_id][run_number]
-            prev_status = run_info["status"]
-            run_info["status"] = TestStatus.SUCCESS
-            
-            # Record success in database
-            retry_count = run_info["retry_count"]
-            self._record_attempt_history(
-                test_id, run_number, retry_count, "success", 
-                query_evaluation_id=query_evaluation_id
-            )
-            
-            logger.info(f"Test {test_id} run {run_number} status change: {prev_status.value} -> SUCCESS (retry {retry_count}, query_eval_id: {query_evaluation_id})")
-            self._log_test_status_summary()
+    def mark_test_running(self, test_id: str, run_number: int) -> None:
+        """
+        Mark a test as running.
+        
+        Args:
+            test_id: ID of the test
+            run_number: Run number for the test
+        """
+        self.test_status[test_id][run_number]["status"] = TestStatus.RUNNING
+        
+    def mark_test_success(self, test_id: str, run_number: int, query_evaluation_id: Optional[int] = None) -> None:
+        """
+        Mark a test as successful.
+        
+        Args:
+            test_id: ID of the test
+            run_number: Run number for the test
+            query_evaluation_id: ID of the query evaluation in the database
+        """
+        run_info = self.test_status[test_id][run_number]
+        run_info["status"] = TestStatus.SUCCESS
+        retry_count = run_info["retry_count"]
+        
+        # Record the successful attempt
+        self._record_attempt_history(
+            test_id, run_number, retry_count, 
+            "success", None, query_evaluation_id
+        )
+        
+        logger.info(f"Test {test_id} (run {run_number}) marked as successful after {retry_count} retries")
     
     def mark_test_failed(self, test_id: str, run_number: int, error_message: str) -> None:
-        """Mark a test as failed, increment retry count, and record in history"""
-        if test_id in self.test_status and run_number in self.test_status[test_id]:
-            run_info = self.test_status[test_id][run_number]
-            prev_status = run_info["status"]
-            prev_retry = run_info["retry_count"]
-            
-            run_info["status"] = TestStatus.FAILED
-            run_info["retry_count"] += 1
-            current_retry = run_info["retry_count"]
-            
-            # Record failure in database
-            self._record_attempt_history(
-                test_id, run_number, prev_retry, 
-                "failed", error_message=error_message
+        """
+        Mark a test as failed and increment retry count.
+        If max retries reached, mark as MAX_RETRIES_REACHED.
+        
+        Args:
+            test_id: ID of the test
+            run_number: Run number for the test
+            error_message: Error message from the failure
+        """
+        run_info = self.test_status[test_id][run_number]
+        
+        # Increment retry count
+        run_info["retry_count"] += 1
+        retry_count = run_info["retry_count"]
+        
+        # Record the failed attempt
+        self._record_attempt_history(
+            test_id, run_number, retry_count - 1,  # Record the attempt that just failed
+            "failed", error_message
+        )
+        
+        # Check if max retries reached
+        if retry_count >= self.max_retries:
+            run_info["status"] = TestStatus.MAX_RETRIES_REACHED
+            logger.warning(
+                f"Test {test_id} (run {run_number}) reached max retries ({self.max_retries}): {error_message}"
             )
             
-            logger.info(f"Test {test_id} run {run_number} status change: {prev_status.value} -> FAILED (retry {prev_retry} -> {current_retry})")
-            
-            # Check if we've exceeded max retries
-            if current_retry >= self.max_retries:
-                logger.warning(
-                    f"Test {test_id} run {run_number} has failed {self.max_retries} times, "
-                    f"will not retry again. Last error: {error_message[:100]}..."
-                )
-            else:
-                # Set back to pending for retry
-                run_info["status"] = TestStatus.PENDING
-                logger.info(
-                    f"Test {test_id} run {run_number} marked for retry "
-                    f"(attempt {current_retry})"
-                )
-            
-            self._log_test_status_summary()
+            # Record final status as max retries reached
+            self._record_attempt_history(
+                test_id, run_number, retry_count,
+                "max_retries_reached", f"Max retries ({self.max_retries}) reached: {error_message}"
+            )
+        else:
+            # Reset to pending for next attempt
+            run_info["status"] = TestStatus.PENDING
+            logger.info(
+                f"Test {test_id} (run {run_number}) failed, will retry ({retry_count}/{self.max_retries}): {error_message}"
+            )
+    
+    def add_successful_evaluation(self, evaluation_result: Dict[str, Any]) -> None:
+        """Add a successful evaluation result to the tracking list"""
+        self.successful_evaluations.append(evaluation_result)
+    
+    def get_summary(self) -> Dict[str, Any]:
+        """
+        Get a summary of the test run status.
+        
+        Returns:
+            Dictionary with summary information
+        """
+        status_counts = {status.value: 0 for status in TestStatus}
+        retry_total = 0
+        successful_test_ids = set()
+        failed_test_ids = set()
+        
+        for test_id, runs in self.test_status.items():
+            for run_number, run_info in runs.items():
+                status_counts[run_info["status"].value] += 1
+                retry_total += run_info["retry_count"]
+                
+                if run_info["status"] == TestStatus.SUCCESS:
+                    successful_test_ids.add(test_id)
+                elif run_info["status"] == TestStatus.MAX_RETRIES_REACHED:
+                    failed_test_ids.add(test_id)
+        
+        return {
+            "model_id": self.model_id,
+            "total_tests": len(self.test_status) * self.number_of_runs,
+            "successful_tests": status_counts[TestStatus.SUCCESS.value],
+            "failed_tests": status_counts[TestStatus.MAX_RETRIES_REACHED.value],
+            "pending_tests": status_counts[TestStatus.PENDING.value],
+            "running_tests": status_counts[TestStatus.RUNNING.value],
+            "total_retries": retry_total,
+            "successful_test_ids": list(successful_test_ids),
+            "failed_test_ids": list(failed_test_ids)
+        }
     
     def _record_attempt_history(self, test_id: str, run_number: int, retry_count: int,
                                status: str, error_message: Optional[str] = None,
@@ -210,82 +263,19 @@ class TestRunManager:
         
         logger.info(f"Test status summary: {status_counts}")
         logger.info(f"Retry counts: {retry_counts}")
-    
-    def all_tests_completed(self) -> bool:
-        """Check if all tests have been completed successfully or failed permanently"""
-        incomplete_tests = []
-        for test_id, runs in self.test_status.items():
-            for run_number, run_info in runs.items():
-                # Test is incomplete if it's pending or running
-                if run_info["status"] in [TestStatus.PENDING, TestStatus.RUNNING]:
-                    incomplete_tests.append((test_id, run_number, run_info["status"].value))
-                    continue
-                
-                # Test is incomplete if it failed but has retries left
-                if (run_info["status"] == TestStatus.FAILED and 
-                    run_info["retry_count"] < self.max_retries):
-                    incomplete_tests.append((test_id, run_number, f"{run_info['status'].value} (retry {run_info['retry_count']})"))
-                    continue
-        
-        if incomplete_tests:
-            logger.debug(f"Incomplete tests: {incomplete_tests}")
-            return False
-        
-        logger.info("All tests have been completed!")
-        return True
-    
-    def get_summary(self) -> Dict[str, Any]:
-        """Get a summary of test run status"""
-        total_tests = len(self.test_status) * self.number_of_runs
-        successful_tests = 0
-        failed_tests = 0
-        pending_tests = 0
-        running_tests = 0
-        
-        for test_id, runs in self.test_status.items():
-            for run_number, run_info in runs.items():
-                if run_info["status"] == TestStatus.SUCCESS:
-                    successful_tests += 1
-                elif run_info["status"] == TestStatus.FAILED and run_info["retry_count"] >= self.max_retries:
-                    failed_tests += 1
-                elif run_info["status"] == TestStatus.PENDING:
-                    pending_tests += 1
-                elif run_info["status"] == TestStatus.RUNNING:
-                    running_tests += 1
-        
-        summary = {
-            "model_id": self.model_id,
-            "total_tests": total_tests,
-            "successful_tests": successful_tests,
-            "failed_tests": failed_tests,
-            "pending_tests": pending_tests,
-            "running_tests": running_tests,
-            "completion_percentage": (successful_tests / total_tests) * 100 if total_tests > 0 else 0
-        }
-        
-        logger.info(f"Test run summary: {summary}")
-        return summary
-    
-    def add_successful_evaluation(self, evaluation_data: Dict[str, Any]) -> None:
-        """Add a successful evaluation to the list for reporting"""
-        self.successful_evaluations.append(evaluation_data)
-        logger.debug(f"Added successful evaluation for test {evaluation_data.get('test_no')}, run {evaluation_data.get('run_number')}")
-    
-    def get_successful_evaluations(self) -> List[Dict[str, Any]]:
-        """Get all successful evaluations"""
-        return self.successful_evaluations
 
 
 def execute_test_runs(model_id: str, number_of_runs: int = 1, 
-                     max_retries: int = 3, progress_callback=None):
+                     max_retries: int = 3, progress_callback=None, test_data=None):
     """
     Main function to execute all test runs with retry logic.
     
-        Args:
+    Args:
         model_id: The model ID to test
         number_of_runs: Number of successful runs needed for each test
         max_retries: Maximum retry attempts per test
         progress_callback: Optional callback function for progress updates
+        test_data: Optional pandas DataFrame containing test data (to avoid circular imports)
     
     Returns:
         Tuple of (combined_ragas_results, all_tests_df)
@@ -296,7 +286,6 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     logger.info(startup_msg)
     
     # Import here to avoid circular imports
-    import pandas as pd
     from app.ragas.scripts.synthetic_ragas_tests import (
         load_synthetic_test_cases, 
         run_test_case, 
@@ -304,8 +293,14 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     )
     from app.helpers.save_query_to_db import save_query_with_eval_to_db
     
-    # Load test cases
-    test_cases = load_synthetic_test_cases()
+    # Load test cases - either from test_data parameter or by loading them
+    test_cases = []
+    if test_data is not None:
+        # Convert DataFrame to list of dictionaries
+        test_cases = test_data.to_dict(orient='records')
+    else:
+        test_cases = load_synthetic_test_cases()
+    
     if not test_cases:
         logger.error("No test cases loaded")
         return None, None
@@ -317,9 +312,6 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     # Execute test runs until all are completed
     all_test_results = []
     all_ragas_results = []
-    
-    # Test: Track failed test 1 to ensure it only fails once
-    failed_test1_already = False
     
     while not run_manager.all_tests_completed():
         # Get next test to run
@@ -344,12 +336,6 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
         
         try:
             logger.info(f"Running test {test_id} (run {run_number}/{number_of_runs})")
-            
-            # SIMULATE FAILURE for test #1 on first attempt only
-            # if test_id == "1" and run_number == 1 and not failed_test1_already:
-            #     failed_test1_already = True
-            #     print(f"SIMULATING FAILURE: Test {test_id} run {run_number} will fail and trigger retry")
-            #     raise Exception(f"Simulated failure for test {test_id} on first attempt")
             
             # Run the test case
             query = test_case["query"]
@@ -407,77 +393,106 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
                 all_test_results.append(test_result)
                 continue
             
-            # Everything succeeded - save to database
-            query_eval_id = None
+            # Everything succeeded - proceed to save to database
             try:
-                # Create evaluation results dictionary for saving to database
+                # Process RAGAS metrics if available
+                if ragas_success and ragas_result:
+                    # Extract metrics from the RAGAS result
+                    try:
+                        # Based on the log output, ragas_result behaves like a dict 
+                        # but is actually an EvaluationResult object
+                        metrics = {}
+                        
+                        # Check if it has a _repr_dict with all metrics
+                        if hasattr(ragas_result, '_repr_dict') and ragas_result._repr_dict:
+                            metrics = ragas_result._repr_dict
+                        # Fall back to using it as a dict directly
+                        elif hasattr(ragas_result, '__getitem__'):
+                            metrics = ragas_result
+                        
+                        # Add each metric to evaluation_data, properly handling 0 values
+                        evaluation_data = {
+                            "retrieved_contexts": str(test_case["reference_contexts"]),
+                            "ground_truth": test_case["ground_truth"],
+                        }
+                        evaluation_data["factual_correctness"] = metrics.get("lenient_factual_correctness")
+                        evaluation_data["semantic_similarity"] = metrics.get("semantic_similarity")
+                        evaluation_data["context_recall"] = metrics.get("context_recall")
+                        evaluation_data["faithfulness"] = metrics.get("faithfulness")
+                        evaluation_data["bleu_score"] = metrics.get("bleu_score")
+                        evaluation_data["non_llm_string_similarity"] = metrics.get("non_llm_string_similarity")
+                        evaluation_data["rogue_score"] = metrics.get("rouge_score(mode=fmeasure)") or metrics.get("rouge_score")
+                        evaluation_data["string_present"] = metrics.get("string_present")
+                        
+                        # Save the results to database immediately for this test
+                        query_eval_id = save_query_with_eval_to_db(
+                            query=query,
+                            direct_response=response,
+                            full_response=context,
+                            llm_model_id=model_id,
+                            evaluation_results=evaluation_data,
+                            sql_queries=[],  # We can add SQL extraction if needed
+                            token_usage=token_usage
+                        )
+                        
+                        # Mark the test as successful
+                        run_manager.mark_test_success(test_id, run_number, query_eval_id)
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to process RAGAS metrics: {e}")
+                        print(f"Failed to process RAGAS metrics: {e}")
+                        # Make sure evaluation_data exists even on failure
+                        if 'evaluation_data' not in locals():
+                            evaluation_data = {
+                                "retrieved_contexts": str(test_case["reference_contexts"]),
+                                "ground_truth": test_case["ground_truth"],
+                            }
+                        # Ensure query_eval_id is set to None if the RAGAS processing fails
+                        query_eval_id = None
+                        # Mark the test as failed
+                        run_manager.mark_test_failed(test_id, run_number, f"RAGAS processing error: {e}")
+                
+                # Create test result with all the metrics included
+                test_result = {
+                    "test_no": test_case["test_no"],
+                    "run_number": run_number,
+                    "query": query,
+                    "ground_truth": test_case["ground_truth"],
+                    "response": response,
+                    "context": context,
+                    "reference_contexts": test_case["reference_contexts"],
+                    "api_call_success": True,
+                    "ragas_evaluated": ragas_success,
+                    "ragas_results": ragas_result,
+                    "token_usage": token_usage,
+                    "query_evaluation_id": query_eval_id,  # Now we include this since we saved to DB
+                    
+                    # Include all individual metrics for reporting
+                    "factual_correctness": evaluation_data.get("factual_correctness"),
+                    "semantic_similarity": evaluation_data.get("semantic_similarity"),
+                    "context_recall": evaluation_data.get("context_recall"),
+                    "faithfulness": evaluation_data.get("faithfulness"),
+                    "bleu_score": evaluation_data.get("bleu_score"),
+                    "non_llm_string_similarity": evaluation_data.get("non_llm_string_similarity"),
+                    "rogue_score": evaluation_data.get("rogue_score"),
+                    "string_present": evaluation_data.get("string_present")
+                }
+                
+                all_test_results.append(test_result)
+                all_ragas_results.append(ragas_result)
+                run_manager.add_successful_evaluation(test_result)
+                
+            except Exception as e:
+                logger.error(f"Failed to process RAGAS metrics: {e}")
+                print(f"Failed to process RAGAS metrics: {e}")
                 evaluation_data = {
                     "retrieved_contexts": str(test_case["reference_contexts"]),
                     "ground_truth": test_case["ground_truth"],
                 }
-                
-                # Extract metrics from RAGAS result
-                if isinstance(ragas_result, dict):
-                    metrics = ragas_result
-                elif hasattr(ragas_result, '__dict__'):
-                    metrics = ragas_result.__dict__
-                elif hasattr(ragas_result, 'to_dict'):
-                    metrics = ragas_result.to_dict()
-                else:
-                    metrics = {}
-                
-                # Map to our expected metric names
-                metric_mapping = {
-                    'lenient_factual_correctness': 'factual_correctness',
-                    'semantic_similarity': 'semantic_similarity',
-                    'context_recall': 'context_recall',
-                    'faithfulness': 'faithfulness',
-                    'bleu_score': 'bleu_score',
-                    'non_llm_string_similarity': 'non_llm_string_similarity',
-                    'rouge_score(mode=fmeasure)': 'rogue_score',
-                    'string_present': 'string_present'
-                }
-                
-                for ragas_key, our_key in metric_mapping.items():
-                    value = metrics.get(ragas_key)
-                    evaluation_data[our_key] = value
-                
-                # Save to database and get the query evaluation ID
-                # query_eval_id = save_query_with_eval_to_db(
-                #     query=query,
-                #     direct_response=response,
-                #     full_response=context,
-                #     llm_model_id=model_id,
-                #     evaluation_results=evaluation_data,
-                #     token_usage=token_usage
-                # )
-                
-                logger.info(f"Saved to database with query_evaluation_id: {query_eval_id}")
-            except Exception as save_error:
-                logger.error(f"Error saving to database: {save_error}")
-            
-            # Mark test as successful with the query evaluation ID
-            run_manager.mark_test_success(test_id, run_number, query_eval_id)
-            
-            # Add to results
-            test_result = {
-                "test_no": test_case["test_no"],
-                "run_number": run_number,
-                "query": query,
-                "ground_truth": test_case["ground_truth"],
-                "response": response,
-                "context": context,
-                "reference_contexts": test_case["reference_contexts"],
-                "api_call_success": True,
-                "ragas_evaluated": True,
-                "ragas_results": ragas_result,
-                "token_usage": token_usage,
-                "query_evaluation_id": query_eval_id
-            }
-            
-            all_test_results.append(test_result)
-            all_ragas_results.append(ragas_result)
-            run_manager.add_successful_evaluation(test_result)
+                # Ensure query_eval_id is set to None if the RAGAS processing fails
+                query_eval_id = None
+                # Mark the test as failed
+                run_manager.mark_test_failed(test_id, run_number, f"RAGAS processing error: {e}")
             
         except Exception as e:
             logger.error(f"Error running test {test_id} (run {run_number}): {e}")
