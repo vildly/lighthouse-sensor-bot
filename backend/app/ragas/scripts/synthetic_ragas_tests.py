@@ -20,7 +20,7 @@ import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple, Union, List, Dict
 import re
 from app.helpers.extract_answer import extract_answer_for_evaluation
 import logging
@@ -50,8 +50,21 @@ if not DEEPSEEK_API_KEY:
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 
-def run_test_case(query, llm_model_id, test_no=None):
-    """Run a single test case directly without making an API call"""
+def run_test_case(query: str, llm_model_id: str, test_no: Optional[str] = None) -> Tuple[str, Union[List[str], str], bool, Optional[Dict[str, int]]]:
+    """Run a single test case directly without making an API call
+    
+    Args:
+        query: The question to process
+        llm_model_id: The ID of the language model to use
+        test_no: Optional test identifier for logging purposes
+        
+    Returns:
+        Tuple containing:
+        - agent_response: The generated response or error message
+        - contexts: Context information including SQL queries and reasoning
+        - success: Boolean indicating if processing was successful
+        - token_usage: Dictionary with token usage statistics or None if unavailable
+    """
     # Import process_query_internal inside the function to avoid circular imports
     from app.services.query_with_eval import process_query_internal
     
@@ -65,15 +78,26 @@ def run_test_case(query, llm_model_id, test_no=None):
         )
         
         agent_response = result.get("content")
-        full_response = result.get("full_response")
+        full_response = result.get("full_response", "")
         sql_queries = result.get("sql_queries", [])
         token_usage = result.get("token_usage")
 
+        # Check for SQL errors in the response
+        if (
+            "Error processing query" in full_response or 
+            "'NoneType' object is not subscriptable" in full_response or
+            "TypeError:" in full_response or
+            "KeyError:" in full_response or
+            "IndexError:" in full_response
+        ):
+            error_message = f"SQL or processing error detected: {full_response}"
+            logger.error(error_message)
+            return error_message, full_response, False, token_usage
+
         if agent_response is None:
-            print(
-                f"Error: No 'content' key found in the result for query: {query}"
-            )
-            return None, None, False, None
+            error_message = f"Error: No 'content' key found in the result for query: {query}"
+            logger.error(error_message)
+            return error_message, full_response, False, token_usage
 
         # Format contexts including SQL queries and full response
         contexts = []
@@ -84,8 +108,9 @@ def run_test_case(query, llm_model_id, test_no=None):
         return agent_response, contexts, True, token_usage
 
     except Exception as e:
-        print(f"Error processing query for test: {query}: {e}")
-        return None, None, False, None
+        error_message = f"Error processing query for test: {query}: {e}"
+        logger.error(error_message)
+        return error_message, str(e), False, None
 
 
 def load_synthetic_test_cases():
