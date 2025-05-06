@@ -463,7 +463,6 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
                     "reference_contexts": test_case["reference_contexts"],
                     "api_call_success": True,
                     "ragas_evaluated": ragas_success,
-                    "ragas_results": ragas_result,
                     "token_usage": token_usage,
                     "query_evaluation_id": query_eval_id,  # Now we include this since we saved to DB
                     
@@ -477,6 +476,15 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
                     "rogue_score": evaluation_data.get("rogue_score"),
                     "string_present": evaluation_data.get("string_present")
                 }
+                
+                # Instead of storing the raw RAGAS result object, store only the metrics in a serializable format
+                if ragas_success and ragas_result:
+                    if hasattr(ragas_result, '_repr_dict'):
+                        test_result["ragas_metrics"] = ragas_result._repr_dict
+                    else:
+                        test_result["ragas_metrics"] = str(ragas_result)
+                else:
+                    test_result["ragas_metrics"] = None
                 
                 all_test_results.append(test_result)
                 all_ragas_results.append(ragas_result)
@@ -524,4 +532,28 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
     summary = run_manager.get_summary()
     logger.info(f"Test run summary: {summary}")
     
-    return combined_ragas_results, results_df 
+    # Convert any non-serializable objects in combined_ragas_results
+    serializable_combined_results = None
+    if combined_ragas_results:
+        if hasattr(combined_ragas_results, '_repr_dict'):
+            serializable_combined_results = combined_ragas_results._repr_dict
+        elif hasattr(combined_ragas_results, 'to_dict') and callable(combined_ragas_results.to_dict):
+            serializable_combined_results = combined_ragas_results.to_dict()
+        else:
+            serializable_combined_results = str(combined_ragas_results)
+
+    # Convert results_df to JSON-serializable format
+    if results_df is not None:
+        # Convert DataFrame to a dict of records for JSON serialization
+        results_dict = results_df.to_dict(orient='records')
+    else:
+        results_dict = []
+
+    # Create a complete, serializable results object
+    final_results = {
+        "summary": run_manager.get_summary(),
+        "tests": results_dict,
+        "combined_metrics": serializable_combined_results
+    }
+
+    return final_results, 200  # Return serializable results and a proper HTTP status code 
