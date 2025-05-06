@@ -169,15 +169,15 @@ def query_with_eval(model_id: str, number_of_runs: int = 1, max_retries: int = 3
                 
                 # Save the query with evaluation results directly using save_query_with_eval_to_db
                 # No need to manage existing_query_result_id as the function handles this internally
-                # save_query_with_eval_to_db(
-                #     query=query,
-                #     direct_response=response,
-                #     full_response=row.get('context', ''),
-                #     llm_model_id=model_id,
-                #     evaluation_results=evaluation_data,
-                #     sql_queries=sql_queries,
-                #     token_usage=token_usage
-                # )
+                save_query_with_eval_to_db(
+                    query=query,
+                    direct_response=response,
+                    full_response=row.get('context', ''),
+                    llm_model_id=model_id,
+                    evaluation_results=evaluation_data,
+                    sql_queries=sql_queries,
+                    token_usage=token_usage
+                )
             except Exception as e:
                 logger.error(f"Error saving evaluation for query {i+1}/{total_rows}: {e}")
         
@@ -321,7 +321,7 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
             sql_queries.append(current_query.strip())
 
         # Print the extracted queries for debugging
-        print(f"Extracted SQL queries: {sql_queries}")
+        # print(f"Extracted SQL queries: {sql_queries}")
 
         # Remove duplicates while preserving order
         unique_queries = []

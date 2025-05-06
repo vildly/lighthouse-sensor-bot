@@ -443,14 +443,14 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
                     evaluation_data[our_key] = value
                 
                 # Save to database and get the query evaluation ID
-                query_eval_id = save_query_with_eval_to_db(
-                    query=query,
-                    direct_response=response,
-                    full_response=context,
-                    llm_model_id=model_id,
-                    evaluation_results=evaluation_data,
-                    token_usage=token_usage
-                )
+                # query_eval_id = save_query_with_eval_to_db(
+                #     query=query,
+                #     direct_response=response,
+                #     full_response=context,
+                #     llm_model_id=model_id,
+                #     evaluation_results=evaluation_data,
+                #     token_usage=token_usage
+                # )
                 
                 logger.info(f"Saved to database with query_evaluation_id: {query_eval_id}")
             except Exception as save_error:
