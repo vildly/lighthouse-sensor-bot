@@ -26,8 +26,10 @@ class LenientFactualCorrectness(SingleTurnMetric):
 
     async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks=None) -> float:
         # First try simple number extraction to handle simple cases directly
-        response_val = self.extract_first_number(sample.response) 
+        response_val = self.extract_first_number(sample.response)
+        print(f"DEBUG - Response value: {response_val}")
         reference_val = self.extract_first_number(sample.reference)
+        print(f"DEBUG - Reference value: {reference_val}")
         
         # If we have clean numbers with less than 5% difference, give a good score directly
         if response_val is not None and reference_val is not None:
