@@ -556,4 +556,53 @@ def execute_test_runs(model_id: str, number_of_runs: int = 1,
         "combined_metrics": serializable_combined_results
     }
 
-    return final_results, 200  # Return serializable results and a proper HTTP status code 
+    # Convert results into a nicely formatted Markdown string and metrics object
+    def format_test_results_for_response(test_results, combined_metrics):
+        # Create a Markdown-formatted string for the full response
+        markdown_output = "# Evaluation Results\n\n"
+        
+        for test in test_results:
+            test_no = test.get("test_no", "Unknown")
+            markdown_output += f"## Test Case {test_no}\n\n"
+            
+            # Question
+            markdown_output += f"### Question\n{test.get('query', '')}\n\n"
+            
+            # Reference Answer
+            markdown_output += f"### Reference Answer\n{test.get('ground_truth', '')}\n\n"
+            
+            # Model Response
+            markdown_output += f"### Model Response\n{test.get('response', '')}\n\n"
+            
+            # Context
+            markdown_output += f"### Context\n{test.get('context', [])}\n\n"
+            
+            markdown_output += "---\n\n"
+        
+        # Format the metrics for the results object
+        results = {}
+        if combined_metrics:
+            # Map the metrics to the expected format
+            results = {
+                "bleu_score": combined_metrics.get("bleu_score", 0),
+                "context_recall": combined_metrics.get("context_recall", 0),
+                "faithfulness": combined_metrics.get("faithfulness", 0),
+                "lenient_factual_correctness": combined_metrics.get("lenient_factual_correctness", 0),
+                "non_llm_string_similarity": round(combined_metrics.get("non_llm_string_similarity", 0), 4),
+                "rouge_score(mode=fmeasure)": round(combined_metrics.get("rouge_score(mode=fmeasure)", 0), 4),
+                "semantic_similarity": round(combined_metrics.get("semantic_similarity", 0), 4),
+                "string_present": combined_metrics.get("string_present", 0)
+            }
+        
+        return {
+            "full_response": markdown_output,
+            "results": results
+        }
+
+    # Convert results_df to a list of dictionaries if it's not None
+    results_dict = results_df.to_dict(orient='records') if results_df is not None else []
+
+    # Format the response in the required structure
+    formatted_response = format_test_results_for_response(results_dict, serializable_combined_results)
+
+    return formatted_response, 200
