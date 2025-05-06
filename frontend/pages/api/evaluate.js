@@ -6,20 +6,24 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      const { model_id } = req.body;
+      const { model_id, number_of_runs, max_retries } = req.body;
       
       if (!model_id) {
         return res.status(400).json({ error: "Model ID is required" });
       }
       
-      console.log("Sending evaluation request to backend:", { model_id });
+      console.log("Sending evaluation request to backend:", { model_id, number_of_runs, max_retries });
       
       const response = await fetch(`${SERVER_URL}/api/evaluate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ model_id }),
+        body: JSON.stringify({ 
+          model_id,
+          number_of_runs: number_of_runs || 1,
+          max_retries: max_retries || 3 
+        }),
       });
 
       if (!response.ok) {

@@ -20,6 +20,8 @@ export default function QuestionForm() {
   const { sqlQueries, queryStatus, resetQueries, evaluationProgress } = useWebSocket();
   const [controlMode, setControlMode] = useState("query"); // "query" or "evaluation"
   const [testCases, setTestCases] = useState(null);
+  const [numberOfRuns, setNumberOfRuns] = useState(1);
+  const [maxRetries, setMaxRetries] = useState(3);
 
   const [queryModeState, setQueryModeState] = useState({
     content: null,
@@ -376,7 +378,9 @@ export default function QuestionForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model_id: selectedModel
+          model_id: selectedModel,
+          number_of_runs: numberOfRuns,
+          max_retries: maxRetries
         }),
       });
 
@@ -735,6 +739,42 @@ export default function QuestionForm() {
                             <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex flex-row gap-4">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Number of Runs
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={numberOfRuns}
+                            onChange={(e) => setNumberOfRuns(parseInt(e.target.value) || 1)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Number of times each test should run successfully (default: 1)
+                          </p>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Max Retries
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={maxRetries}
+                            onChange={(e) => setMaxRetries(parseInt(e.target.value) || 3)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Maximum retry attempts for failed tests (default: 3)
+                          </p>
+                        </div>
                       </div>
                     </div>
 
