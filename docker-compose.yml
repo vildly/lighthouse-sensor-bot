@@ -73,3 +73,5 @@ services:
 networks:
   lighthouse:
     driver: bridge
+  paadmin:
+    driver: bridge
