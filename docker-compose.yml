@@ -26,7 +26,6 @@ services:
     restart: always
     networks:
       - lighthouse
-      - paadmin
     ports:
       - "8081:80"
     environment:
