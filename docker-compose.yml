@@ -24,6 +24,9 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pgadmin-container-lighthouse
     restart: always
+    networks:
+      - lighthouse
+      - paadmin
     ports:
       - "8081:80"
     environment:
@@ -70,4 +73,6 @@ services:
 
 networks:
   lighthouse:
+    driver: bridge
+  paadmin:
     driver: bridge
