@@ -1,13 +1,13 @@
 version: '3.8'
-name: 2dv50e
+name: lighthouse
 services:
   
-  postgres: # Database "backend" (själva databasen)
+  postgres:
     image: postgres:latest
-    container_name: postgres-container-2dv50e
+    container_name: postgres-container-lighthouse
     restart: always
     networks:
-      - 2dv50e
+      - lighthouse
     ports:
       - "5432:5432"
     environment:
@@ -16,17 +16,22 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
-      - ./backend/postgres/backups:/docker-entrypoint-initdb.d # autoloads data from backups
-
-  pgadmin: # Database "frontend" (visualiseringsverktyg)
+      - ./backend/postgres/init/db_schemas.sql:/docker-entrypoint-initdb.d/db_schemas.sql
+      - ./backend/postgres/init/01-init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
+      - ./backend/postgres/init/insert_models.sql:/docker-entrypoint-initdb.d/insert_models.sql
+      
+  pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin-container-2dv50e
+    container_name: pgadmin-container-lighthouse
     restart: always
+    networks:
+      - lighthouse
     ports:
       - "8081:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      MAX_LOGIN_ATTEMPTS: 0
     depends_on:
       - postgres
     volumes:
@@ -39,15 +44,15 @@ services:
     ports:
           - 5000:5000
     networks:
-      - 2dv50e
+      - lighthouse
     environment:
-      - FRONTEND_URL=http://frontend:3000
+      - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=${DB_HOST}
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_PORT=${DB_PORT}
-      - SERVER_URL=http://backend:5000
+      - SERVER_URL=${SERVER_URL}
     depends_on:
       - postgres
 
@@ -58,13 +63,15 @@ services:
     ports:
       - "3000:3000"  
     networks:
-      - 2dv50e
+      - lighthouse
     environment:
       - DEV_MODE=true
-      - SERVER_URL="http://backend:5000"
+      - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
     depends_on:
       - backend
 
 networks:
-  2dv50e:
+  lighthouse:
+    driver: bridge
+  paadmin:
     driver: bridge
