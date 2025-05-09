@@ -1,8 +1,12 @@
-# lighthouse bot
+# Lighthouse Sensor Bot
 
-## Overview
+Repository for the Lighthouse sensor bot project.
 
-Lighthouse is a data analysis application that uses natural language queries to analyze maritime ferry data using agentic RAG. The system consists of:
+This project initiated with the pre-study: "Large Language Models (LLMs) in Maritime Data Analysis and Decision Support."
+Read more about it here: [Large Language Models (LLMs) can solve operational challenges](https://lighthouse.nu/en/whats-on/news/large-language-models-can-solve-operational-challenges)
+
+
+Lighthouse Sensor Bot is a data analysis application that uses natural language queries to analyze maritime ferry data using agentic RAG. The system consists of:
 
 - **Frontend**: Interface for submitting queries, and viewing results
 - **Backend**: Flask server that processes queries with the help of an LLM as an agent
@@ -72,3 +76,4 @@ If you encounter any issues, please do the following:
 ## Known issues
 
 Every now and then a model will try to use a tool that doesn't exist or other errors from the LLMwill occur. Currently this results in a 500 status code as response. We are working on a more graceful solution.
+
