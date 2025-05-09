@@ -8,11 +8,14 @@ freeze:
 
 # Install dependencies
 i:
-	pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 
 # Clean temporary files
 clean:
 	rm -rf __pycache__ .pytest_cache .mypy_cache
+
+test:
+	python -m app.tests.utils.lenient_factual_correctness
 
 # eval:
 # 	python -m app.ragas.scripts.ragas_tests

@@ -52,7 +52,7 @@ export const WebSocketProvider = ({ children }) => {
     
     // Add listener for evaluation progress
     socketInstance.on('evaluation_progress', (data) => {
-      console.log('Evaluation progress update:', data);
+
       setEvaluationProgress(data);
     });
 

@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import ReactMarkdown from 'react-markdown';
 import { marked } from 'marked';
+import io from 'socket.io-client';
 
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
@@ -20,6 +21,8 @@ export default function QuestionForm() {
   const { sqlQueries, queryStatus, resetQueries, evaluationProgress } = useWebSocket();
   const [controlMode, setControlMode] = useState("query"); // "query" or "evaluation"
   const [testCases, setTestCases] = useState(null);
+  const [numberOfRuns, setNumberOfRuns] = useState(1);
+  const [maxRetries, setMaxRetries] = useState(3);
 
   const [queryModeState, setQueryModeState] = useState({
     content: null,
@@ -361,13 +364,18 @@ export default function QuestionForm() {
     }
 
     setIsLoading(true);
+    setActiveQuery(true); // Ensure evaluation is marked as active
 
+    // Ensure controlMode is 'evaluation'
+    if (controlMode !== "evaluation") {
+      setControlMode("evaluation");
+    }
     switchTab('live-tool-calls');
 
     try {
       setContent("Running model evaluation...");
 
-      // Reset evaluation progress
+      // Reset evaluation progress (this sets evaluationProgress to null in context)
       resetQueries();
 
       const response = await fetch("/api/evaluate", {
@@ -376,47 +384,55 @@ export default function QuestionForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model_id: selectedModel
+          model_id: selectedModel,
+          number_of_runs: numberOfRuns,
+          max_retries: maxRetries
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! Status: ${response.status}. Message: ${errorText}`);
       }
 
       const data = await response.json();
 
       if (data.error) {
-        // Only update evaluation mode state, not query mode state
+        // API call succeeded but returned an error in the JSON payload
         setContent(`## Error during evaluation\n${data.error}`);
         setFullResponse(`## Error during evaluation\n${data.error}`);
         setEvaluationResults(null);
-
-        setEvaluationModeState({
+        setEvaluationModeState(prevState => ({
+          ...prevState,
           content: `## Error during evaluation\n${data.error}`,
           fullResponse: `## Error during evaluation\n${data.error}`,
           evaluationResults: null,
-          sqlQueries: sqlQueries,
-          activeQuery: true
-        });
+          activeQuery: false // Mark as not active on error
+        }));
+        setActiveQuery(false); // Explicitly set activeQuery to false
       } else {
-        // Only update evaluation mode state, not query mode state
+        // API call successful, data received.
+        // isLoading remains true until finally, then useEffect manages based on WebSocket.
+        // activeQuery remains true until WebSocket signals completion or an error.
         setEvaluationResults(data.results);
-        setContent("## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.");
+        // The content might be updated by progress messages or upon completion.
+        // For now, let's set a generic message or rely on renderEvaluationProgress.
+        setContent("Evaluation processing... detailed results will appear in the Evaluation tab.");
 
         if (data.full_response) {
           setFullResponse(data.full_response);
         }
 
-        setEvaluationModeState({
-          content: "## Evaluation successful! ✓\n\nDetailed results available in the Evaluation tab.",
+        setEvaluationModeState(prevState => ({
+          ...prevState,
+          content: "Evaluation processing... detailed results will appear in the Evaluation tab.",
           fullResponse: data.full_response || null,
           evaluationResults: data.results,
-          sqlQueries: sqlQueries,
+          sqlQueries: sqlQueries, 
           activeQuery: true
-        });
+        }));
 
-        // Switch to evaluation tab after a short delay to ensure state updates are processed
+
         setTimeout(() => {
           switchTab('evaluation');
           // Force the evaluation content to be visible
@@ -447,8 +463,16 @@ export default function QuestionForm() {
       setContent(`## Error during evaluation\n${error.message}`);
       setFullResponse(`## Error during evaluation\n${error.message}`);
       setEvaluationResults(null);
+      setActiveQuery(false); // Crucial: stop active query if the fetch itself fails
+      setEvaluationModeState(prevState => ({ // Also update mode state
+        ...prevState,
+        content: `## Error during evaluation\n${error.message}`,
+        fullResponse: `## Error during evaluation\n${error.message}`,
+        evaluationResults: null,
+        activeQuery: false
+      }));
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); 
     }
   };
 
@@ -520,27 +544,88 @@ export default function QuestionForm() {
       .join(' ');
   };
 
-  // Add this function to render the progress bar
+  // Clean up the renderEvaluationProgress function to be simpler and clearer
   const renderEvaluationProgress = () => {
-    if (!evaluationProgress) return null;
+    // Always show progress info even when initializing
+    const progressData = evaluationProgress || { 
+      progress: 0, 
+      total: 1,
+      test_no: 0,
+      total_tests: 0,
+      iteration: 0,
+      total_iterations: 0
+    };
+    
+    // Extract all relevant fields with fallbacks
+    const { 
+      progress = 0, 
+      total = 1, 
+      message = "",
+      test_no = 0, 
+      total_tests = 0,
+      iteration = 0,
+      total_iterations = 0
+    } = progressData;
 
-    const { progress, total, percent, message } = evaluationProgress;
-    const displayPercent = percent !== undefined ? percent : Math.round((progress / total) * 100);
+    // Display percent calculation
+    const displayPercent = Math.round((progress / total) * 100) || 0;
 
     return (
-      <div className="mt-4 mb-4">
-        <div className="flex justify-between mb-1">
-          <span className="text-sm font-medium text-blue-700">{message} - {displayPercent}%</span>
+      <div className="mt-4 mb-4 p-3 border border-gray-200 rounded-lg" id="evaluation-progress-display">
+        <h3 className="text-lg font-semibold text-blue-700">Evaluation Progress</h3>
+        
+        {/* Test and iteration status - always shown */}
+        <div className="my-3">
+          <p className="text-base font-medium">
+            Test {test_no}/{total_tests || total}, Iteration {iteration}/{total_iterations || numberOfRuns}
+          </p>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
           <div
             className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
             style={{ width: `${displayPercent}%` }}
           ></div>
         </div>
+        
+        {/* Overall progress count */}
+        <p className="text-sm text-gray-600">
+          Progress: {progress}/{total} ({displayPercent}%)
+        </p>
       </div>
     );
   };
+
+  
+  useEffect(() => {
+    // evaluationProgress is from useWebSocket() context
+    if (evaluationProgress) {
+      // Log for debugging to ensure context is providing updates
+      console.log("Evaluation progress from context in index.js:", evaluationProgress);
+
+      // When evaluation is complete, switch tab
+      if (evaluationProgress.progress !== undefined && evaluationProgress.total !== undefined &&
+          (evaluationProgress.progress === evaluationProgress.total || evaluationProgress.percent === 100)) {
+        
+        
+        setIsLoading(false); 
+        setActiveQuery(false);
+        
+        // Delay slightly to allow final progress message to be seen
+        setTimeout(() => {
+          switchTab('evaluation');
+        }, 500); 
+      }
+    }
+  }, [evaluationProgress, setActiveQuery, switchTab, setIsLoading]); // Added setIsLoading to dependencies
+
+  // Add useEffect to monitor evaluationProgress changes
+  useEffect(() => {
+    if (evaluationProgress) {
+      console.log('🔄 Rendering with updated progress:', evaluationProgress);
+    }
+  }, [evaluationProgress]);
 
   return (
     <div className="bg-ferry-image min-h-screen">
@@ -645,7 +730,7 @@ export default function QuestionForm() {
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7m7 7l7-7m-7 7"></path>
                         </svg>
                       </div>
                     </div>
@@ -738,6 +823,42 @@ export default function QuestionForm() {
                       </div>
                     </div>
 
+                    <div className="mt-3">
+                      <div className="flex flex-row gap-4">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Number of Runs
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={numberOfRuns}
+                            onChange={(e) => setNumberOfRuns(parseInt(e.target.value) || 1)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Number of times each test should run successfully (default: 1)
+                          </p>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Max Retries
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={maxRetries}
+                            onChange={(e) => setMaxRetries(parseInt(e.target.value) || 3)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Maximum retry attempts for failed tests (default: 3)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     <button
                       className="w-full flex items-center justify-center px-4 py-2 mt-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                       onClick={evaluateModel}
@@ -770,19 +891,21 @@ export default function QuestionForm() {
 
               <div className="mb-4 visualization-container">
                 <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto">
-                  {isLoading ? (
+                  {controlMode === "evaluation" && activeQuery ? (
+                 
+                    renderEvaluationProgress()
+                  ) : isLoading ? (
+                    // Not active evaluation, but something else is loading (e.g., query mode initial load)
                     <div className="flex flex-col justify-center items-center py-4">
-                      {evaluationProgress ? (
-                        renderEvaluationProgress()
-                      ) : (
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-black mb-3"></div>
-                      )}
+                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-black mb-3"></div>
                     </div>
                   ) : content ? (
+                    // Not loading, and not active evaluation. Show content.
                     <div className="prose prose-sm max-w-none text-gray-800">
                       <ReactMarkdown>{content}</ReactMarkdown>
                     </div>
                   ) : (
+                    // Default placeholder
                     <div className="text-gray-500 text-sm text-center py-4">
                       Response will appear here
                     </div>

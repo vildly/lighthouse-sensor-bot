@@ -83,11 +83,17 @@ def test_connection():
 def evaluate_endpoint():
     data = request.get_json()
     model_id = data.get("model_id")
+    number_of_runs = data.get("number_of_runs", 1)
+    max_retries = data.get("max_retries", 3) 
 
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
 
-    results, status_code = query_with_eval(model_id)
+    results, status_code = query_with_eval(
+        model_id, 
+        number_of_runs=number_of_runs,
+        max_retries=max_retries
+    )
     return jsonify(results), status_code
 
 
@@ -168,6 +174,7 @@ def query_data():
         logger.error(f"Error fetching model performance: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @api_bp.route("/test-cases", methods=["GET"])
 def get_test_cases():
     try:
@@ -180,17 +187,16 @@ def get_test_cases():
         ordered_test_cases = []
         for test_case in test_cases:
             ordered_test_case = OrderedDict()
-            ordered_test_case["user_input"] = test_case["user_input"]
+            ordered_test_case["query"] = test_case["query"]
             ordered_test_case["reference_contexts"] = test_case["reference_contexts"]
-            ordered_test_case["reference"] = test_case["reference"]
+            ordered_test_case["ground_truth"] = test_case["ground_truth"]
             ordered_test_case["synthesizer_name"] = test_case["synthesizer_name"]
             ordered_test_cases.append(ordered_test_case)
 
         response_data = {"test_cases": ordered_test_cases}
-        
+
         return Response(
-            json.dumps(response_data, indent=2),
-            mimetype="application/json"
+            json.dumps(response_data, indent=2), mimetype="application/json"
         )
     except Exception as e:
         logger.error(f"Error fetching test cases: {e}")
