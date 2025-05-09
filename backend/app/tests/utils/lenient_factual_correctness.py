@@ -56,13 +56,14 @@ def main():
   
     
     # Example 1: Exact match
-    response = "The total cost was 116000 SEK"
-    reference  = "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK"
-    query  = "What was the total fuel cost for ferry Jupiter in January 2024?"
+    # response = "The total cost was 116000 SEK"
+    # reference  = "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK"
+    # query  = "What was the total fuel cost for ferry Jupiter in January 2024?"
     
-    # response = "The average speed of ferry Jupiter is: 11 km/h"
-    # reference = "Average speed in km/h is 11.55"
-    # query = "What is the average speed of ferry Jupiter? (in km/h)"
+    query = "What is the average speed of ferry Jupiter? (in km/h)"
+    response = "The average speed of ferry Jupiter is: 11 km/h"
+    reference = "Average speed in km/h is 11.55"
+    
     
     asyncio.run(test_factual_correctness(response, reference, query))
   
