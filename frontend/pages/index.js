@@ -198,7 +198,7 @@ export default function QuestionForm() {
         },
         body: JSON.stringify({
           question,
-          source_file: sourceFile,
+          // source_file: sourceFile,
           llm_model_id: selectedModel
         }),
       });

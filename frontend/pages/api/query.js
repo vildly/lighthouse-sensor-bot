@@ -28,7 +28,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ content: "Error: No question provided" });
       }
       
-      console.log("Sending to backend:", { question: questionText, source_file, llm_model_id });
+      // console.log("Sending to backend:", { question: questionText, source_file, llm_model_id });
+      console.log("Sending to backend:", { question: questionText, llm_model_id });
       
       const response = await fetch(`${SERVER_URL}/api/query`, {
         method: "POST",
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({ 
           question: questionText,
-          source_file,
+          // source_file,
           llm_model_id: llm_model_id
         }),
       });

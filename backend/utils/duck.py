@@ -86,7 +86,7 @@ def get_system_message(instructions, semantic_model) -> List[str]:
         """
         )
         
-        system_message += json.dumps(semantic_model['tables'][0])
+        system_message += json.dumps(semantic_model)
         system_message += "\n"
 
     return system_message.strip()

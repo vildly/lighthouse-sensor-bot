@@ -19,6 +19,11 @@
       "name": "furusundsleden-blidoleden-schedule",
       "description": " Schedules for the ferry route Furusundsleden, Yxlan ferry",
       "path": "schedules/furusundsleden-blidoleden_utg9_200623_w.csv"
+    },
+    {
+      "name": "route-descriptions",
+      "description": "Markdown file containing descriptions of ferry routes, including ferry line length, crossing time, and scheduling information for each route.",
+      "path": "route_descriptions.json"
     }
   ]
 }

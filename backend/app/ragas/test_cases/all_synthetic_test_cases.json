@@ -48,5 +48,16 @@
     "ground_truth": "The route with the highest vehicle throughput per day is Ljusteröleden with 1840 vehicles",
     "extracted_true_value": "1840",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+
+  {
+    "test_no": 11,
+    "query": "What is the most underutilized route in the dataset and what is the utilization percentage?",
+    "reference_contexts": [
+      "Route(s) with the overall highest daily throughput: Ljusteröleden with 1840 vehicles. All routes with their highest daily throughput: Aspöleden: 351, Furusundsleden: 1794, Ljusteröleden: 1840, Oxdjupsleden: 841, Vaxholmsleden: 1387"
+    ],
+    "ground_truth": "The route with the highest vehicle throughput per day is Ljusteröleden with 1840 vehicles",
+    "extracted_true_value": "1840",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
