@@ -52,12 +52,12 @@
 
   {
     "test_no": 11,
-    "query": "What is the most underutilized route in the dataset and what is the utilization percentage?",
+    "query": "What is the most underutilized route in the dataset and what is the utilization percentage (average PCE vs the ferry's maximum capacity)?",
     "reference_contexts": [
-      "Route(s) with the overall highest daily throughput: Ljusteröleden with 1840 vehicles. All routes with their highest daily throughput: Aspöleden: 351, Furusundsleden: 1794, Ljusteröleden: 1840, Oxdjupsleden: 841, Vaxholmsleden: 1387"
+      "Most underutilized: Oxdjupsleden. Utilization percentage: 29.24%."
     ],
-    "ground_truth": "The route with the highest vehicle throughput per day is Ljusteröleden with 1840 vehicles",
-    "extracted_true_value": "1840",
+    "ground_truth": "The most underutilized route is Oxdjupsleden with a utilization percentage of 29.24%.",
+    "extracted_true_value": "29.24",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
