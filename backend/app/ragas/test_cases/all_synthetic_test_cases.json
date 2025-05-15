@@ -11,7 +11,7 @@
   },
   {
     "test_no": 12,
-    "query": "What's the average number of vehicles left at terminals in March for Furusundsleden?",
+    "query": "What's the average number of vehicles left at terminals in June for Furusundsleden?",
     "reference_contexts": [
         "Average Vehicles Left at Terminals in June for Furusundsleden: 5.01 vehicles left per trip"
     ],
