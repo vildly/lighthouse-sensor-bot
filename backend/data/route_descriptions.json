@@ -1,0 +1,44 @@
+{
+  "routes": [
+    {
+      "route_name": "Aspöleden",
+      "ferries": ["Yxlan", "Aspö3"],
+      "location": "between Karlskrona and Aspö in the Karlskrona archipelago",
+      "ferry_line_length_m": 6700,
+      "crossing_time_in_minutes": 25,
+      "schedule": "Two ferries during morning and evening traffic"
+    },
+    {
+      "route_name": "Oxdjupsleden",
+      "ferries": ["Fragancia"],
+      "location": "between Rindö and Stenslätten on Värmdö in the Stockholm archipelago",
+      "ferry_line_length_m": 500,
+      "crossing_time_in_minutes": 3,
+      "schedule": "One ferry only"
+    },
+    {
+      "route_name": "Furusundsleden",
+      "ferries": ["Merkurius", "Gulli"],
+      "location": "between Furusund and Yxlan in the Stockholm archipelago",
+      "ferry_line_length_m": 600,
+      "crossing_time_in_minutes": 4,
+      "schedule": "Two ferries during summertime and spring holidays"
+    },
+    {
+      "route_name": "Vaxholmsleden",
+      "ferries": ["Nina", "Castella"],
+      "location": "between Vaxholm and Rindö in the Stockholm archipelago",
+      "ferry_line_length_m": 970,
+      "crossing_time_in_minutes": 6,
+      "schedule": "Two ferries during morning and evening"
+    },
+    {
+      "route_name": "Ljusteröleden",
+      "ferries": ["Jupiter", "Frida"],
+      "location": "between Östanå and Ljusterö in the Stockholm archipelago",
+      "ferry_line_length_m": 1100,
+      "crossing_time_in_minutes": 7,
+      "schedule": "Two ferries during morning, evening, and summertime. Different timetables for winter and summer."
+    }
+  ]
+} 

@@ -1,11 +1,12 @@
 [
   {
-    "test_no": 1,
-    "query": "What is the total fuel cost for ferry Jupiter in January 2024 assuming that the price per liter is 20 sek?",
+    "test_no": 20,
+    "query": "What is the total CO2 emission from Ljusteröleden in February 2024, assuming 2.68 kg CO2 per liter of fuel?",
     "reference_contexts": [
-      "Total fuel consumption for ferry Jupiter in January 2024: 12709.34 liters"
+        "CO2 Emissions Analysis for Ljusteröleden in February 2024:\nTotal fuel consumption: 16,359.66 liters\nCO2 emission factor: 2.68 kg CO2 per liter\nTotal CO2 emissions: 43,843.88 kg CO2 (43.84 tons CO2)"
     ],
-    "ground_truth": "Total fuel cost for ferry Jupiter in January 2024: 254186.70 SEK",
+    "ground_truth": "The total CO2 emission from Ljusteröleden in February 2024 is 43,843.88 kg",
+    "extracted_true_value": "43843.88",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]

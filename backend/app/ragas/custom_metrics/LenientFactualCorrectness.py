@@ -11,6 +11,8 @@ from ragas.metrics.base import SingleTurnMetric, MetricType
 class LenientFactualCorrectness(SingleTurnMetric):
     name: str = "lenient_factual_correctness"
     api_key: str = None
+    # Class-level dictionary to store extracted_true_values by reference text
+    _extracted_true_values_dict = {}  # Class-level dictionary
 
     required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
@@ -24,24 +26,56 @@ class LenientFactualCorrectness(SingleTurnMetric):
         self.api_key = os.environ.get("OPENROUTER_API_KEY")
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not found in environment variables")
+        
+        # Don't clear the class-level dictionary - keep values across instances
+        # Instead, optionally clear it at the start of a full test run
 
     def supports_sample_type(self, sample_type) -> bool:
         return sample_type is SingleTurnSample
+    
+    # Add a method to register extracted true values
+    def register_extracted_true_value(self, reference: str, value: float) -> None:
+        """Register an extracted true value for a reference text"""
+        if reference and value is not None:
+            # Normalize the reference text to avoid matching issues
+            normalized_ref = reference.strip()
+            LenientFactualCorrectness._extracted_true_values_dict[normalized_ref] = value
+            print(f"DEBUG: Registered value {value} for normalized reference: '{normalized_ref}'")
 
     async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks=None) -> float:
         # Get the query from either question or user_input attributes
         query = getattr(sample, "question", "") or getattr(sample, "user_input", "") or ""
         
-        # Extract relevant numbers from response and reference based on the query
+        print("_single_turn_ascore called")
+        print(f"DEBUG: Reference text: '{sample.reference}'")
+        print(f"DEBUG: Available keys in _extracted_true_values_dict: {list(LenientFactualCorrectness._extracted_true_values_dict.keys())}")
+        
+        # Try to get the pre-registered extracted true value for this reference
+        reference_val = None
+        if sample.reference in LenientFactualCorrectness._extracted_true_values_dict:
+            reference_val = LenientFactualCorrectness._extracted_true_values_dict[sample.reference]
+            print(f"Using pre-registered extracted value: {reference_val}")
+        else:
+            print(f"DEBUG: No pre-registered value found for this reference")
+            # Try a more flexible matching approach
+            for ref_text, value in LenientFactualCorrectness._extracted_true_values_dict.items():
+                if ref_text.strip() == sample.reference.strip():
+                    reference_val = value
+                    print(f"DEBUG: Found match using stripped comparison: {reference_val}")
+                    break
+        
+        # Extract relevant number from response based on the query
         response_val = await self.extract_first_number(sample.response, query)
-        reference_val = await self.extract_first_number(sample.reference, query)
         
         # If we don't have both values, return 0
         if response_val is None or reference_val is None:
+            print(f"DEBUG: Missing values - response_val: {response_val}, reference_val: {reference_val}")
             return 0.0
             
         # Compare the numbers
-        return self.compare_numbers(response_val, reference_val)
+        score = self.compare_numbers(response_val, reference_val)
+        print(f"DEBUG: Final score: {score} (comparing {response_val} to {reference_val})")
+        return score
 
     async def extract_first_number(self, text: str, query: str) -> t.Optional[float]:
         """Extract the first relevant number from text using OpenRouter API directly."""
@@ -101,6 +135,8 @@ class LenientFactualCorrectness(SingleTurnMetric):
                     import re
                     # Remove all non-numeric characters except decimal point
                     clean_extracted = re.sub(r'[^\d.]', '', extracted)
+                    
+                    print(f"Extracted number: '{extracted}' -> Cleaned: '{clean_extracted}'")
                     
                     # Try to convert to float
                     try:
