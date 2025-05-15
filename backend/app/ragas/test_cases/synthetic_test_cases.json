@@ -1,12 +1,12 @@
 [
   {
-    "test_no": 13,
-    "query": "What is the average daily vehicle throughput per day for Vaxholmsleden (only outbound)?",
+    "test_no": 20,
+    "query": "What is the total CO2 emission from Ljusteröleden in February 2024, assuming 2.68 kg CO2 per liter of fuel?",
     "reference_contexts": [
-      "Vaxholmsleden Average Daily Vehicle Throughput Analysis:\nNumber of days analyzed: 366\nAverage vehicles per day: 743.98\nMinimum vehicles in a day: 0\nMaximum vehicles in a day: 1387"
+        "CO2 Emissions Analysis for Ljusteröleden in February 2024:\nTotal fuel consumption: 16,359.66 liters\nCO2 emission factor: 2.68 kg CO2 per liter\nTotal CO2 emissions: 43,843.88 kg CO2 (43.84 tons CO2)"
     ],
-    "ground_truth": "The average vehicle throughput per day for Vaxholmsleden is 743.98 vehicles.",
-    "extracted_true_value": "743.98",
+    "ground_truth": "The total CO2 emission from Ljusteröleden in February 2024 is 43,843.88 kg",
+    "extracted_true_value": "43843.88",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
