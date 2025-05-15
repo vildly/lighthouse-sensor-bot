@@ -1,12 +1,102 @@
 [
   {
     "test_no": 11,
-    "query": "What is the most underutilized route in the dataset and what is the utilization percentage (average PCE vs the ferry's maximum capacity)?",
+    "query": "What is the average utilization percentage for Oxdjupsleden (average PCE vs the ferry's maximum capacity)?",
     "reference_contexts": [
-      "Most underutilized: Oxdjupsleden. Utilization percentage: 29.24%."
+        "Oxdjupsleden Route Utilization Analysis:\nFerry: Fragancia\nFerry capacity: 34 PCE\nAverage outbound PCE: 9.95\nAverage inbound PCE: 9.94\nAverage PCE per trip: 9.94\nNumber of trips analyzed: 17505\nUtilization percentage: 29.25%"
     ],
-    "ground_truth": "The most underutilized route is Oxdjupsleden with a utilization percentage of 29.24%.",
-    "extracted_true_value": "29.24",
+    "ground_truth": "The average utilization percentage for Oxdjupsleden is 29.25%.",
+    "extracted_true_value": "29.25",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 12,
+    "query": "What's the average number of vehicles left at terminals in March for Furusundsleden?",
+    "reference_contexts": [
+        "Average Vehicles Left at Terminals in June for Furusundsleden: 5.01 vehicles left per trip"
+    ],
+    "ground_truth": "The average number of vehicles left at terminals in June for Furusundsleden is 5.01",
+    "extracted_true_value": "5.01",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 13,
+    "query": "What is the average daily vehicle throughput per day for Vaxholmsleden?",
+    "reference_contexts": [
+        "Vaxholmsleden Average Daily Vehicle Throughput Analysis:\nNumber of days analyzed: 366\nAverage vehicles per day: 743.98\nMinimum vehicles in a day: 0\nMaximum vehicles in a day: 1387"
+    ],
+    "ground_truth": "The average vehicle throughput per day for Vaxholmsleden is 743.98 vehicles.",
+    "extracted_true_value": "743.98",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 14,
+    "query": "What's the average PCE for thursdays for route Oxdjupsleden?",
+    "reference_contexts": [
+        "Thursday PCE Analysis for Oxdjupsleden:\nNumber of Thursday trips analyzed: 2771\nAverage outbound PCE on Thursdays: 10.14\nAverage inbound PCE on Thursdays: 9.94\nAverage PCE per trip on Thursdays: 10.04"
+    ],
+    "ground_truth": "The average PCE for Thursdays for route Oxdjupsleden is 10.04.",
+    "extracted_true_value": "10.04",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 15,
+    "query": "Which hour of the day has the highest average passenger car equivalent (PCE) for route Ljusteröleden (with inbound and outbound trips combined)?",
+    "reference_contexts": [
+        "Peak PCE times for Ljusteröleden: \nOutbound: Hour 15.0 with average PCE of 35.49\nInbound: Hour 15.0 with average PCE of 36.63\nCombined average: 72.12"
+    ],
+    "ground_truth": "The hour with the highest combined average PCE is no.: 15",
+    "extracted_true_value": "15",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 16,
+    "query": "What is the average passenger car equivalent (PCE) during June, July, August for Vaxholmsleden route?",
+    "reference_contexts": [
+        "Monthly breakdown of average PCE for Vaxholmsleden during summer:\nJune: 46.41 PCE\nJuly: 39.54 PCE\nAugust: 40.53 PCE\nCombined average PCE: 42.06."
+    ],
+    "ground_truth": "The average PCE during June, July and August for Vaxholmsleden route is 42.06",
+    "extracted_true_value": "42.06",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 17,
+    "query": "What is the difference in percent of pedestrians to vehicles, comparing weekdays to weekends for Vaxholmsleden?",
+    "reference_contexts": [
+        "Vaxholmsleden Pedestrian to Vehicle Ratio Analysis:\nWeekday ratio (Mon-Fri): 0.185 pedestrians per vehicle\nWeekend ratio (Sat-Sun): 0.184 pedestrians per vehicle\nPercentage change: +0.9% (higher on weekdays)"
+    ],
+    "ground_truth": "The difference in percent of pedestrians to vehicles, comparing weekdays to weekends for Vaxholmsleden is 0.9%.",
+    "extracted_true_value": "0.9",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 18,
+    "query": "At which hour does Oxdjupsleden on average have the highest passenger car equivalent (PCE)?",
+    "reference_contexts": [
+        "Oxdjupsleden Hourly PCE Analysis:\nTop 5 Hours by Average PCE:\n15:00: 31.81, 15.46, 16.35, 1139\n16:00: 29.77, 15.43, 14.34, 1331\n17:00: 24.63, 13.18, 11.45, 1271\n14:00: 23.67, 11.76, 11.91, 1340\n11:00: 23.46, 11.49, 11.97, 1060"
+    ],
+    "ground_truth": "Oxdjupsleden has the highest average PCE at hour 15",
+    "extracted_true_value": "15",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 19,
+    "query": "What was Aspöleden's ratio of pedestrians to vehicles in 2023?",
+    "reference_contexts": [
+        "Aspöleden Pedestrian to Vehicle Ratio Analysis (2023):\nTotal trips analyzed: 4631\nTotal pedestrians: 76,522\nTotal vehicles: 124,694\nPedestrian to vehicle ratio: 0.614"
+    ],
+    "ground_truth": "Aspöleden's ratio of pedestrians to vehicles in 2023 was 0.614.",
+    "extracted_true_value": "0.614",
+    "synthesizer_name": "single_hop_specifc_query_synthesizer"
+  },
+  {
+    "test_no": 20,
+    "query": "What is the total CO2 emission from Ljusteröleden in February 2024, assuming 2.68 kg CO2 per liter of fuel?",
+    "reference_contexts": [
+        "CO2 Emissions Analysis for Ljusteröleden in February 2024:\nTotal fuel consumption: 16,359.66 liters\nCO2 emission factor: 2.68 kg CO2 per liter\nTotal CO2 emissions: 43,843.88 kg CO2 (43.84 tons CO2)"
+    ],
+    "ground_truth": "The total CO2 emission from Ljusteröleden in February 2024 is 43,843.88 kg",
+    "extracted_true_value": "43843.88",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
