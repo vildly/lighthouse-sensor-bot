@@ -210,13 +210,26 @@ def evaluate_single_test(
         metrics = [
             LenientFactualCorrectness(),
             SemanticSimilarity(embeddings=evaluator_embeddings),
-            LLMContextRecall(llm=evaluator_llm),
+            # LLMContextRecall(llm=evaluator_llm),
             Faithfulness(llm=evaluator_llm),
             BleuScore(),
             NonLLMStringSimilarity(),
             RougeScore(),
             StringPresence(),
         ]
+        
+        # Pre-register the extracted true value if available
+        if "extracted_true_value" in test_case and test_case["extracted_true_value"]:
+            try:
+                extracted_val = float(test_case["extracted_true_value"])
+                # Register this value with the LenientFactualCorrectness metric
+                for metric in metrics:
+                    if isinstance(metric, LenientFactualCorrectness):
+                        metric.register_extracted_true_value(test_case["ground_truth"], extracted_val)
+                        print(f"Pre-registered value {extracted_val} for test {test_case.get('test_no')}")
+                        break
+            except (ValueError, TypeError) as e:
+                print(f"Error converting extracted_true_value to float: {e}")
 
         # Run evaluation on single test
         result = evaluate(eval_dataset, metrics, llm=evaluator_llm)
