@@ -15,7 +15,7 @@ clean:
 	rm -rf __pycache__ .pytest_cache .mypy_cache
 
 test:
-	python -m app.tests.utils.lenient_factual_correctness
+	python -m app.tests.utils.text_extracted_value
 
 # eval:
 # 	python -m app.ragas.scripts.ragas_tests

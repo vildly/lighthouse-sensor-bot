@@ -1,12 +1,12 @@
 [
   {
-    "test_no": 12,
-    "query": "What's the average number of vehicles left at terminals in June for Furusundsleden?",
+    "test_no": 13,
+    "query": "What is the average daily vehicle throughput per day for Vaxholmsleden (only outbound)?",
     "reference_contexts": [
-        "Average Vehicles Left at Terminals in June for Furusundsleden: 5.01 vehicles left per trip"
+      "Vaxholmsleden Average Daily Vehicle Throughput Analysis:\nNumber of days analyzed: 366\nAverage vehicles per day: 743.98\nMinimum vehicles in a day: 0\nMaximum vehicles in a day: 1387"
     ],
-    "ground_truth": "The average number of vehicles left at terminals in June for Furusundsleden is 5.01",
-    "extracted_true_value": "5.01",
+    "ground_truth": "The average vehicle throughput per day for Vaxholmsleden is 743.98 vehicles.",
+    "extracted_true_value": "743.98",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
