@@ -1,12 +1,12 @@
 [
   {
-    "test_no": 20,
-    "query": "What is the total CO2 emission from Ljusteröleden in February 2024, assuming 2.68 kg CO2 per liter of fuel?",
+    "test_no": 5,
+    "query": "What is the highest average daily PCE (Passenger Car Equivalent) value for Furusundsleden route? (outbound and inbound combined)?",
     "reference_contexts": [
-        "CO2 Emissions Analysis for Ljusteröleden in February 2024:\nTotal fuel consumption: 16,359.66 liters\nCO2 emission factor: 2.68 kg CO2 per liter\nTotal CO2 emissions: 43,843.88 kg CO2 (43.84 tons CO2)"
+      "Furusundsleden Daily PCE Analysis:\nAverage PCE by day of week:\nMonday: 37.05 PCE (2184 trips)\nTuesday: 36.49 PCE (2173 trips)\nWednesday: 37.27 PCE (2198 trips)\nThursday: 38.42 PCE (2251 trips)\nFriday: 40.33 PCE (2308 trips)\nSaturday: 30.23 PCE (2161 trips)\nSunday: 31.78 PCE (2267 trips)"
     ],
-    "ground_truth": "The total CO2 emission from Ljusteröleden in February 2024 is 43,843.88 kg",
-    "extracted_true_value": "43843.88",
+    "ground_truth": "The highest average daily PCE value for Furusundsleden route is 40.33.",
+    "extracted_true_value": "40.33",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]
