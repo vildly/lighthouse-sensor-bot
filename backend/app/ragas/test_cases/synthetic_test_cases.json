@@ -1,12 +1,12 @@
 [
   {
-    "test_no": 5,
-    "query": "What is the highest average daily PCE (Passenger Car Equivalent) value for Furusundsleden route? (outbound and inbound combined)?",
+    "test_no": 10,
+    "query": "Which ferry has the best fuel efficiency, and what is its liters per nautical mile?",
     "reference_contexts": [
-      "Furusundsleden Daily PCE Analysis:\nAverage PCE by day of week:\nMonday: 37.05 PCE (2184 trips)\nTuesday: 36.49 PCE (2173 trips)\nWednesday: 37.27 PCE (2198 trips)\nThursday: 38.42 PCE (2251 trips)\nFriday: 40.33 PCE (2308 trips)\nSaturday: 30.23 PCE (2161 trips)\nSunday: 31.78 PCE (2267 trips)"
+      "Fuel Efficiency Analysis (liters per nautical mile): Lower values indicate better fuel efficiency: Merkurius: 6.08 L/NM. Nina: 8.37 L/NM. Yxlan: 10.82 L/NM. Fragancia: 11.92 L/NM. Jupiter: 12.30 L/NM. The most fuel-efficient ferry is: Merkurius: 6.08 L/NM"
     ],
-    "ground_truth": "The highest average daily PCE value for Furusundsleden route is 40.33.",
-    "extracted_true_value": "40.33",
+    "ground_truth": "The most fuel-efficient ferry is: Merkurius: 6.08 L/NM",
+    "extracted_true_value": " 6.08",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   }
 ]

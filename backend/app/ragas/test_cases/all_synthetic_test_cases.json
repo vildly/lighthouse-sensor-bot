@@ -91,11 +91,11 @@
   },
   {
     "test_no": 10,
-    "query": "Which ferry has the best fuel efficiency, and what is its liters per nautical mile?",
+    "query": "What is the fuel consumption (liters per nautical mile) for ferry Merkurius?",
     "reference_contexts": [
-      "Fuel Efficiency Analysis (liters per nautical mile): Lower values indicate better fuel efficiency: Merkurius: 6.08 L/NM. Nina: 8.37 L/NM. Yxlan: 10.82 L/NM. Fragancia: 11.92 L/NM. Jupiter: 12.30 L/NM. The most fuel-efficient ferry is: Merkurius: 6.08 L/NM"
+      "Fuel Efficiency Analysis (liters per nautical mile):Lower values indicate better fuel efficiency\nMerkurius: 6.08 L/NM\nNina: 8.37 L/NM\nYxlan: 10.82 L/NM\nFragancia: 11.92 L/NM\nJupiter: 12.30 L/NM"
     ],
-    "ground_truth": "The most fuel-efficient ferry is: Merkurius: 6.08 L/NM",
+    "ground_truth": "The most fuel-efficient ferry is Merkurius with a consumption of 6.08 L/NM",
     "extracted_true_value": " 6.08",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
