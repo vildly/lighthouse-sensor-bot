@@ -51,11 +51,11 @@
   },
   {
     "test_no": 6,
-    "query": "What is the average distance travelled on Ljusteröleden?",
+    "query": "What is the average distance travelled on Ljusteröleden (in nautical miles)?",
     "reference_contexts": [
       "The average distance travelled on Ljusteröleden is: 0.57 NM."
     ],
-    "ground_truth": "The average distance travelled on Ljusteröleden is: 0.57 NM.",
+    "ground_truth": "The average distance travelled on Ljusteröleden is 0.57 nautical miles.",
     "extracted_true_value": "0.57",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
@@ -81,7 +81,7 @@
   },
   {
     "test_no": 9,
-    "query": "What is the average trip duration for Oxdjupsleden?",
+    "query": "What is the average trip duration for Oxdjupsleden (in minutes)?",
     "reference_contexts": [
       "Average Trip Duration for Oxdjupsleden: Outbound: 3.16 minutes. Inbound: 3.09 minutes. The average trip duration is 3.12 minutes"
     ],
