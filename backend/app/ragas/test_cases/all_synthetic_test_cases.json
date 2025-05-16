@@ -153,10 +153,10 @@
     "test_no": 16,
     "query": "What is the average passenger car equivalent (PCE) during June, July, August for Vaxholmsleden route (calculated as the mean of the average inbound PCE and average outbound PCE)?",
     "reference_contexts": [
-        "Monthly breakdown of average PCE for Vaxholmsleden during summer:\nJune: 46.41 PCE\nJuly: 39.54 PCE\nAugust: 40.53 PCE\nCombined average PCE: 42.06."
+        "Monthly breakdown of average PCE for Vaxholmsleden during summer:\nJune: 23.21 PCE\nJuly: 19.77 PCE\nAugust: 20.26 PCE\nOutbound average PCE: 20.71\nInbound average PCE: 21.35\nCombined average PCE: 21.03."
     ],
-    "ground_truth": "The average PCE during June, July and August for Vaxholmsleden route is 42.06",
-    "extracted_true_value": "42.06",
+    "ground_truth": "The average PCE during June, July and August for Vaxholmsleden route is 21.03.",
+    "extracted_true_value": "21.03",
     "synthesizer_name": "single_hop_specifc_query_synthesizer"
   },
   {
