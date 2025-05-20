@@ -345,6 +345,16 @@ def create_posthoc_graph(data_df, metric_name, posthoc_results, wilcoxon_results
         axes[0].set_yticklabels([model_aliases[m] for m in models])
         plt.setp(axes[0].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
         
+        # Add grid lines to create borders around each cell
+        for edge, spine in axes[0].spines.items():
+            spine.set_visible(True)
+            spine.set_color('black')
+            spine.set_linewidth(1)
+            
+        axes[0].set_xticks(np.arange(-.5, len(models), 1), minor=True)
+        axes[0].set_yticks(np.arange(-.5, len(models), 1), minor=True)
+        axes[0].grid(which='minor', color='black', linestyle='-', linewidth=1)
+        
         # Add p-values in each cell
         for i in range(len(models)):
             for j in range(len(models)):
