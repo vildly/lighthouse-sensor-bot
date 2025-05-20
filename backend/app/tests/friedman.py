@@ -157,15 +157,40 @@ metrics = [
 
 results_by_metric = {}
 
+def create_model_aliases(models):
+    """Create hardcoded aliases for model names"""
+    model_name_map = {
+        "anthropic/claude-3.7-sonnet": "Claude 3.7 Sonnet",
+        "qwen/qwen-2.5-72b-instruct": "Qwen 2.5 72B",
+        "meta-llama/llama-3.3-70b-instruct": "Llama 3.3 70B",
+        "meta-llama/llama-3.1-8b-instruct": "Llama 3.1 8B",
+        "mistralai/ministral-8b": "Ministral 8B"
+    }
+    
+    # Create aliases 
+    aliases = {}
+    for i, model in enumerate(models):
+        if model in model_name_map:
+            aliases[model] = model_name_map[model]
+        else:
+            # Fallback for any models not in our hardcoded list
+            aliases[model] = f"Model {i+1}"
+    
+    return aliases
+
 def plot_and_save_metric_comparison(data_df, metric_name, friedman_results, posthoc_results=None, wilcoxon_results=None):
     pdf_path = os.path.join(output_dir, f'{metric_name}_comparison.pdf')
+    
+    # Create aliases for model names
+    model_aliases = create_model_aliases(data_df.columns)
     
     with PdfPages(pdf_path) as pdf:
         # First page: Main boxplot with Friedman test results
         plt.figure(figsize=(12, 6))
         
-        # Create boxplot
-        plt.boxplot([data_df[col].values for col in data_df.columns], tick_labels=data_df.columns)
+        # Create boxplot with shortened names
+        plt.boxplot([data_df[col].values for col in data_df.columns], 
+                   tick_labels=[model_aliases[col] for col in data_df.columns])
         
         # Add statistical test information
         if 'error' not in friedman_results:
@@ -196,18 +221,17 @@ def plot_and_save_metric_comparison(data_df, metric_name, friedman_results, post
             # Add Nemenyi post-hoc test results if available
             if posthoc_results is not None:
                 axes[0].set_title("Post-hoc Nemenyi Test p-values")
-                # Convert posthoc_results to a nice table format
                 posthoc_vals = posthoc_results.values
                 models = posthoc_results.columns
                 
                 # Create a heatmap-like table
                 im = axes[0].imshow(posthoc_vals, cmap='coolwarm', vmin=0, vmax=0.1)
                 
-                # Add model names as labels
+                # Add model aliases as labels
                 axes[0].set_xticks(np.arange(len(models)))
                 axes[0].set_yticks(np.arange(len(models)))
-                axes[0].set_xticklabels(models)
-                axes[0].set_yticklabels(models)
+                axes[0].set_xticklabels([model_aliases[m] for m in models])
+                axes[0].set_yticklabels([model_aliases[m] for m in models])
                 plt.setp(axes[0].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
                 
                 # Add p-values in each cell
@@ -233,11 +257,15 @@ def plot_and_save_metric_comparison(data_df, metric_name, friedman_results, post
                     wilcoxon_results = wilcoxon_results[~wilcoxon_results['error'].notna()]
                 
                 if not wilcoxon_results.empty:
+                    # Use model names for comparison column
                     table_data = []
                     for _, row in wilcoxon_results.iterrows():
+                        m1_name = model_aliases[row['model1']]
+                        m2_name = model_aliases[row['model2']]
+                        
                         sig_text = "✓" if row.get('significant', False) else ""
                         table_data.append([
-                            f"{row['model1']} vs {row['model2']}",
+                            f"{m1_name} vs {m2_name}",
                             f"{row['wilcoxon_stat']:.4f}",
                             f"{row['p_value']:.4f}",
                             sig_text
@@ -248,7 +276,8 @@ def plot_and_save_metric_comparison(data_df, metric_name, friedman_results, post
                             cellText=table_data,
                             colLabels=['Comparison', 'Statistic', 'p-value', 'Significant (p<0.05)'],
                             loc='center',
-                            cellLoc='center'
+                            cellLoc='center',
+                            colWidths=[0.4, 0.2, 0.2, 0.2]  # Control column widths
                         )
                         table.auto_set_font_size(False)
                         table.set_fontsize(9)
