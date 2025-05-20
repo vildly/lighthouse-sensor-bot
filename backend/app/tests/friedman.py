@@ -120,6 +120,13 @@ def run_pairwise_wilcoxon(data_df):
     models = data_df.columns
     results = []
     
+    # Calculate Bonferroni-corrected alpha
+    n_tests = len(models) * (len(models) - 1) // 2  # number of pairwise comparisons
+    alpha = 0.05  # standard significance level
+    bonferroni_alpha = alpha / n_tests  # Bonferroni correction
+    
+    print(f"\nUsing Bonferroni correction: alpha = {alpha:.5f} / {n_tests} tests = {bonferroni_alpha:.5f}")
+    
     for i, j in itertools.combinations(range(len(models)), 2):
         model1, model2 = models[i], models[j]
         # Paired test - each row is a specific query
@@ -133,7 +140,8 @@ def run_pairwise_wilcoxon(data_df):
                 'model2': model2,
                 'wilcoxon_stat': stat,
                 'p_value': p,
-                'significant': p < 0.05
+                'significant': p < bonferroni_alpha, 
+                'corrected_alpha': bonferroni_alpha
             })
         except Exception as e:
             results.append({
