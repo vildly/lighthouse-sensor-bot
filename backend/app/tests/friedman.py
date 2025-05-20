@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import itertools
 from collections import defaultdict
 from matplotlib.backends.backend_pdf import PdfPages
+import scikit_posthocs as sp
 
 # Load environment variables
 load_dotenv()
@@ -117,40 +118,62 @@ def run_friedman_test(data_df):
 
 # Run pairwise Wilcoxon tests if Friedman test is significant
 def run_pairwise_wilcoxon(data_df):
+    """
+    Run pairwise Wilcoxon signed-rank tests using scikit_posthocs
+    which provides better p-value adjustment methods
+    """
+    # Reshape data for scikit_posthocs
+    # scikit_posthocs.posthoc_wilcoxon expects long-format data
+    long_format_data = []
     models = data_df.columns
-    results = []
     
-    # Calculate Bonferroni-corrected alpha
-    n_tests = len(models) * (len(models) - 1) // 2  # number of pairwise comparisons
-    alpha = 0.05  # standard significance level
-    bonferroni_alpha = alpha / n_tests  # Bonferroni correction
+    # Create a list of model names and test values for posthoc_wilcoxon
+    for query_idx in range(len(data_df)):
+        for model in models:
+            # Skip NaN values
+            if pd.notna(data_df[model].iloc[query_idx]):
+                long_format_data.append({
+                    'model': model,
+                    'score': data_df[model].iloc[query_idx]
+                })
     
-    print(f"\nUsing Bonferroni correction: alpha = {alpha:.5f} / {n_tests} tests = {bonferroni_alpha:.5f}")
+    # Convert to dataframe
+    long_df = pd.DataFrame(long_format_data)
     
-    for i, j in itertools.combinations(range(len(models)), 2):
-        model1, model2 = models[i], models[j]
-        # Paired test - each row is a specific query
-        x = data_df[model1].values
-        y = data_df[model2].values
+    print(f"\nRunning Wilcoxon tests with Bonferroni correction...")
+    
+    try:
+        # Run the pairwise Wilcoxon tests with Bonferroni correction
+        result_matrix = sp.posthoc_wilcoxon(
+            long_df, 
+            val_col='score',
+            group_col='model',
+            p_adjust='bonferroni',
+            zero_method='wilcox'
+        )
         
-        try:
-            stat, p = stats.wilcoxon(x, y)
-            results.append({
-                'model1': model1,
-                'model2': model2,
-                'wilcoxon_stat': stat,
-                'p_value': p,
-                'significant': p < bonferroni_alpha, 
-                'corrected_alpha': bonferroni_alpha
-            })
-        except Exception as e:
-            results.append({
-                'model1': model1,
-                'model2': model2,
-                'error': str(e)
-            })
+        # Convert matrix format to the list format expected by the plotting code
+        results = []
+        for i, model1 in enumerate(result_matrix.index):
+            for j, model2 in enumerate(result_matrix.columns):
+                if i < j:  # Only look at upper triangle to avoid duplicates
+                    p_value = result_matrix.iloc[i, j]
+                    
+                    results.append({
+                        'model1': model1,
+                        'model2': model2,
+                        'p_value': p_value,
+                        'significant': p_value < 0.05,
+                        'correction': 'bonferroni'
+                    })
+        
+        return pd.DataFrame(results)
     
-    return pd.DataFrame(results)
+    except Exception as e:
+        print(f"Error running pairwise Wilcoxon tests: {e}")
+        return pd.DataFrame({
+            'error': [str(e)]
+        })
 
 # Analyze all metrics
 metrics = [
@@ -337,14 +360,13 @@ def create_posthoc_graph(data_df, metric_name, posthoc_results, wilcoxon_results
     
     # Add Wilcoxon test results if available
     if wilcoxon_results is not None and not wilcoxon_results.empty:
-        axes[1].set_title("Pairwise Wilcoxon Signed-Rank Tests")
+        axes[1].set_title("Pairwise Wilcoxon Signed-Rank Tests (Bonferroni Correction)")
         axes[1].axis('off')
         
         # Format Wilcoxon results as a table
         if 'error' in wilcoxon_results.columns:
-            wilcoxon_results = wilcoxon_results[~wilcoxon_results['error'].notna()]
-        
-        if not wilcoxon_results.empty:
+            print(f"Error in Wilcoxon tests: {wilcoxon_results['error'].iloc[0]}")
+        else:
             # Use the actual aliases instead of model numbers
             table_data = []
             for _, row in wilcoxon_results.iterrows():
@@ -355,7 +377,6 @@ def create_posthoc_graph(data_df, metric_name, posthoc_results, wilcoxon_results
                 sig_text = "✓" if row.get('significant', False) else ""
                 table_data.append([
                     f"{m1_name} vs {m2_name}",
-                    f"{row['wilcoxon_stat']:.4f}",
                     f"{row['p_value']:.4f}",
                     sig_text
                 ])
@@ -363,10 +384,10 @@ def create_posthoc_graph(data_df, metric_name, posthoc_results, wilcoxon_results
             if table_data:
                 table = axes[1].table(
                     cellText=table_data,
-                    colLabels=['Comparison', 'Statistic', 'p-value', 'Significant (p<0.05)'],
+                    colLabels=['Comparison', 'p-value', 'Significant (p<0.05)'],
                     loc='center',
                     cellLoc='center',
-                    colWidths=[0.4, 0.2, 0.2, 0.2]  # Control column widths
+                    colWidths=[0.6, 0.2, 0.2]  # Control column widths
                 )
                 table.auto_set_font_size(False)
                 table.set_fontsize(9)
