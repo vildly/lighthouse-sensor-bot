@@ -14,14 +14,12 @@ i:
 clean:
 	rm -rf __pycache__ .pytest_cache .mypy_cache
 
-test:
-	python -m app.tests.utils.text_extracted_value
+# test:
+# 	python -m app.tests.utils.text_extracted_value
 
-# eval:
-# 	python -m app.ragas.scripts.ragas_tests
+friedman:
+	python app/tests/friedman.py
 
-# eval-s:
-# 	python -m app.ragas.scripts.synthetic_ragas_tests --model_id="openai/gpt-4o-2024-11-20"
 
-convert:
-	python -m app.ragas.utils.convert_synthetic_to_json
+# convert:
+# 	python -m app.ragas.utils.convert_synthetic_to_json
