@@ -1,0 +1,48 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{float}
+
+\title{Maritime Sensor Data Queries Classification}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{table}[H]
+\centering
+\caption{Comprehensive Classification of Maritime Sensor Data Queries (Appendix 1)}
+\label{tab:appendix1}
+\begin{tabular}{|p{1cm}|p{4cm}|p{1cm}|p{2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Q\#} & \textbf{Query} & \textbf{GT\#} & \textbf{Complexity} & \textbf{Domain} & \textbf{Interaction} \\
+\hline
+Q1 & Wht is the Ljusteröleden feri route detals? & GT1 & Simple & Route Optimization & Retrieval \\
+\hline
+Q2 & What are the details of the ferry route arriving at Östanå? & GT2 & Simple & Route Optimization & Retrieval \\
+\hline
+Q3 & What Ljusterö ferry do? & GT3 & Simple & Route Optimization & Retrieval \\
+\hline
+Q4 & What are the details of the Ljusteröleden ferry route on January 11, 2024? & GT4 & Simple & Route Optimization & Retrieval \\
+\hline
+Q5 & What is the role of the ferry named Jupiter in the Ljusteröleden route? & GT5 & Simple & Route Optimization & Retrieval \\
+\hline
+Q6 & Wht r the diffrnces in ferry trips on 2024-01-21 09:31:17 and 2024-01-24 11:41:32? & GT6 & Moderate & Route Optimization & Comparison \\
+\hline
+Q7 & Wht were the fuel consmption and passengr car equivalents for the ferry Jupiter on 2024-01-20 and 2024-01-28? & GT7 & Moderate & Fuel Efficiency & Aggregation \\
+\hline
+Q8 & What are the differences in ferry operations for the Ljusteröleden route on January 20, 2024, and January 31, 2024, in terms of vehicle and passenger capacity, fuel consumption, and travel distance? & GT8 & Complex & Route Optimization & Comparison \\
+\hline
+Q9 & What ferry operations on 2024-01-23 08:40:00 and 2024-01-30 05:20:00? & GT9 & Moderate & Route Optimization & Comparison \\
+\hline
+Q10 & How do the ferry operations on the Ljusteröleden route, specifically on January 18th and January 28th, 2024, compare in terms of vehicle capacity and fuel consumption, considering the timestamps 2024-01-18 18:35:27 and 2024-01-28 18:00:42? & GT10 & Complex & Route Optimization & Comparison \\
+\hline
+\end{tabular}
+\end{table}
+
+\end{document} 
