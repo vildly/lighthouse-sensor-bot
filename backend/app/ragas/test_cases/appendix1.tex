@@ -1,12 +1,10 @@
 \documentclass{article}
-\usepackage[utf8]{inputenc}
 \usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{array}
 \usepackage{longtable}
-\usepackage{float}
+\usepackage{array}
+\usepackage{hyperref}
 
-\title{Maritime Sensor Data Queries Classification}
+\title{Appendix 1: Test Cases Classification}
 \author{}
 \date{}
 
@@ -14,35 +12,48 @@
 
 \maketitle
 
-\begin{table}[H]
-\centering
-\caption{Comprehensive Classification of Maritime Sensor Data Queries (Appendix 1)}
-\label{tab:appendix1}
-\begin{tabular}{|p{1cm}|p{4cm}|p{1cm}|p{2cm}|p{2cm}|p{2cm}|}
-\hline
-\textbf{Q\#} & \textbf{Query} & \textbf{GT\#} & \textbf{Complexity} & \textbf{Domain} & \textbf{Interaction} \\
-\hline
-Q1 & Wht is the Ljusteröleden feri route detals? & GT1 & Simple & Route Optimization & Retrieval \\
-\hline
-Q2 & What are the details of the ferry route arriving at Östanå? & GT2 & Simple & Route Optimization & Retrieval \\
-\hline
-Q3 & What Ljusterö ferry do? & GT3 & Simple & Route Optimization & Retrieval \\
-\hline
-Q4 & What are the details of the Ljusteröleden ferry route on January 11, 2024? & GT4 & Simple & Route Optimization & Retrieval \\
-\hline
-Q5 & What is the role of the ferry named Jupiter in the Ljusteröleden route? & GT5 & Simple & Route Optimization & Retrieval \\
-\hline
-Q6 & Wht r the diffrnces in ferry trips on 2024-01-21 09:31:17 and 2024-01-24 11:41:32? & GT6 & Moderate & Route Optimization & Comparison \\
-\hline
-Q7 & Wht were the fuel consmption and passengr car equivalents for the ferry Jupiter on 2024-01-20 and 2024-01-28? & GT7 & Moderate & Fuel Efficiency & Aggregation \\
-\hline
-Q8 & What are the differences in ferry operations for the Ljusteröleden route on January 20, 2024, and January 31, 2024, in terms of vehicle and passenger capacity, fuel consumption, and travel distance? & GT8 & Complex & Route Optimization & Comparison \\
-\hline
-Q9 & What ferry operations on 2024-01-23 08:40:00 and 2024-01-30 05:20:00? & GT9 & Moderate & Route Optimization & Comparison \\
-\hline
-Q10 & How do the ferry operations on the Ljusteröleden route, specifically on January 18th and January 28th, 2024, compare in terms of vehicle capacity and fuel consumption, considering the timestamps 2024-01-18 18:35:27 and 2024-01-28 18:00:42? & GT10 & Complex & Route Optimization & Comparison \\
-\hline
-\end{tabular}
-\end{table}
+\begin{longtable}{p{0.5cm}p{6cm}p{2cm}p{3cm}p{2.5cm}}
+\caption{Test Cases Classification} \\
+\toprule
+No. & Query & Complexity & Domain & Interaction Type \\
+\midrule
+\endfirsthead
+
+\multicolumn{5}{c}%
+{{\bfseries Table \thetable{} -- continued from previous page}} \\
+\toprule
+No. & Query & Complexity & Domain & Interaction Type \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{5}{r}{{Continued on next page}} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+1 & What is the total fuel cost for ferry Jupiter in January 2024 assuming that the price per liter is 20 sek? & Simple & Fuel Efficiency & Retrieval \\
+2 & What is the average speed of ferry Jupiter? (in km/h) & Simple & Route Optimization/Operations & Retrieval \\
+3 & How many vehicles are on average left at the terminal for inbound trips? & Moderate & Route Optimization/Operations & Aggregation \\
+4 & How many vehicles are on average unable to board (left behind at the terminal) per trip for ferry Jupiter during summer months (6, 7, 8)? & Moderate & Route Optimization/Operations & Aggregation \\
+5 & What is the highest average daily PCE (Passenger Car Equivalent) value for Furusundsleden route? (outbound and inbound combined)? & Moderate & Route Optimization/Operations & Aggregation \\
+6 & What is the average distance travelled on Ljusteröleden (in nautical miles)? & Simple & Route Optimization/Operations & Retrieval \\
+7 & What is the total Passenger Car Equivalent (PCE) during the peak hour for route Aspöleden in February, combining both outbound and inbound directions? & Moderate & Route Optimization/Operations & Aggregation \\
+8 & What is the average fuel consumption on the route Ljusterö to Östanå, combining both outbound and inbound? & Moderate & Fuel Efficiency & Aggregation \\
+9 & What is the average trip duration for Oxdjupsleden (in minutes)? & Simple & Route Optimization/Operations & Retrieval \\
+10 & What is the fuel consumption (liters per nautical mile) for ferry Merkurius? & Simple & Fuel Efficiency & Retrieval \\
+11 & What is the average utilization percentage for Oxdjupsleden (average PCE vs the ferry's maximum capacity)? & Moderate & Route Optimization/Operations & Aggregation \\
+12 & What's the average number of vehicles left at terminals in June for Furusundsleden (combine outbound and inboud)? & Moderate & Route Optimization/Operations & Aggregation \\
+13 & What is the average daily vehicle throughput per day for Vaxholmsleden (only outbound)? & Moderate & Route Optimization/Operations & Aggregation \\
+14 & What's the average PCE for Oxdjupsleden on Thursdays (calculated as the mean of the average inbound PCE and average outbound PCE)? & Moderate & Route Optimization/Operations & Aggregation \\
+15 & Which hour of the day has the highest average passenger car equivalent (PCE) for route Ljusteröleden (with inbound and outbound trips combined)? & Moderate & Route Optimization/Operations & Aggregation \\
+16 & What is the average passenger car equivalent (PCE) during June, July, August for Vaxholmsleden route (calculated as the mean of the average inbound PCE and average outbound PCE)? & Moderate & Route Optimization/Operations & Aggregation \\
+17 & What is the difference in percent of pedestrians to vehicles, comparing weekdays to weekends for Vaxholmsleden? & Moderate & Route Optimization/Operations & Comparison \\
+18 & At which hour does Oxdjupsleden on average have the highest passenger car equivalent (PCE)? & Moderate & Route Optimization/Operations & Aggregation \\
+19 & What was Aspöleden's ratio of pedestrians to vehicles in 2023? & Moderate & Route Optimization/Operations & Aggregation \\
+20 & What is the total CO2 emission from Ljusteröleden in February 2024, assuming 2.68 kg CO2 per liter of fuel? & Moderate & Environmental Impact & Aggregation \\
+
+\end{longtable}
 
 \end{document} 
