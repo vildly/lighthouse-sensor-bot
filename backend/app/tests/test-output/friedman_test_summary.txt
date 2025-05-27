@@ -1,0 +1,8 @@
+=== SUMMARY OF STATISTICAL TESTS ===
+factual_correctness: p=0.0000 (SIGNIFICANT), 20 queries
+semantic_similarity: p=0.0000 (SIGNIFICANT), 20 queries
+faithfulness: p=0.0000 (SIGNIFICANT), 20 queries
+bleu_score: p=0.0000 (SIGNIFICANT), 20 queries
+non_llm_string_similarity: p=0.0000 (SIGNIFICANT), 20 queries
+rouge_score: p=0.0000 (SIGNIFICANT), 20 queries
+string_present: p=0.2938 (not significant), 20 queries

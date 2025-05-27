@@ -8,17 +8,18 @@ freeze:
 
 # Install dependencies
 i:
-	pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 
 # Clean temporary files
 clean:
 	rm -rf __pycache__ .pytest_cache .mypy_cache
 
-# eval:
-# 	python -m app.ragas.scripts.ragas_tests
+# test:
+# 	python -m app.tests.utils.text_extracted_value
 
-# eval-s:
-# 	python -m app.ragas.scripts.synthetic_ragas_tests --model_id="openai/gpt-4o-2024-11-20"
+friedman:
+	python app/tests/friedman.py
 
-convert:
-	python -m app.ragas.utils.convert_synthetic_to_json
+
+# convert:
+# 	python -m app.ragas.utils.convert_synthetic_to_json

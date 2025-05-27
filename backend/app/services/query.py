@@ -11,6 +11,7 @@ from app.conf.websocket import socketio
 from app.utils.websocket_logger import WebSocketLogHandler
 from app.helpers.extract_answer import extract_answer_for_evaluation
 from app.helpers.extract_token_usage import extract_token_usage
+import os
 
 def query(data, data_dir=None, data_analyst=None, source_file=None):
     """Process a query and return the response
@@ -23,6 +24,8 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
     prompt_filepath = data.get("prompt_file", None)
     source_file = data.get("source_file", None)
     llm_model_id = data.get("llm_model_id", None)
+    
+    logger.info('query called')
 
     if prompt_filepath:
         question = load_prompt_from_file(data_dir.joinpath(prompt_filepath))
@@ -146,3 +149,4 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
         error_message = f"Error processing query: {str(e)}"
         print(error_message)
         return {"error": error_message, "content": f"Error: {str(e)}"}, 500
+

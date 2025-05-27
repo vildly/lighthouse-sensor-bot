@@ -28,10 +28,10 @@ def query_endpoint():
     # Get the necessary objects from app config
     data_dir = current_app.config["DATA_DIR"]
     # Get source_file from request if provided
-    source_file = data.get("source_file")
+    # source_file = data.get("source_file")
 
-    if not source_file:
-        return jsonify({"error": "Source file is required"}), 400
+    # if not source_file:
+    #     return jsonify({"error": "Source file is required"}), 400
 
     # Get model_id from request if provided
     llm_model_id = data.get("llm_model_id")
@@ -40,33 +40,34 @@ def query_endpoint():
         return jsonify({"error": "LLM Model ID is required"}), 400
 
     # If source_file is provided, create a new agent with the source_file
-    if source_file:
-        semantic_model_data = load_json_from_file(
-            data_dir.joinpath("semantic_model.json")
-        )
-        if semantic_model_data is None:
-            print("Error: Could not load semantic model. Exiting.")
-            exit()
+    # if source_file:
+    #     semantic_model_data = load_json_from_file(
+    #         data_dir.joinpath("semantic_model.json")
+    #     )
+    #     if semantic_model_data is None:
+    #         print("Error: Could not load semantic model. Exiting.")
+    #         exit()
 
-        # Create a new instance of CustomDuckDbTools with the source_file
-        duck_tools = CustomDuckDbTools(
-            data_dir=str(data_dir),
-            semantic_model=current_app.config["SEMANTIC_MODEL"],
-            source_file=source_file,
-        )
+      # Create a new instance of CustomDuckDbTools with the source_file
+    duck_tools = CustomDuckDbTools(
+        data_dir=str(data_dir),
+        semantic_model=current_app.config["SEMANTIC_MODEL"],
+        # source_file=source_file,
+    )
 
-        # Initialize a new agent for this request with the custom tools
-        from app.services.agent import initialize_agent
+    # Initialize a new agent for this request with the custom tools
+    from app.services.agent import initialize_agent
 
-        data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools])
+    data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools])
 
-        # Add source file specific instructions
-        additional_instructions = [
-            f"IMPORTANT: Use the file '{source_file}' as your primary data source.",
-            f"When you need to create a table, use 'data' as the table name and it will automatically use the file '{source_file}'.",
-        ]
-        data_analyst.instructions = data_analyst.instructions + additional_instructions
-
+    # Add source file specific instructions
+    # additional_instructions = [
+    #     f"IMPORTANT: Use the file '{source_file}' as your primary data source.",
+    #     f"When you need to create a table, use 'data' as the table name and it will automatically use the file '{source_file}'.",
+    # ]
+    # data_analyst.instructions = data_analyst.instructions + additional_instructions
+    
+    # Initialize the agent with the custom tools
     # Call the query service
     return query(data=data, data_dir=data_dir, data_analyst=data_analyst)
 
@@ -83,11 +84,17 @@ def test_connection():
 def evaluate_endpoint():
     data = request.get_json()
     model_id = data.get("model_id")
+    number_of_runs = data.get("number_of_runs", 1)
+    max_retries = data.get("max_retries", 3) 
 
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
 
-    results, status_code = query_with_eval(model_id)
+    results, status_code = query_with_eval(
+        model_id, 
+        number_of_runs=number_of_runs,
+        max_retries=max_retries
+    )
     return jsonify(results), status_code
 
 
@@ -138,7 +145,7 @@ def model_performance():
                             "id": "avg_non_llm_string_similarity",
                             "name": "String Similarity",
                         },
-                        {"id": "avg_rouge_score", "name": "ROUGE Score"},
+                        {"id": "avg_rogue_score", "name": "ROUGE Score"},
                         {"id": "avg_string_present", "name": "String Present"},
                     ],
                 }
@@ -168,6 +175,7 @@ def query_data():
         logger.error(f"Error fetching model performance: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @api_bp.route("/test-cases", methods=["GET"])
 def get_test_cases():
     try:
@@ -180,17 +188,16 @@ def get_test_cases():
         ordered_test_cases = []
         for test_case in test_cases:
             ordered_test_case = OrderedDict()
-            ordered_test_case["user_input"] = test_case["user_input"]
+            ordered_test_case["query"] = test_case["query"]
             ordered_test_case["reference_contexts"] = test_case["reference_contexts"]
-            ordered_test_case["reference"] = test_case["reference"]
+            ordered_test_case["ground_truth"] = test_case["ground_truth"]
             ordered_test_case["synthesizer_name"] = test_case["synthesizer_name"]
             ordered_test_cases.append(ordered_test_case)
 
         response_data = {"test_cases": ordered_test_cases}
-        
+
         return Response(
-            json.dumps(response_data, indent=2),
-            mimetype="application/json"
+            json.dumps(response_data, indent=2), mimetype="application/json"
         )
     except Exception as e:
         logger.error(f"Error fetching test cases: {e}")

@@ -1,0 +1,8 @@
+FACTUAL_CORRECTNESS STATISTICS BY MODEL
+Model             | Mean   | Median | Std Dev
+---------------------------------------------
+Claude 3.7 Sonnet | 0.8578 | 0.9943 | 0.2693 
+Llama 3.1 8B      | 0.1565 | 0.1302 | 0.1321 
+Llama 3.3 70B     | 0.3552 | 0.2985 | 0.1941 
+Ministral 8B      | 0.1649 | 0.1295 | 0.1463 
+Qwen 2.5 72B      | 0.5281 | 0.5702 | 0.3220 
