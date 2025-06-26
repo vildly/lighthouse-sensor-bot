@@ -4,8 +4,8 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default async function handler(req, res) {
     try {
-
-
+      console.log("DEBUG: SERVER_URL =", SERVER_URL);
+      
       const response = await fetch(`${SERVER_URL}/api/test`);
       
       if (!response.ok) {
