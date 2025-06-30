@@ -15,7 +15,7 @@ export const WebSocketProvider = ({ children }) => {
     if (process.env.DEV_MODE) {
       SERVER_URL = process.env.SERVER_URL;
     } else {
-      SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5001';
     }
     
     console.log('Connecting to WebSocket server at:', SERVER_URL);
