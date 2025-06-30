@@ -44,7 +44,7 @@ def initialize_agent(data_dir, llm_model_id, tools):
         model=OpenRouter(
             base_url=BASE_URL, api_key=API_KEY, id=llm_model_id
         ),
-        tool_choice="required",
+        tool_choice="auto",
         tool_call_limit=20,
         markdown=True,
     )

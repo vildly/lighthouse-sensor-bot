@@ -67,7 +67,11 @@ def evaluate_endpoint():
     data = request.get_json()
     model_id = data.get("model_id")
     number_of_runs = data.get("number_of_runs", 1)
-    max_retries = data.get("max_retries", 3) 
+    max_retries = data.get("max_retries", 3)
+    test_selection = data.get("test_selection")
+
+    print(f"🔍 DEBUG API: Received request with data: {data}")
+    print(f"🔍 DEBUG API: test_selection parameter: {test_selection}")
 
     if not model_id:
         return jsonify({"error": "Model ID is required"}), 400
@@ -75,8 +79,61 @@ def evaluate_endpoint():
     results, status_code = query_with_eval(
         model_id, 
         number_of_runs=number_of_runs,
-        max_retries=max_retries
+        max_retries=max_retries,
+        test_selection=test_selection
     )
+    
+    # Add extensive debugging to understand the structure of results
+    print(f"🔍 DEBUG API: Results type: {type(results)}")
+    print(f"🔍 DEBUG API: Status code: {status_code}")
+    
+    if isinstance(results, dict):
+        print(f"🔍 DEBUG API: Results keys: {list(results.keys())}")
+        
+        # Check each key for problematic objects
+        for key, value in results.items():
+            print(f"🔍 DEBUG API: Key '{key}' type: {type(value)}")
+            
+            # Check if it's a non-serializable object
+            try:
+                json.dumps(value)
+                print(f"🔍 DEBUG API: Key '{key}' is JSON serializable")
+            except TypeError as e:
+                print(f"🔍 DEBUG API: Key '{key}' is NOT JSON serializable: {e}")
+                
+                # If it's a list or dict, dive deeper
+                if isinstance(value, (list, dict)):
+                    print(f"🔍 DEBUG API: Analyzing contents of '{key}'...")
+                    if isinstance(value, list) and len(value) > 0:
+                        for i, item in enumerate(value[:3]):  # Check first 3 items
+                            print(f"🔍 DEBUG API: Item {i} type: {type(item)}")
+                            if hasattr(item, '__class__'):
+                                print(f"🔍 DEBUG API: Item {i} class: {item.__class__.__module__}.{item.__class__.__name__}")
+                    elif isinstance(value, dict):
+                        for sub_key, sub_value in list(value.items())[:3]:  # Check first 3 items
+                            print(f"🔍 DEBUG API: Sub-key '{sub_key}' type: {type(sub_value)}")
+                            if hasattr(sub_value, '__class__'):
+                                print(f"🔍 DEBUG API: Sub-key '{sub_key}' class: {sub_value.__class__.__module__}.{sub_value.__class__.__name__}")
+    else:
+        print(f"🔍 DEBUG API: Results is not a dict, it's: {type(results)}")
+    
+    # Try to serialize the entire results object to see where it fails
+    try:
+        json.dumps(results)
+        print("🔍 DEBUG API: Results is fully JSON serializable")
+    except TypeError as e:
+        print(f"🔍 DEBUG API: Results serialization failed: {e}")
+        
+        # Apply the serialization fix
+        print("🔍 DEBUG API: Attempting to make results serializable...")
+        try:
+            serializable_results = make_json_serializable(results)
+            print("🔍 DEBUG API: Successfully made results serializable")
+            return jsonify(serializable_results), status_code
+        except Exception as fix_error:
+            print(f"🔍 DEBUG API: Failed to make results serializable: {fix_error}")
+            return jsonify({"error": f"Serialization failed: {str(fix_error)}"}), 500
+    
     return jsonify(results), status_code
 
 
@@ -241,3 +298,29 @@ def test_tools():
             "message": f"Tool integration test failed: {str(e)}",
             "error": str(e)
         }), 500
+
+
+def make_json_serializable(obj):
+    """Recursively convert any non-serializable objects to serializable format"""
+    from ragas.dataset_schema import SingleTurnSample
+    
+    if isinstance(obj, SingleTurnSample):
+        # Convert SingleTurnSample to string representation
+        return str(obj)
+    elif isinstance(obj, dict):
+        return {key: make_json_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [make_json_serializable(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(make_json_serializable(item) for item in obj)
+    elif hasattr(obj, '_repr_dict'):
+        return obj._repr_dict
+    elif hasattr(obj, 'to_dict') and callable(obj.to_dict):
+        return make_json_serializable(obj.to_dict())
+    else:
+        # For any other types, try to convert to basic types
+        try:
+            json.dumps(obj)  # Test if it's serializable
+            return obj
+        except (TypeError, ValueError):
+            return str(obj)
