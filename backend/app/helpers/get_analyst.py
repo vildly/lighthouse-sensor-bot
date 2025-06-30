@@ -16,7 +16,7 @@ def get_data_analyst(source_file, llm_model_id=None):
         llm_model_id: The LLM model ID to use
         
     Returns:
-        The configured data analyst agent
+        The configured data analyst agent with enhanced capabilities
     """
     try:
         # Get the data directory
@@ -37,13 +37,22 @@ def get_data_analyst(source_file, llm_model_id=None):
             source_file=source_file,
         )
 
-        # Initialize a new agent for this request with the custom tools
-        data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools])
+        # Initialize additional tools
+        from agno.tools.pandas import PandasTools
+        from agno.tools.python import PythonTools
+        
+        pandas_tools = PandasTools()
+        python_tools = PythonTools()
+
+        # Initialize agent with all tools
+        data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools, python_tools, pandas_tools])
 
         # Add source file specific instructions
         additional_instructions = [
             f"IMPORTANT: Use the file '{source_file}' as your primary data source.",
             f"When you need to create a table, use 'data' as the table name and it will automatically use the file '{source_file}'.",
+            "You can load this data into Pandas for advanced analysis if needed.",
+            "Combine SQL querying with Python/Pandas analysis for comprehensive insights."
         ]
         data_analyst.instructions = data_analyst.instructions + additional_instructions
         

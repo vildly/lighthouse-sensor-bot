@@ -4,6 +4,9 @@ from app.helpers.load_json_from_file import load_json_from_file
 from dotenv import load_dotenv
 from app.services.query import query
 from app.conf.CustomDuckDbTools import CustomDuckDbTools
+from agno.tools.pandas import PandasTools
+from agno.tools.python import PythonTools
+from app.services.agent import initialize_agent
 import pandas as pd
 from app.services.query_with_eval import query_with_eval
 from app.conf.postgres import get_cursor
@@ -27,47 +30,26 @@ def query_endpoint():
 
     # Get the necessary objects from app config
     data_dir = current_app.config["DATA_DIR"]
-    # Get source_file from request if provided
-    # source_file = data.get("source_file")
-
-    # if not source_file:
-    #     return jsonify({"error": "Source file is required"}), 400
-
+    
     # Get model_id from request if provided
     llm_model_id = data.get("llm_model_id")
 
     if not llm_model_id:
         return jsonify({"error": "LLM Model ID is required"}), 400
 
-    # If source_file is provided, create a new agent with the source_file
-    # if source_file:
-    #     semantic_model_data = load_json_from_file(
-    #         data_dir.joinpath("semantic_model.json")
-    #     )
-    #     if semantic_model_data is None:
-    #         print("Error: Could not load semantic model. Exiting.")
-    #         exit()
-
-      # Create a new instance of CustomDuckDbTools with the source_file
+    # Create a new instance of CustomDuckDbTools
     duck_tools = CustomDuckDbTools(
         data_dir=str(data_dir),
         semantic_model=current_app.config["SEMANTIC_MODEL"],
-        # source_file=source_file,
     )
 
-    # Initialize a new agent for this request with the custom tools
-    from app.services.agent import initialize_agent
+    # Initialize additional tools
+    pandas_tools = PandasTools()
+    python_tools = PythonTools()
 
-    data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools])
 
-    # Add source file specific instructions
-    # additional_instructions = [
-    #     f"IMPORTANT: Use the file '{source_file}' as your primary data source.",
-    #     f"When you need to create a table, use 'data' as the table name and it will automatically use the file '{source_file}'.",
-    # ]
-    # data_analyst.instructions = data_analyst.instructions + additional_instructions
+    data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools, python_tools, pandas_tools])
     
-    # Initialize the agent with the custom tools
     # Call the query service
     return query(data=data, data_dir=data_dir, data_analyst=data_analyst)
 
@@ -202,3 +184,60 @@ def get_test_cases():
     except Exception as e:
         logger.error(f"Error fetching test cases: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/test-tools", methods=["GET"])
+def test_tools():
+    """Test endpoint to verify Python and Pandas tools are properly integrated"""
+    try:
+        # Get the necessary objects from app config
+        data_dir = current_app.config["DATA_DIR"]
+        semantic_model = current_app.config["SEMANTIC_MODEL"]
+        
+        # Create tools instances
+        duck_tools = CustomDuckDbTools(
+            data_dir=str(data_dir),
+            semantic_model=semantic_model,
+        )
+        pandas_tools = PandasTools()
+        python_tools = PythonTools()
+        
+        # Initialize agent with all tools
+        from app.services.agent import initialize_agent
+        
+        # Use a simple model that supports tools for testing
+        test_model_id = "anthropic/claude-3-haiku"
+        
+        try:
+            data_analyst = initialize_agent(data_dir, test_model_id, [duck_tools, python_tools, pandas_tools])
+            
+            # Check that all tools are present
+            tool_names = [tool.__class__.__name__ for tool in data_analyst.tools]
+            
+            return jsonify({
+                "status": "success",
+                "message": "All tools successfully integrated",
+                "tools_count": len(data_analyst.tools),
+                "tool_types": tool_names,
+                "duck_tools": "CustomDuckDbTools" in tool_names,
+                "python_tools": "PythonTools" in tool_names,
+                "pandas_tools": "PandasTools" in tool_names,
+                "agent_initialized": True
+            })
+            
+        except Exception as agent_error:
+            return jsonify({
+                "status": "partial_success", 
+                "message": "Tools created but agent initialization failed",
+                "duck_tools": duck_tools is not None,
+                "python_tools": python_tools is not None,
+                "pandas_tools": pandas_tools is not None,
+                "agent_error": str(agent_error)
+            })
+            
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Tool integration test failed: {str(e)}",
+            "error": str(e)
+        }), 500
