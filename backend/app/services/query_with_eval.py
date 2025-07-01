@@ -19,7 +19,7 @@ from app.conf.websocket import socketio
 
 logger = logging.getLogger(__name__)
 
-def query_with_eval(model_id, number_of_runs=1, max_retries=3, progress_callback=None):
+def query_with_eval(model_id, number_of_runs=1, max_retries=3, progress_callback=None, test_selection=None):
     """
     Process queries and evaluate them.
     This function is the entry point for running evaluation tests.
@@ -30,22 +30,92 @@ def query_with_eval(model_id, number_of_runs=1, max_retries=3, progress_callback
         number_of_runs: Number of runs per test
         max_retries: Maximum number of retries per test
         progress_callback: Optional callback for progress updates
+        test_selection: Optional string specifying which tests to run (e.g., "1", "1,3,5", "1-3")
+    
+    Returns:
+        For API usage: (response_dict, status_code)
+        For direct usage: (combined_ragas_results, results_df)
     """
     logger.info(f"Starting evaluation for model: {model_id}")
     
-    # Import here to avoid circular dependencies
-    from app.ragas.scripts.test_run_manager import execute_test_runs
-    
-    # Run the tests - test_data parameter is None so test_run_manager will load cases from JSON
-    combined_ragas_results, results_df = execute_test_runs(
-        model_id=model_id, 
-        number_of_runs=number_of_runs,
-        max_retries=max_retries,
-        progress_callback=progress_callback,
-        test_data=None  # Let test_run_manager load test cases from JSON
-    )
-    
-    return combined_ragas_results, results_df
+    try:
+        # Import here to avoid circular dependencies
+        from app.ragas.scripts.test_run_manager import execute_test_runs
+        
+        # Run the tests - test_data parameter is None so test_run_manager will load cases from JSON
+        combined_ragas_results, results_df = execute_test_runs(
+            model_id=model_id, 
+            number_of_runs=number_of_runs,
+            max_retries=max_retries,
+            progress_callback=progress_callback,
+            test_data=None,  # Let test_run_manager load test cases from JSON
+            test_selection=test_selection  # Pass test selection to execute_test_runs
+        )
+        
+        # Check if this is being called from the API (look at the call stack)
+        import inspect
+        frame = inspect.currentframe()
+        calling_function = None
+        try:
+            if frame and frame.f_back and frame.f_back.f_code:
+                calling_function = frame.f_back.f_code.co_name
+        finally:
+            del frame
+            
+        # If called from API endpoint, return API format
+        if calling_function == "evaluate_endpoint":
+            # Format response for API
+            response_dict = {
+                "status": "success",
+                "message": "Evaluation completed successfully",
+                "results": combined_ragas_results,
+                "summary": {
+                    "total_tests": len(results_df) if results_df is not None else 0,
+                    "model_id": model_id,
+                    "number_of_runs": number_of_runs,
+                    "max_retries": max_retries
+                }
+            }
+            
+            # Add metrics if available
+            if results_df is not None and not results_df.empty:
+                numeric_cols = results_df.select_dtypes(include=['float64', 'int64']).columns
+                metrics = {}
+                for col in numeric_cols:
+                    if col.startswith(('factual_', 'semantic_', 'context_', 'faithfulness')):
+                        metrics[col] = float(results_df[col].mean()) if results_df[col].notna().any() else None
+                
+                if metrics:
+                    response_dict["metrics"] = metrics
+            
+            return response_dict, 200
+        else:
+            # Return original format for direct usage
+            return combined_ragas_results, results_df
+            
+    except Exception as e:
+        logger.error(f"Error in query_with_eval: {e}")
+        
+        # Check if this is being called from the API
+        import inspect
+        frame = inspect.currentframe()
+        calling_function = None
+        try:
+            if frame and frame.f_back and frame.f_back.f_code:
+                calling_function = frame.f_back.f_code.co_name
+        finally:
+            del frame
+            
+        # If called from API endpoint, return API error format
+        if calling_function == "evaluate_endpoint":
+            return {
+                "status": "error",
+                "message": f"Evaluation failed: {str(e)}",
+                "error": str(e)
+            }, 500
+        else:
+            # Re-raise for direct usage
+            raise
 
 # Remove the save_query_with_eval_to_db function completely
 # All DB operations should go through app.helpers.save_query_to_db directly

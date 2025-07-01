@@ -1,7 +1,7 @@
 import logging
 import sys
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Union
 import time
 from enum import Enum
 from app.conf.postgres import get_cursor
@@ -11,6 +11,7 @@ import pandas as pd
 from app.helpers.save_query_to_db import save_query_with_eval_to_db
 from flask_socketio import emit
 from app.conf.websocket import socketio
+from flask import has_app_context
 
 # Create and configure logger with a direct stream handler
 logger = logging.getLogger(__name__)
@@ -31,6 +32,32 @@ if not logger.handlers:
     
     # Ensure our logger doesn't propagate to parent
     logger.propagate = False
+
+def make_serializable(obj):
+    """Recursively convert any non-serializable objects to serializable format"""
+    from ragas.dataset_schema import SingleTurnSample
+    
+    if isinstance(obj, SingleTurnSample):
+        # Convert SingleTurnSample to dict representation
+        return str(obj)
+    elif isinstance(obj, dict):
+        return {key: make_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [make_serializable(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(make_serializable(item) for item in obj)
+    elif hasattr(obj, '_repr_dict'):
+        return obj._repr_dict
+    elif hasattr(obj, 'to_dict') and callable(obj.to_dict):
+        return make_serializable(obj.to_dict())
+    else:
+        # For any other types, try to convert to basic types
+        try:
+            import json
+            json.dumps(obj)  # Test if it's serializable
+            return obj
+        except (TypeError, ValueError):
+            return str(obj)
 
 class TestStatus(Enum):
     PENDING = "pending"
@@ -267,8 +294,46 @@ class TestRunManager:
         logger.info(f"Retry counts: {retry_counts}")
 
 
+def parse_test_selection(test_selection: str) -> List[int]:
+    """
+    Parse test selection string and return list of test indices.
+    
+    Examples:
+        "1" -> [1]
+        "1,3,5" -> [1, 3, 5]  
+        "1-3" -> [1, 2, 3]
+        "1,3,7-10" -> [1, 3, 7, 8, 9, 10]
+    """
+    if not test_selection:
+        return []
+    
+    indices = []
+    parts = test_selection.split(',')
+    
+    for part in parts:
+        part = part.strip()
+        if '-' in part:
+            # Handle range (e.g., "1-3")
+            try:
+                start, end = part.split('-', 1)
+                start_idx = int(start.strip())
+                end_idx = int(end.strip())
+                indices.extend(range(start_idx, end_idx + 1))
+            except ValueError:
+                print(f"Warning: Invalid range format '{part}', skipping")
+                continue
+        else:
+            # Handle single number
+            try:
+                indices.append(int(part))
+            except ValueError:
+                print(f"Warning: Invalid test number '{part}', skipping")
+                continue
+    
+    return sorted(list(set(indices)))  # Remove duplicates and sort
+
 def execute_test_runs(model_id: str, number_of_runs, 
-                     max_retries, progress_callback=None, test_data=None):
+                     max_retries, progress_callback=None, test_data=None, test_selection=None):
     """
     Main function to execute all test runs with retry logic.
     
@@ -278,6 +343,7 @@ def execute_test_runs(model_id: str, number_of_runs,
         max_retries: Maximum retry attempts per test
         progress_callback: Optional callback function for progress updates
         test_data: Optional pandas DataFrame containing test data (to avoid circular imports)
+        test_selection: Optional string specifying which tests to run (e.g., "1", "1,3,5", "1-3")
     
     Returns:
         Tuple of (combined_ragas_results, all_tests_df)
@@ -306,6 +372,16 @@ def execute_test_runs(model_id: str, number_of_runs,
     if not test_cases:
         logger.error("No test cases loaded")
         return None, None
+    
+    # Filter test cases based on test_selection if provided
+    if test_selection:
+        test_indices = parse_test_selection(test_selection)
+        filtered_test_cases = []
+        for i, test_case in enumerate(test_cases, 1):
+            if i in test_indices:
+                filtered_test_cases.append(test_case)
+        test_cases = filtered_test_cases
+        print(f"Filtered to {len(test_cases)} test cases based on selection: {test_selection}")
     
     # Initialize test run manager
     run_manager = TestRunManager(model_id, number_of_runs, max_retries)
@@ -554,18 +630,21 @@ def execute_test_runs(model_id: str, number_of_runs,
             current_run += 1
             
             try:
-                socketio.emit('evaluation_progress', {
-                    'progress': current_run,
-                    'total': total_runs,
-                    'percent': int((current_run / total_runs) * 100),
-                    'test_no': test_id,
-                    'total_tests': total_tests,
-                    'iteration': run_number,
-                    'total_iterations': number_of_runs,
-                    'message': f'Completed test {test_id}/{total_tests}, iteration {run_number}/{number_of_runs}'
-                }, namespace='/query')
-                # Add debug log to confirm emission
-                logger.info(f"Emitted progress update: Test {test_id}/{total_tests}, Iteration {run_number}/{number_of_runs}, Progress {current_run}/{total_runs}")
+                if has_app_context():
+                    socketio.emit('evaluation_progress', {
+                        'progress': current_run,
+                        'total': total_runs,
+                        'percent': int((current_run / total_runs) * 100),
+                        'test_no': test_id,
+                        'total_tests': total_tests,
+                        'iteration': run_number,
+                        'total_iterations': number_of_runs,
+                        'message': f'Completed test {test_id}/{total_tests}, iteration {run_number}/{number_of_runs}'
+                    }, namespace='/query')
+                    # Add debug log to confirm emission
+                    logger.info(f"Emitted progress update: Test {test_id}/{total_tests}, Iteration {run_number}/{number_of_runs}, Progress {current_run}/{total_runs}")
+                else:
+                    logger.info(f"Progress update (no socket context): Test {test_id}/{total_tests}, Iteration {run_number}/{number_of_runs}, Progress {current_run}/{total_runs}")
             except Exception as e:
                 logger.error(f"Error emitting completion progress: {e}")
             
@@ -672,20 +751,23 @@ def execute_test_runs(model_id: str, number_of_runs,
     # Format the response in the required structure
     formatted_response = format_test_results_for_response(results_dict, serializable_combined_results)
 
-    return formatted_response, 200
+    return combined_ragas_results, results_df
 
 def update_progress(progress, total, message, test_no=None, total_tests=None, iteration=None, total_iterations=None):
     """Update progress via WebSocket"""
     try:
-        socketio.emit('evaluation_progress', {
-            'progress': progress,
-            'total': total,
-            'percent': int((progress / total) * 100) if total > 0 else 0,
-            'message': message,
-            'test_no': test_no if test_no is not None else progress,
-            'total_tests': total_tests if total_tests is not None else total,
-            'iteration': iteration if iteration is not None else 0,
-            'total_iterations': total_iterations if total_iterations is not None else 1
-        }, namespace='/query')
+        if has_app_context():
+            socketio.emit('evaluation_progress', {
+                'progress': progress,
+                'total': total,
+                'percent': int((progress / total) * 100) if total > 0 else 0,
+                'message': message,
+                'test_no': test_no if test_no is not None else progress,
+                'total_tests': total_tests if total_tests is not None else total,
+                'iteration': iteration if iteration is not None else 0,
+                'total_iterations': total_iterations if total_iterations is not None else 1
+            }, namespace='/query')
+        else:
+            logger.info(f"Progress update (no socket context): {message}")
     except Exception as e:
         logger.error(f"Error emitting progress update: {e}")
