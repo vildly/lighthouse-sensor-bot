@@ -62,79 +62,80 @@ def test_connection():
     )
 
 
-@api_bp.route("/evaluate", methods=["POST"])
-def evaluate_endpoint():
-    data = request.get_json()
-    model_id = data.get("model_id")
-    number_of_runs = data.get("number_of_runs", 1)
-    max_retries = data.get("max_retries", 3)
-    test_selection = data.get("test_selection")
+# COMMENTED OUT - Evaluation Mode functionality
+# @api_bp.route("/evaluate", methods=["POST"])
+# def evaluate_endpoint():
+#     data = request.get_json()
+#     model_id = data.get("model_id")
+#     number_of_runs = data.get("number_of_runs", 1)
+#     max_retries = data.get("max_retries", 3)
+#     test_selection = data.get("test_selection")
 
-    print(f"🔍 DEBUG API: Received request with data: {data}")
-    print(f"🔍 DEBUG API: test_selection parameter: {test_selection}")
+#     print(f"🔍 DEBUG API: Received request with data: {data}")
+#     print(f"🔍 DEBUG API: test_selection parameter: {test_selection}")
 
-    if not model_id:
-        return jsonify({"error": "Model ID is required"}), 400
+#     if not model_id:
+#         return jsonify({"error": "Model ID is required"}), 400
 
-    results, status_code = query_with_eval(
-        model_id, 
-        number_of_runs=number_of_runs,
-        max_retries=max_retries,
-        test_selection=test_selection
-    )
+#     results, status_code = query_with_eval(
+#         model_id, 
+#         number_of_runs=number_of_runs,
+#         max_retries=max_retries,
+#         test_selection=test_selection
+#     )
     
-    # Add extensive debugging to understand the structure of results
-    print(f"🔍 DEBUG API: Results type: {type(results)}")
-    print(f"🔍 DEBUG API: Status code: {status_code}")
+#     # Add extensive debugging to understand the structure of results
+#     print(f"🔍 DEBUG API: Results type: {type(results)}")
+#     print(f"🔍 DEBUG API: Status code: {status_code}")
     
-    if isinstance(results, dict):
-        print(f"🔍 DEBUG API: Results keys: {list(results.keys())}")
+#     if isinstance(results, dict):
+#         print(f"🔍 DEBUG API: Results keys: {list(results.keys())}")
         
-        # Check each key for problematic objects
-        for key, value in results.items():
-            print(f"🔍 DEBUG API: Key '{key}' type: {type(value)}")
+#         # Check each key for problematic objects
+#         for key, value in results.items():
+#             print(f"🔍 DEBUG API: Key '{key}' type: {type(value)}")
             
-            # Check if it's a non-serializable object
-            try:
-                json.dumps(value)
-                print(f"🔍 DEBUG API: Key '{key}' is JSON serializable")
-            except TypeError as e:
-                print(f"🔍 DEBUG API: Key '{key}' is NOT JSON serializable: {e}")
+#             # Check if it's a non-serializable object
+#             try:
+#                 json.dumps(value)
+#                 print(f"🔍 DEBUG API: Key '{key}' is JSON serializable")
+#             except TypeError as e:
+#                 print(f"🔍 DEBUG API: Key '{key}' is NOT JSON serializable: {e}")
                 
-                # If it's a list or dict, dive deeper
-                if isinstance(value, (list, dict)):
-                    print(f"🔍 DEBUG API: Analyzing contents of '{key}'...")
-                    if isinstance(value, list) and len(value) > 0:
-                        for i, item in enumerate(value[:3]):  # Check first 3 items
-                            print(f"🔍 DEBUG API: Item {i} type: {type(item)}")
-                            if hasattr(item, '__class__'):
-                                print(f"🔍 DEBUG API: Item {i} class: {item.__class__.__module__}.{item.__class__.__name__}")
-                    elif isinstance(value, dict):
-                        for sub_key, sub_value in list(value.items())[:3]:  # Check first 3 items
-                            print(f"🔍 DEBUG API: Sub-key '{sub_key}' type: {type(sub_value)}")
-                            if hasattr(sub_value, '__class__'):
-                                print(f"🔍 DEBUG API: Sub-key '{sub_key}' class: {sub_value.__class__.__module__}.{sub_value.__class__.__name__}")
-    else:
-        print(f"🔍 DEBUG API: Results is not a dict, it's: {type(results)}")
+#                 # If it's a list or dict, dive deeper
+#                 if isinstance(value, (list, dict)):
+#                     print(f"🔍 DEBUG API: Analyzing contents of '{key}'...")
+#                     if isinstance(value, list) and len(value) > 0:
+#                         for i, item in enumerate(value[:3]):  # Check first 3 items
+#                             print(f"🔍 DEBUG API: Item {i} type: {type(item)}")
+#                             if hasattr(item, '__class__'):
+#                                 print(f"🔍 DEBUG API: Item {i} class: {item.__class__.__module__}.{item.__class__.__name__}")
+#                     elif isinstance(value, dict):
+#                         for sub_key, sub_value in list(value.items())[:3]:  # Check first 3 items
+#                             print(f"🔍 DEBUG API: Sub-key '{sub_key}' type: {type(sub_value)}")
+#                             if hasattr(sub_value, '__class__'):
+#                                 print(f"🔍 DEBUG API: Sub-key '{sub_key}' class: {sub_value.__class__.__module__}.{sub_value.__class__.__name__}")
+#     else:
+#         print(f"🔍 DEBUG API: Results is not a dict, it's: {type(results)}")
     
-    # Try to serialize the entire results object to see where it fails
-    try:
-        json.dumps(results)
-        print("🔍 DEBUG API: Results is fully JSON serializable")
-    except TypeError as e:
-        print(f"🔍 DEBUG API: Results serialization failed: {e}")
+#     # Try to serialize the entire results object to see where it fails
+#     try:
+#         json.dumps(results)
+#         print("🔍 DEBUG API: Results is fully JSON serializable")
+#     except TypeError as e:
+#         print(f"🔍 DEBUG API: Results serialization failed: {e}")
         
-        # Apply the serialization fix
-        print("🔍 DEBUG API: Attempting to make results serializable...")
-        try:
-            serializable_results = make_json_serializable(results)
-            print("🔍 DEBUG API: Successfully made results serializable")
-            return jsonify(serializable_results), status_code
-        except Exception as fix_error:
-            print(f"🔍 DEBUG API: Failed to make results serializable: {fix_error}")
-            return jsonify({"error": f"Serialization failed: {str(fix_error)}"}), 500
+#         # Apply the serialization fix
+#         print("🔍 DEBUG API: Attempting to make results serializable...")
+#         try:
+#             serializable_results = make_json_serializable(results)
+#             print("🔍 DEBUG API: Successfully made results serializable")
+#             return jsonify(serializable_results), status_code
+#         except Exception as fix_error:
+#             print(f"🔍 DEBUG API: Failed to make results serializable: {fix_error}")
+#             return jsonify({"error": f"Serialization failed: {str(fix_error)}"}), 500
     
-    return jsonify(results), status_code
+#     return jsonify(results), status_code
 
 
 @api_bp.route("/model-performance", methods=["GET"])
@@ -215,32 +216,33 @@ def query_data():
         return jsonify({"error": str(e)}), 500
 
 
-@api_bp.route("/test-cases", methods=["GET"])
-def get_test_cases():
-    try:
-        # Load test cases from JSON file
-        test_cases_path = Path("app/ragas/test_cases/synthetic_test_cases.json")
-        with open(test_cases_path, "r") as f:
-            test_cases = json.load(f)
+# COMMENTED OUT - Evaluation Mode functionality
+# @api_bp.route("/test-cases", methods=["GET"])
+# def get_test_cases():
+#     try:
+#         # Load test cases from JSON file
+#         test_cases_path = Path("app/ragas/test_cases/synthetic_test_cases.json")
+#         with open(test_cases_path, "r") as f:
+#             test_cases = json.load(f)
 
-        # Create an ordered list of test cases
-        ordered_test_cases = []
-        for test_case in test_cases:
-            ordered_test_case = OrderedDict()
-            ordered_test_case["query"] = test_case["query"]
-            ordered_test_case["reference_contexts"] = test_case["reference_contexts"]
-            ordered_test_case["ground_truth"] = test_case["ground_truth"]
-            ordered_test_case["synthesizer_name"] = test_case["synthesizer_name"]
-            ordered_test_cases.append(ordered_test_case)
+#         # Create an ordered list of test cases
+#         ordered_test_cases = []
+#         for test_case in test_cases:
+#             ordered_test_case = OrderedDict()
+#             ordered_test_case["query"] = test_case["query"]
+#             ordered_test_case["reference_contexts"] = test_case["reference_contexts"]
+#             ordered_test_case["ground_truth"] = test_case["ground_truth"]
+#             ordered_test_case["synthesizer_name"] = test_case["synthesizer_name"]
+#             ordered_test_cases.append(ordered_test_case)
 
-        response_data = {"test_cases": ordered_test_cases}
+#         response_data = {"test_cases": ordered_test_cases}
 
-        return Response(
-            json.dumps(response_data, indent=2), mimetype="application/json"
-        )
-    except Exception as e:
-        logger.error(f"Error fetching test cases: {e}")
-        return jsonify({"error": str(e)}), 500
+#         return Response(
+#             json.dumps(response_data, indent=2), mimetype="application/json"
+#         )
+#     except Exception as e:
+#         logger.error(f"Error fetching test cases: {e}")
+#         return jsonify({"error": str(e)}), 500
 
 
 @api_bp.route("/test-tools", methods=["GET"])
