@@ -34,7 +34,8 @@ export default function Navigation() {
                   Query
                 </a>
               </Link>
-              <Link href="/model-performance">
+              {/* COMMENTED OUT - Evaluation Mode functionality */}
+              {/* <Link href="/model-performance">
                 <a className="text-white hover:text-gray-300 transition-colors font-medium flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm1 0v12h12V3H4z" clipRule="evenodd" />
@@ -44,15 +45,16 @@ export default function Navigation() {
                   </svg>
                   Analytics
                 </a>
-              </Link>
-              <Link href="/history">
+              </Link> */}
+              {/* COMMENTED OUT - Evaluation Mode functionality */}
+              {/* <Link href="/history">
                 <a className="text-white hover:text-gray-300 transition-colors font-medium flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
                   History
                 </a>
-              </Link>
+              </Link> */}
               <div className="flex items-center">
                 <span className={`backend-status-indicator ${connected ? 'online' : 'offline'}`}></span>
                 <span className="ml-2 text-sm text-white text-opacity-80">
