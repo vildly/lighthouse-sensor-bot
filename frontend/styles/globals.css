@@ -2,31 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Add background image styling */
+/* Add background styling - clean solid color */
 .bg-ferry-image {
-  /* Remove the background image */
-  background-image: none;
-  /* Create a stronger light blue/gray gradient */
-  background: linear-gradient(180deg, rgba(180, 200, 215, 0.95) 0%, rgba(215, 225, 235, 0.95) 100%);
-  /* Add a subtle noise texture for the frosted effect */
+  /* Clean solid background color that complements the navigation */
+  background-color: #e8ebff;
+  /* Soft lavender that harmonizes with purple navigation - more visible than white */
   position: relative;
-}
-
-/* Add a frosted glass effect with pseudo-element */
-.bg-ferry-image::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  backdrop-filter: blur(10px);
-  pointer-events: none; /* Allow clicks to pass through */
-  z-index: -1;
-  opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  background-position: center;
-  background-size: cover;
 }
 
 
@@ -48,22 +29,26 @@
   animation: gradientAnimation 15s ease infinite;
 }
 
-/* Arc-shaped navigation bar - fixed version */
-.arc-navbar {
-  border-radius: 3rem;
-  margin: 1rem 4rem;
-  background-color:rgb(69, 69, 218);
-  border: none;
-  outline: none;
-  position: relative;
-  box-shadow: none;
-  /* Force a black border all around to cover any white artifacts */
-  border: 1px solid black;
-  /* Create a black pseudo-element that covers the top area */
-  position: relative;
-  overflow: visible;
+/* Simple navigation bar with gradient - override all conflicts */
+.navigation-bar {
+  border-radius: 3rem !important;
+  margin: 1rem 4rem !important;
+  background: linear-gradient(135deg, #4A5DCF 0%, #6366F1 50%, #7C3AED 100%) !important;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3) !important;
+  padding: 0 !important;
 }
 
+/* Only target page-level nav/header elements, not our custom navigation */
+body > nav:not([style*="gradient"]), 
+body > header:not([style*="gradient"]),
+main > nav:not([style*="gradient"]), 
+main > header:not([style*="gradient"]) {
+  background: none !important;
+  background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
 
 .transparent-card {
   background-color: rgba(255, 255, 255, 0.85);
@@ -276,6 +261,8 @@ select:hover,
   border-radius: 0.75rem;
   width: 100%; /* Let it fill its grid column */
   max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 /* Card text color updates */
@@ -370,8 +357,9 @@ select:hover,
 
 /* Expanded visualization container */
 .visualization-expanded {
-  height: calc(100vh - 180px) !important; /* Taller visualization area */
-  min-height: 600px !important;
+  max-height: 100% !important; /* Stay within parent bounds */
+  height: auto !important; /* Remove fixed height */
+  overflow: hidden;
 }
 
 /* White background for response area - matching input field */
@@ -432,41 +420,43 @@ select:hover,
   height: 100%;
   width: 100%;
   flex: 1;
+  min-height: 0; /* Allow flex shrinking */
 }
 
 .tab-pane.active {
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Allow flex shrinking */
 }
 
-/* Make navigation bar smaller */
-nav, 
-.navbar,
-header nav {
+/* Make navigation bar smaller - but NOT our custom navigation-bar */
+nav:not(.navigation-bar), 
+.navbar:not(.navigation-bar),
+header nav:not(.navigation-bar) {
   padding-top: 0.5rem !important; /* Reduced top padding */
   padding-bottom: 0.5rem !important; /* Reduced bottom padding */
   min-height: 3rem !important; /* Smaller overall height */
 }
 
-/* Smaller navigation elements */
-nav .container,
-.navbar .container,
-header nav .container {
+/* Smaller navigation elements - but NOT our custom navigation-bar */
+nav:not(.navigation-bar) .container,
+.navbar:not(.navigation-bar) .container,
+header nav:not(.navigation-bar) .container {
   padding-top: 0.25rem !important;
   padding-bottom: 0.25rem !important;
 }
 
-/* Make logo and navigation links smaller */
-nav .logo,
-.navbar .logo,
-nav img,
-.navbar img {
+/* Make logo and navigation links smaller - but NOT our custom navigation-bar */
+nav:not(.navigation-bar) .logo,
+.navbar:not(.navigation-bar) .logo,
+nav:not(.navigation-bar) img,
+.navbar:not(.navigation-bar) img {
   height: 1.75rem !important; /* Smaller logo */
 }
 
-nav a,
-.navbar a,
-header nav a {
+nav:not(.navigation-bar) a,
+.navbar:not(.navigation-bar) a,
+header nav:not(.navigation-bar) a {
   font-size: 0.9rem !important; /* Smaller text */
   padding: 0.25rem 0.5rem !important; /* Less padding */
 }
@@ -474,32 +464,26 @@ header nav a {
 /* Adjust padding for the entire header section */
 header {
   padding-top: 0.5rem !important;
+  background: none !important;
+  background-color: transparent !important;
 }
 
 /* Make sure the SQL queries container takes full height */
 #sql-data-container {
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Ensure the tab content takes full height */
 #tab-content {
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.tab-pane {
-  display: none;
-  height: 100%;
-  width: 100%;
-  flex: 1;
-}
-
-.tab-pane.active {
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
 pre {
