@@ -216,6 +216,9 @@ export default function QuestionForm() {
       setFullResponse(data.full_response);
       setModelUsed(selectedModel);
 
+      // Save successful query to history
+      saveQueryToHistory(question, data.full_response, selectedModel);
+
       // Update query mode state with all relevant data
       setQueryModeState({
         content: data.content,
@@ -235,6 +238,33 @@ export default function QuestionForm() {
       setContent("Error connecting to the backend: " + error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const saveQueryToHistory = (question, response, model) => {
+    try {
+      const existingHistory = localStorage.getItem('queryHistory');
+      const history = existingHistory ? JSON.parse(existingHistory) : [];
+      
+      const newQuery = {
+        id: Date.now() + Math.random(), // Simple unique ID
+        question: question,
+        response: response,
+        model: model,
+        timestamp: Date.now()
+      };
+      
+      // Add to beginning of array (most recent first)
+      history.unshift(newQuery);
+      
+      // Limit history to last 100 queries to prevent memory issues
+      if (history.length > 100) {
+        history.splice(100);
+      }
+      
+      localStorage.setItem('queryHistory', JSON.stringify(history));
+    } catch (error) {
+      console.error('Error saving query to history:', error);
     }
   };
 
@@ -635,9 +665,9 @@ export default function QuestionForm() {
   return (
     <div className="bg-ferry-image min-h-screen">
       <main className="container mx-auto py-6 flex justify-center">
-        <div className="grid grid-cols-[30vw_60vw] gap-5">
-          <div>
-            <div className="sidebar-container rounded-xl p-6 bg-white bg-opacity-95 shadow-lg border border-gray-100">
+        <div className="flex gap-5 w-full max-w-7xl h-[calc(100vh-8rem)]">
+          <div className="w-[30vw]">
+            <div className="sidebar-container rounded-xl p-6 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full">
               <div className="flex items-center mb-6">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -888,8 +918,8 @@ export default function QuestionForm() {
             </div>
           </div>
 
-          <div>
-            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full">
+          <div className="w-[60vw]">
+            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full flex flex-col">
               <div className="flex items-center mb-5">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -900,8 +930,8 @@ export default function QuestionForm() {
                 <h2 className="text-xl font-bold">Response & Analysis Results</h2>
               </div>
 
-              <div className="mb-4 visualization-container">
-                <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto">
+              <div className="mb-4">
+                <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto border border-gray-300 bg-white bg-opacity-10">
                   {/* COMMENTED OUT - Evaluation Mode functionality */}
                   {/* controlMode === "evaluation" && activeQuery ? (
                  
@@ -955,21 +985,22 @@ export default function QuestionForm() {
               </div>
 
               <div
-                className="bg-white bg-opacity-20 rounded-xl p-6 visualization-container visualization-expanded overflow-x-auto"
+                className="bg-white bg-opacity-20 rounded-xl p-4 overflow-hidden flex-1 min-h-0"
+                style={{ maxHeight: 'calc(100% - 200px)' }}
               >
                 {isLoading ? (
-                  <div id="tab-content" className="h-full">
-                    <div id="live-tool-calls-content" className="tab-pane active">
+                  <div id="tab-content" className="h-full max-h-full overflow-hidden">
+                    <div id="live-tool-calls-content" className="tab-pane active h-full">
                       <div className="h-full w-full flex flex-col">
                         <div className="flex justify-center items-center mb-4">
                           <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-opacity-20 border-t-white mr-3"></div>
                         </div>
-                        <div id="sql-data-container" className="w-full h-full flex-1">
+                        <div id="sql-data-container" className="w-full flex-1 min-h-0 overflow-hidden">
                           {sqlQueries.length > 0 ? (
                             <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full w-full">
                               <div
                                 ref={queriesContainerRef}
-                                className="space-y-2 overflow-y-auto h-[calc(100%-2rem)] w-full"
+                                className="space-y-2 overflow-y-auto h-full w-full"
                               >
                                 {sqlQueries.map((query, index) => (
                                   <div key={index} className="rounded w-full">
@@ -1001,15 +1032,15 @@ export default function QuestionForm() {
                     </div>
                   </div>
                 ) : content ? (
-                  <div id="tab-content" className="h-full">
-                    <div id="live-tool-calls-content" className="tab-pane active">
+                  <div id="tab-content" className="h-full max-h-full overflow-hidden">
+                    <div id="live-tool-calls-content" className="tab-pane active h-full">
                       <div className="h-full w-full flex flex-col">
-                        <div id="sql-data-container" className="w-full h-full">
+                        <div id="sql-data-container" className="w-full flex-1 min-h-0 overflow-hidden">
                           {sqlQueries.length > 0 ? (
                             <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full">
                               <div
                                 ref={queriesContainerRef}
-                                className="space-y-2 overflow-y-auto h-[calc(100%-2rem)]"
+                                className="space-y-2 overflow-y-auto h-full"
                               >
                                 {sqlQueries.map((query, index) => (
                                   <div key={index} className="rounded">
@@ -1038,9 +1069,9 @@ export default function QuestionForm() {
                       </div>
                     </div>
 
-                    <div id="full-response-content" className="tab-pane hidden">
+                    <div id="full-response-content" className="tab-pane hidden h-full">
                       <div className="h-full w-full flex flex-col">
-                        <div className="w-full h-full overflow-y-auto bg-white bg-opacity-10 rounded-xl p-4">
+                        <div className="w-full flex-1 min-h-0 overflow-y-auto bg-white bg-opacity-10 rounded-xl p-4">
                           <ReactMarkdown
                             className="prose prose-sm max-w-none text-gray-200"
                             components={{
@@ -1105,11 +1136,11 @@ export default function QuestionForm() {
                     </div> */}
                   </div>
                 ) : (
-                  <div className="flex flex-col justify-center items-center h-full">
+                  <div className="flex flex-col justify-center items-center h-full max-h-full overflow-hidden">
                     <svg className="w-24 h-24 text-white text-opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
                     </svg>
-                    <h3 className="mt-4 text-white text-opacity-80 text-lg font-medium">Run an analysis to see results</h3>
+                    <h3 className="mt-4 text-white text-opacity-80 text-lg font-medium">Test an query to see results</h3>
                   </div>
                 )}
               </div>
