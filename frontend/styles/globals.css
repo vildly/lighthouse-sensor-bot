@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  /* Make the Response & Analysis Results section taller on mobile */
+  .transparent-card {
+    min-height: calc(100vh - 16rem) !important; /* Increased height for mobile */
+  }
+
+  /* Increase the main content area height on mobile */
+  .bg-white.bg-opacity-20.rounded-xl.p-3.overflow-hidden.flex-1 {
+    max-height: calc(100vh - 20rem) !important; /* More room to scroll */
+    min-height: calc(100vh - 20rem) !important;
+  }
+
+  /* Ensure tab content takes full available height on mobile */
+  #tab-content {
+    height: calc(100vh - 24rem) !important;
+    max-height: calc(100vh - 24rem) !important;
+  }
+
+  /* Make sure the response container has enough height */
+  .response-container {
+    max-height: 200px !important; /* Increased from default */
+  }
+
+  /* Adjust main container height for mobile */
+  .h-\[calc\(100vh-6rem\)\] {
+    height: auto !important;
+    min-height: calc(100vh - 4rem) !important;
+  }
+
+  /* Remove max-height constraint on mobile for main container */
+  .max-h-\[700px\] {
+    max-height: none !important;
+  }
+}
+
 /* Add background styling - clean solid color */
 .bg-ferry-image {
   /* Clean solid background color that complements the navigation */
