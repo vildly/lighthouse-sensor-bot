@@ -56,6 +56,10 @@ export default function Navigation() {
     }
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <>
       <nav className="rounded-full mx-2 md:mx-16 mt-4 mb-4 shadow-lg" style={{
@@ -136,6 +140,42 @@ export default function Navigation() {
               </button>
             </div>
           </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden mt-4 pt-4 border-t border-white border-opacity-20">
+              <div className="flex flex-col space-y-3">
+                <Link href="/">
+                  <a 
+                    className="text-white hover:text-gray-300 transition-colors font-medium flex items-center py-2"
+                    onClick={closeMobileMenu}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    New Query
+                  </a>
+                </Link>
+                <Link href="/query-history">
+                  <a 
+                    className="text-white hover:text-gray-300 transition-colors font-medium flex items-center py-2"
+                    onClick={closeMobileMenu}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    Query History
+                  </a>
+                </Link>
+                <div className="flex items-center py-2">
+                  <span className={`backend-status-indicator ${backendStatus === "online" ? 'online' : 'offline'}`}></span>
+                  <span className="ml-2 text-sm text-white text-opacity-80">
+                    Backend {backendStatus === "online" ? 'connected' : 'disconnected'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
