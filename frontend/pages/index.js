@@ -74,6 +74,49 @@ export default function QuestionForm() {
     }
   };
 
+  // Function to extract simple answer from full response
+  // Based on the backend extract_answer_for_evaluation function
+  const extractSimpleAnswer = (fullResponse) => {
+    if (!fullResponse) return '';
+    
+    let cleanAnswer = '';
+    
+    // Extract the answer section using regex - get the LAST answer section
+    const answerSections = fullResponse.match(/## Answer\s*(.*?)(?=\s*##|$)/gs);
+    if (answerSections && answerSections.length > 0) {
+      // Use the last answer section and remove the "## Answer" header
+      cleanAnswer = answerSections[answerSections.length - 1].replace(/## Answer\s*/g, '').trim();
+    } else {
+      // Check if there's an "Agent Reasoning and Response:" prefix
+      if (fullResponse.includes("Agent Reasoning and Response:")) {
+        const parts = fullResponse.split("Agent Reasoning and Response:");
+        if (parts.length > 1) {
+          fullResponse = parts[1].trim();
+        }
+      }
+      
+      // Try to find any section that looks like an answer
+      const answerMatch = fullResponse.match(/(?:###|##)\s*(?:Answer|Key Details.*?)\s*(.*?)(?=\s*(?:###|##)|$)/s);
+      if (answerMatch) {
+        cleanAnswer = answerMatch[1].trim();
+      } else {
+        // Fallback: Split on the Analysis section header to get just the answer
+        const parts = fullResponse.split("## Analysis");
+        cleanAnswer = parts.length > 1 ? parts[parts.length - 1].trim() : fullResponse.trim();
+      }
+    }
+    
+    // Remove any remaining markdown headers
+    cleanAnswer = cleanAnswer.replace(/^###\s*.*?\n/gm, '');
+    
+    // If we still don't have a clean answer, return a fallback message
+    if (!cleanAnswer || cleanAnswer.trim() === '') {
+      cleanAnswer = 'Answer calculated - see Full Response tab for details';
+    }
+    
+    return cleanAnswer;
+  };
+
   // Reference to the SQL queries container for auto-scrolling
   const queriesContainerRef = useRef(null);
 
@@ -211,18 +254,21 @@ export default function QuestionForm() {
 
       const data = await response.json();
 
+      // Extract simple answer for the response area
+      const simpleAnswer = extractSimpleAnswer(data.full_response || data.content);
+
       // First update all state values
-      setContent(data.content);
-      setFullResponse(data.full_response);
+      setContent(simpleAnswer);
+      setFullResponse(data.full_response || data.content);
       setModelUsed(selectedModel);
 
       // Save successful query to history
-      saveQueryToHistory(question, data.full_response, selectedModel);
+      saveQueryToHistory(question, data.full_response || data.content, selectedModel);
 
       // Update query mode state with all relevant data
       setQueryModeState({
-        content: data.content,
-        fullResponse: data.full_response,
+        content: simpleAnswer,
+        fullResponse: data.full_response || data.content,
         modelUsed: selectedModel,
         sqlQueries: sqlQueries,
         activeQuery: true
@@ -664,11 +710,11 @@ export default function QuestionForm() {
 
   return (
     <div className="bg-ferry-image min-h-screen">
-      <main className="container mx-auto py-6 flex justify-center">
-        <div className="flex gap-5 w-full max-w-7xl h-[calc(100vh-8rem)]">
-          <div className="w-[30vw]">
-            <div className="sidebar-container rounded-xl p-6 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full">
-              <div className="flex items-center mb-6">
+      <main className="container mx-auto py-4 flex justify-center px-2 lg:px-4">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 w-full max-w-7xl h-[calc(100vh-6rem)] max-h-[700px]">
+          <div className="w-full lg:w-80 xl:w-96 min-w-0 flex-shrink-0">
+            <div className="sidebar-container rounded-xl p-3 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full">
+                              <div className="flex items-center mb-4">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17l4-4m0 0l4-4m-4 4H3m4 4h10" />
@@ -719,7 +765,7 @@ export default function QuestionForm() {
                 </div>
               </div> */}
 
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div>
 
                   <div className="mb-2 mt-5">
@@ -910,27 +956,27 @@ export default function QuestionForm() {
                   // </>
                 )}
                 
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
-                  <p>Lighthouse Bot can make mistakes. Please consider the answers carefully.</p>
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-xs sm:text-sm break-words overflow-wrap-anywhere">
+                  <p className="break-words overflow-wrap-anywhere hyphens-auto leading-relaxed">Lighthouse Bot can make mistakes. Please consider the answers carefully.</p>
                 </div>
   
               </div>
             </div>
           </div>
 
-          <div className="w-[60vw]">
-            <div className="transparent-card rounded-xl p-5 shadow-xl border border-gray-600 border-opacity-30 h-full flex flex-col">
-              <div className="flex items-center mb-5">
+          <div className="w-full lg:flex-1 min-w-0 max-w-4xl">
+            <div className="transparent-card rounded-xl p-3 lg:p-4 shadow-xl border border-gray-600 border-opacity-30 h-full flex flex-col">
+                              <div className="flex items-center mb-3">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="white" />
                     <polyline points="22 4 12 14.01 9 11.01" stroke="white" fill="none" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold">Response & Analysis Results</h2>
+                <h2 className="text-lg sm:text-xl font-bold truncate">Response & Analysis Results</h2>
               </div>
 
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="response-container rounded-lg p-3 max-h-48 overflow-y-auto border border-gray-300 bg-white bg-opacity-10">
                   {/* COMMENTED OUT - Evaluation Mode functionality */}
                   {/* controlMode === "evaluation" && activeQuery ? (
@@ -955,17 +1001,17 @@ export default function QuestionForm() {
                 </div>
               </div>
 
-              <div className="mb-4 border-b border-white border-opacity-20">
-                <div className="flex space-x-2 border-b border-white border-opacity-20">
+              <div className="mb-3 border-b border-white border-opacity-20">
+                <div className="flex space-x-1 sm:space-x-2 border-b border-white border-opacity-20 overflow-x-auto">
                   <button
-                    className="tab-button px-4 py-2"
+                    className="tab-button px-2 sm:px-4 py-2 text-sm sm:text-base whitespace-nowrap"
                     data-tab="live-tool-calls"
                     onClick={() => switchTab('live-tool-calls')}
                   >
                     Live Tool Calls
                   </button>
                   <button
-                    className="tab-button px-4 py-2"
+                    className="tab-button px-2 sm:px-4 py-2 text-sm sm:text-base whitespace-nowrap"
                     data-tab="full-response"
                     onClick={() => switchTab('full-response')}
                   >
@@ -985,8 +1031,8 @@ export default function QuestionForm() {
               </div>
 
               <div
-                className="bg-white bg-opacity-20 rounded-xl p-4 overflow-hidden flex-1 min-h-0"
-                style={{ maxHeight: 'calc(100% - 200px)' }}
+                className="bg-white bg-opacity-20 rounded-xl p-3 overflow-hidden flex-1 min-h-0"
+                style={{ maxHeight: 'calc(100% - 120px)' }}
               >
                 {isLoading ? (
                   <div id="tab-content" className="h-full max-h-full overflow-hidden">

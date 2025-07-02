@@ -189,7 +189,7 @@ export default function QueryHistory() {
               </div>
             ) : (
               queryHistory.map((query) => (
-                <div key={query.id} className="bg-white bg-opacity-95 rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                <div key={query.id} className="bg-white bg-opacity-95 rounded-xl shadow-lg border border-gray-100">
                   <div className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-4 flex-1">
@@ -217,12 +217,6 @@ export default function QueryHistory() {
                             
                             <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => toggleExpanded(query.id)}
-                                className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors"
-                              >
-                                {expandedQuery === query.id ? 'Collapse' : 'Expand'}
-                              </button>
-                              <button
                                 onClick={() => handleDeleteSingle(query.id)}
                                 className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                                 title="Delete this query"
@@ -245,44 +239,75 @@ export default function QueryHistory() {
                           {/* Response Preview/Full */}
                           <div>
                             <h3 className="font-medium text-gray-800 mb-1">Response:</h3>
-                            <div className="bg-gray-50 rounded-lg overflow-hidden">
+                            <div className="relative">
                               {expandedQuery === query.id ? (
-                                <div className="max-h-96 overflow-y-auto">
-                                  <ReactMarkdown
-                                    className="prose prose-sm max-w-none text-gray-700 p-4"
-                                    components={{
-                                      code({ node, inline, className, children, ...props }) {
-                                        const match = /language-(\w+)/.exec(className || '')
-                                        const language = match ? match[1] : 'text'
-                                        return !inline && (language === 'sql' || language === 'mysql') ? (
-                                          <SyntaxHighlighter
-                                            language="sql"
-                                            style={vscDarkPlus}
-                                            customStyle={{
-                                              margin: 0,
-                                              borderRadius: '0.25rem',
-                                              fontSize: '0.875rem',
-                                              padding: '0.5rem'
-                                            }}
-                                            {...props}
-                                          >
-                                            {String(children).replace(/\n$/, '')}
-                                          </SyntaxHighlighter>
-                                        ) : (
-                                          <code className="bg-gray-200 px-1 py-0.5 rounded text-gray-800" {...props}>
-                                            {children}
-                                          </code>
-                                        )
-                                      }
-                                    }}
-                                  >
-                                    {query.response}
-                                  </ReactMarkdown>
+                                <div className="border rounded-lg">
+                                  {/* Close button when expanded */}
+                                  <div className="flex justify-end p-2 bg-gray-100 border-b border-gray-200">
+                                    <button
+                                      onClick={() => toggleExpanded(query.id)}
+                                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                                      title="Close expanded view"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <div className="max-h-96 overflow-auto">
+                                    <div className="p-4">
+                                      <ReactMarkdown
+                                        className="prose prose-sm max-w-none text-gray-700"
+                                        components={{
+                                          code({ node, inline, className, children, ...props }) {
+                                            const match = /language-(\w+)/.exec(className || '')
+                                            const language = match ? match[1] : 'text'
+                                            return !inline && (language === 'sql' || language === 'mysql') ? (
+                                              <div className="w-full overflow-x-auto bg-gray-900 rounded my-2">
+                                                <SyntaxHighlighter
+                                                  language="sql"
+                                                  style={vscDarkPlus}
+                                                  customStyle={{
+                                                    margin: 0,
+                                                    borderRadius: '0.25rem',
+                                                    fontSize: '0.75rem',
+                                                    padding: '0.75rem',
+                                                    minWidth: '100%',
+                                                    width: 'max-content'
+                                                  }}
+                                                  wrapLines={false}
+                                                  {...props}
+                                                >
+                                                  {String(children).replace(/\n$/, '')}
+                                                </SyntaxHighlighter>
+                                              </div>
+                                            ) : (
+                                              <code className="bg-gray-200 px-1 py-0.5 rounded text-gray-800" {...props}>
+                                                {children}
+                                              </code>
+                                            )
+                                          }
+                                        }}
+                                      >
+                                        {query.response}
+                                      </ReactMarkdown>
+                                    </div>
+                                  </div>
                                 </div>
                               ) : (
-                                <p className="text-gray-700 p-4">
-                                  {truncateText(query.response.replace(/[#*`_~]/g, ''))}
-                                </p>
+                                <div 
+                                  className="border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors border-2 border-transparent hover:border-blue-200"
+                                  onClick={() => toggleExpanded(query.id)}
+                                  title="Click to expand full response"
+                                >
+                                  <p className="text-gray-700 p-4">
+                                    {truncateText(query.response.replace(/[#*`_~]/g, ''))}
+                                  </p>
+                                  {/* Visual indicator that it's clickable */}
+                                  <div className="text-right p-2 text-xs text-gray-500">
+                                    Click to expand full response
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>
