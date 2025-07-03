@@ -61,12 +61,6 @@ app.config['DATA_DIR'] = data_dir
 from app.routes.websocket import setup_websocket_routes
 setup_websocket_routes(socketio)
 
-# reminder for melker since he has the bad habit of always running wsl as root
-print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
-print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
-print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
-print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
-print('REMEMBER TO USE THE AGENT WITH APPROPRIATE PERMISSIONS!!!!')
 
 # backend/run.py or backend/main.py
 from app.app import app, socketio

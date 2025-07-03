@@ -112,7 +112,7 @@ export default function QueryHistory() {
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
           <div className="bg-white bg-opacity-95 rounded-xl p-6 shadow-lg border border-gray-100 mb-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,19 +120,19 @@ export default function QueryHistory() {
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">Query History</h1>
+                  <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Query History</h1>
                   <p className="text-gray-600 text-sm">
                     {queryHistory.length} quer{queryHistory.length === 1 ? 'y' : 'ies'} stored in browser memory
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 {queryHistory.length > 0 && (
                   <>
                     <button
                       onClick={handleSelectAll}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       {selectAll ? 'Deselect All' : 'Select All'}
                     </button>
@@ -140,7 +140,7 @@ export default function QueryHistory() {
                     {selectedQueries.size > 0 && (
                       <button
                         onClick={handleDeleteSelected}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                        className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                       >
                         Delete Selected ({selectedQueries.size})
                       </button>
@@ -148,7 +148,7 @@ export default function QueryHistory() {
                     
                     <button
                       onClick={handleClearAll}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                      className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
                     >
                       Clear All
                     </button>
@@ -159,11 +159,11 @@ export default function QueryHistory() {
             
             {/* Memory Storage Notice */}
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-blue-800 text-sm">
+                <p className="text-blue-800 text-sm leading-relaxed">
                   <strong>Note:</strong> Query history is stored locally in your browser's memory. 
                   Data will be lost when you clear browser data or use a different device.
                 </p>
@@ -189,12 +189,12 @@ export default function QueryHistory() {
               </div>
             ) : (
               queryHistory.map((query) => (
-                <div key={query.id} className="bg-white bg-opacity-95 rounded-xl shadow-lg border border-gray-100">
-                  <div className="p-6">
+                <div key={query.id} className="bg-white bg-opacity-95 rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="p-4 sm:p-6">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
+                      <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
                         {/* Checkbox */}
-                        <div className="mt-1">
+                        <div className="mt-1 flex-shrink-0">
                           <input
                             type="checkbox"
                             checked={selectedQueries.has(query.id)}
@@ -204,10 +204,10 @@ export default function QueryHistory() {
                         </div>
                         
                         {/* Query Content */}
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3">
-                              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full self-start">
                                 {query.model}
                               </span>
                               <span className="text-gray-500 text-sm">
@@ -215,10 +215,10 @@ export default function QueryHistory() {
                               </span>
                             </div>
                             
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 self-start">
                               <button
                                 onClick={() => handleDeleteSingle(query.id)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
                                 title="Delete this query"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,7 +231,7 @@ export default function QueryHistory() {
                           {/* Query Question */}
                           <div className="mb-3">
                             <h3 className="font-medium text-gray-800 mb-1">Question:</h3>
-                            <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
+                            <p className="text-gray-700 bg-gray-50 p-3 rounded-lg break-words overflow-wrap-anywhere">
                               {query.question}
                             </p>
                           </div>
@@ -255,15 +255,15 @@ export default function QueryHistory() {
                                     </button>
                                   </div>
                                   <div className="max-h-96 overflow-auto">
-                                    <div className="p-4">
+                                    <div className="p-4 max-w-full overflow-hidden">
                                       <ReactMarkdown
-                                        className="prose prose-sm max-w-none text-gray-700"
+                                        className="prose prose-sm max-w-none text-gray-700 break-words overflow-wrap-anywhere w-full"
                                         components={{
                                           code({ node, inline, className, children, ...props }) {
                                             const match = /language-(\w+)/.exec(className || '')
                                             const language = match ? match[1] : 'text'
                                             return !inline && (language === 'sql' || language === 'mysql') ? (
-                                              <div className="w-full overflow-x-auto bg-gray-900 rounded my-2">
+                                              <div className="w-full overflow-x-auto bg-gray-900 rounded my-2 max-w-full">
                                                 <SyntaxHighlighter
                                                   language="sql"
                                                   style={vscDarkPlus}
@@ -272,21 +272,73 @@ export default function QueryHistory() {
                                                     borderRadius: '0.25rem',
                                                     fontSize: '0.75rem',
                                                     padding: '0.75rem',
-                                                    minWidth: '100%',
-                                                    width: 'max-content'
+                                                    maxWidth: '100%',
+                                                    overflowWrap: 'break-word',
+                                                    wordBreak: 'break-all'
                                                   }}
-                                                  wrapLines={false}
+                                                  wrapLines={true}
+                                                  wrapLongLines={true}
                                                   {...props}
                                                 >
                                                   {String(children).replace(/\n$/, '')}
                                                 </SyntaxHighlighter>
                                               </div>
                                             ) : (
-                                              <code className="bg-gray-200 px-1 py-0.5 rounded text-gray-800" {...props}>
+                                              <code className="bg-gray-200 px-1 py-0.5 rounded text-gray-800 break-all max-w-full inline-block" {...props}>
                                                 {children}
                                               </code>
                                             )
-                                          }
+                                          },
+                                          p: ({ children, ...props }) => (
+                                            <p className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </p>
+                                          ),
+                                          li: ({ children, ...props }) => (
+                                            <li className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </li>
+                                          ),
+                                          h1: ({ children, ...props }) => (
+                                            <h1 className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </h1>
+                                          ),
+                                          h2: ({ children, ...props }) => (
+                                            <h2 className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </h2>
+                                          ),
+                                          h3: ({ children, ...props }) => (
+                                            <h3 className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </h3>
+                                          ),
+                                          h4: ({ children, ...props }) => (
+                                            <h4 className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </h4>
+                                          ),
+                                          h5: ({ children, ...props }) => (
+                                            <h5 className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </h5>
+                                          ),
+                                          h6: ({ children, ...props }) => (
+                                            <h6 className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </h6>
+                                          ),
+                                          div: ({ children, ...props }) => (
+                                            <div className="break-words overflow-wrap-anywhere max-w-full" {...props}>
+                                              {children}
+                                            </div>
+                                          ),
+                                          span: ({ children, ...props }) => (
+                                            <span className="break-words overflow-wrap-anywhere" {...props}>
+                                              {children}
+                                            </span>
+                                          )
                                         }}
                                       >
                                         {query.response}
@@ -296,11 +348,11 @@ export default function QueryHistory() {
                                 </div>
                               ) : (
                                 <div 
-                                  className="border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors border-2 border-transparent hover:border-blue-200"
+                                  className="border rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors border-2 border-transparent hover:border-blue-200"
                                   onClick={() => toggleExpanded(query.id)}
                                   title="Click to expand full response"
                                 >
-                                  <p className="text-gray-700 p-4">
+                                  <p className="text-gray-700 p-4 break-words overflow-wrap-anywhere">
                                     {truncateText(query.response.replace(/[#*`_~]/g, ''))}
                                   </p>
                                   {/* Visual indicator that it's clickable */}
