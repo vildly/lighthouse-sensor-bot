@@ -1247,8 +1247,8 @@ export default function QuestionForm() {
               </div>
             </div>
           </div>
-        </div>
       </main>
     </div>
   );
 }
+
