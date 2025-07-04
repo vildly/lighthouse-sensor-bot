@@ -5,6 +5,8 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import ReactMarkdown from 'react-markdown';
 import { marked } from 'marked';
 import io from 'socket.io-client';
+import GDPRBanner from '../components/GDPRBanner';
+import ApiKeyManager from '../components/ApiKeyManager';
 
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
@@ -20,6 +22,7 @@ export default function QuestionForm() {
   const [fullResponse, setFullResponse] = useState(null);
   const { sqlQueries, queryStatus, resetQueries, evaluationProgress } = useWebSocket();
   const [controlMode, setControlMode] = useState("query"); // "query" or "evaluation"
+  const [userApiKey, setUserApiKey] = useState('');
   // COMMENTED OUT - Evaluation Mode functionality
   // const [testCases, setTestCases] = useState(null);
   // const [numberOfRuns, setNumberOfRuns] = useState(1);
@@ -227,6 +230,13 @@ export default function QuestionForm() {
       return;
     }
 
+    // Check if API key is available
+    if (!userApiKey.trim()) {
+      alert('Please provide your OpenRouter API key to use this application.');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setContent(null);
     setActiveQuery(true);
@@ -240,6 +250,7 @@ export default function QuestionForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-API-Key": userApiKey, // Pass the API key to backend
         },
         body: JSON.stringify({
           question,
@@ -710,17 +721,23 @@ export default function QuestionForm() {
 
   return (
     <div className="bg-ferry-image min-h-screen">
+      {/* GDPR Banner */}
+      <GDPRBanner />
+      
       <main className="container mx-auto py-4 flex justify-center px-2 lg:px-4">
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 w-full max-w-7xl h-[calc(100vh-6rem)] max-h-[700px]">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 w-full max-w-7xl min-h-[calc(100vh-10rem)]">
           <div className="w-full lg:w-80 xl:w-96 min-w-0 flex-shrink-0">
-            <div className="sidebar-container rounded-xl p-3 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full">
-                              <div className="flex items-center mb-4">
-                <div className="p-2 bg-blue-600 rounded text-white mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="sidebar-container rounded-xl p-3 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-[calc(100vh-10rem)] overflow-y-auto flex flex-col">
+              
+              {/* API Key Manager */}
+              <ApiKeyManager onApiKeyChange={setUserApiKey} />
+                              <div className="flex items-center mb-3">
+                <div className="p-1.5 bg-blue-600 rounded text-white mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17l4-4m0 0l4-4m-4 4H3m4 4h10" />
                   </svg>
                 </div>
-                <h1 className="text-xl font-bold text-gray-800">Query Controls</h1>
+                <h1 className="text-lg font-bold text-gray-800">Query Controls</h1>
               </div>
 
               {/* COMMENTED OUT - Evaluation Mode functionality */}
@@ -765,20 +782,20 @@ export default function QuestionForm() {
                 </div>
               </div> */}
 
-              <div className="space-y-4">
+              <div className="space-y-3 flex-1 flex flex-col">
                 <div>
 
-                  <div className="mb-2 mt-5">
+                  <div className="mb-2">
 
-                    <div className="flex rounded-lg overflow-hidden border border-gray-200">
+                    <div className="flex rounded overflow-hidden border border-gray-200">
                       <button
-                        className={`flex-1 py-2 px-4 text-center transition-colors ${modelCategory === "proprietary" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                        className={`flex-1 py-1.5 px-2 text-center transition-colors text-xs ${modelCategory === "proprietary" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
                         onClick={() => handleCategoryChange("proprietary")}
                       >
                         Proprietary
                       </button>
                       <button
-                        className={`flex-1 py-2 px-4 text-center transition-colors ${modelCategory === "open-source" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                        className={`flex-1 py-1.5 px-2 text-center transition-colors text-xs ${modelCategory === "open-source" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
                         onClick={() => handleCategoryChange("open-source")}
                       >
                         Open Source
@@ -786,11 +803,11 @@ export default function QuestionForm() {
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Model</label>
+                  <div className="mb-3">
+                    <label className="text-xs font-medium text-gray-700 block mb-1">Model</label>
                     <div className="relative">
                       <select
-                        className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="block w-full rounded border border-gray-300 px-2 py-1.5 text-gray-700 appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
                       >
@@ -820,8 +837,8 @@ export default function QuestionForm() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-2">Data Source</label>
-                  <div className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-700 bg-gray-50">
+                  <label className="text-xs font-medium text-gray-700 block mb-1">Data Source</label>
+                  <div className="block w-full rounded border border-gray-300 px-2 py-1.5 text-gray-700 bg-gray-50 text-xs">
                     Ferry Trips Data (CSV)
                   </div>
                 </div>
@@ -829,23 +846,23 @@ export default function QuestionForm() {
                 {controlMode === "query" ? (
                   <>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-2">Your Analysis Query</label>
+                      <label className="text-xs font-medium text-gray-700 block mb-1">Your Analysis Query</label>
                       <textarea
-                        className="w-full h-32 px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-24 px-2 py-1.5 text-gray-700 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
                         placeholder="E.g., What is the average speed of ferry Jupiter? How does fuel consumption correlate with passenger load?"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                       ></textarea>
                     </div>
 
-                    <div className="flex space-x-3 pt-2">
+                    <div className="flex space-x-2 pt-2">
                       <div className="relative group">
                         <button
-                          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          className="flex items-center justify-center px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
                           onClick={loadPrompt}
                           aria-label="Load an example query into the input field"
                         >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                           </svg>
                           Example
@@ -856,19 +873,19 @@ export default function QuestionForm() {
                       </div>
 
                       <button
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        className="px-2 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-xs"
                         onClick={() => setQuestion("")}
                       >
                         Clear
                       </button>
 
                       <button
-                        className="flex-1 flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        className="flex-1 flex items-center justify-center px-2 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-xs"
                         onClick={askQuestion}
                         disabled={isLoading || !question.trim()}
                       >
                         <span>Query</span>
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                         </svg>
                       </button>
@@ -956,8 +973,10 @@ export default function QuestionForm() {
                   // </>
                 )}
                 
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-xs sm:text-sm break-words overflow-wrap-anywhere">
-                  <p className="break-words overflow-wrap-anywhere hyphens-auto leading-relaxed">Lighthouse Bot can make mistakes. Please consider the answers carefully.</p>
+                <div className="mt-auto pt-2 flex-shrink-0">
+                  <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
+                    <p className="text-center">⚠️ Lighthouse Bot can make mistakes. Please verify answers carefully.</p>
+                  </div>
                 </div>
   
               </div>
@@ -965,15 +984,15 @@ export default function QuestionForm() {
           </div>
 
           <div className="w-full lg:flex-1 min-w-0 max-w-4xl">
-            <div className="transparent-card rounded-xl p-3 lg:p-4 shadow-xl border border-gray-600 border-opacity-30 h-full flex flex-col">
-                              <div className="flex items-center mb-3">
-                <div className="p-2 bg-blue-600 rounded text-white mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="transparent-card rounded-xl p-3 shadow-xl border border-gray-600 border-opacity-30 h-[calc(100vh-10rem)] flex flex-col overflow-hidden">
+                              <div className="flex items-center mb-3 flex-shrink-0">
+                <div className="p-1.5 bg-blue-600 rounded text-white mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="white" />
                     <polyline points="22 4 12 14.01 9 11.01" stroke="white" fill="none" />
                   </svg>
                 </div>
-                <h2 className="text-lg sm:text-xl font-bold truncate">Response & Analysis Results</h2>
+                <h2 className="text-lg font-bold truncate">Response & Analysis Results</h2>
               </div>
 
               <div className="mb-3">

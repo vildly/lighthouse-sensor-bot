@@ -157,16 +157,38 @@ export default function QueryHistory() {
               </div>
             </div>
             
-            {/* Memory Storage Notice */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-blue-800 text-sm">
-                  <strong>Note:</strong> Query history is stored locally in your browser's memory. 
-                  Data will be lost when you clear browser data or use a different device.
-                </p>
+            {/* Privacy & Local Storage Notice */}
+            <div className="mt-4 space-y-3">
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.8-3.6a9 9 0 11-4.95 15.95A8.97 8.97 0 013 12a9 9 0 019-9z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-green-800 text-sm font-medium">🔒 GDPR Compliant - Your Data Stays Private</p>
+                    <p className="text-green-700 text-xs mt-1">
+                      All query history is stored locally on your device only. We don't collect, transmit, or store your data on our servers.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-blue-800 text-sm font-medium">Local Storage Information</p>
+                    <ul className="text-blue-700 text-xs mt-1 space-y-1">
+                      <li>• Data is stored in your browser's local storage</li>
+                      <li>• Available only on this device and browser</li>
+                      <li>• Automatically deleted if you clear browser data</li>
+                      <li>• You can delete all history using the "Clear All" button</li>
+                      <li>• Maximum 100 queries stored (oldest automatically removed)</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
