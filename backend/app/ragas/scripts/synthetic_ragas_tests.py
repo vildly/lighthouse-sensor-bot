@@ -20,7 +20,7 @@ import requests
 from app.ragas.custom_metrics.LenientFactualCorrectness import LenientFactualCorrectness
 from app.ragas.custom_metrics.bleu_score import BleuScore
 import argparse
-from typing import Callable, Optional, Tuple, Union, List, Dict
+from typing import Callable, Optional, Tuple, Union, List, Dict, Any
 import re
 from app.helpers.extract_answer import extract_answer_for_evaluation
 import logging
@@ -50,7 +50,7 @@ if not DEEPSEEK_API_KEY:
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 
-def run_test_case(query: str, llm_model_id: str, test_no: Optional[str] = None) -> Tuple[str, Union[List[str], str], bool, Optional[Dict[str, int]]]:
+def run_test_case(query: str, llm_model_id: str, test_no: Optional[str] = None) -> Tuple[str, Union[List[str], str], bool, Optional[Dict[str, int]], Optional[str]]:
     """Run a single test case directly without making an API call
     
     Args:
@@ -64,23 +64,31 @@ def run_test_case(query: str, llm_model_id: str, test_no: Optional[str] = None) 
         - contexts: Context information including SQL queries and reasoning
         - success: Boolean indicating if processing was successful
         - token_usage: Dictionary with token usage statistics or None if unavailable
+        - tool_calls: String representation of tool calls or None if unavailable
     """
+    print(f"DEBUG: Entered run_test_case for query: {query[:50]}...")
+    
     # Import process_query_internal inside the function to avoid circular imports
     from app.services.query_with_eval import process_query_internal
     
     try:
         # Directly call the internal processing function instead of making an API call
+        print(f"DEBUG: About to call process_query_internal")
         result = process_query_internal(
             question=query,
-            # source_file="ferry_trips_data.csv", 
+            source_file="ferry_trips_data.csv", 
             llm_model_id=llm_model_id,
             save_to_db=False  # Don't save this to DB, we'll do it ourselves later
         )
+        print(f"DEBUG: process_query_internal returned: {result}")
         
         agent_response = result.get("content")
         full_response = result.get("full_response", "")
         sql_queries = result.get("sql_queries", [])
         token_usage = result.get("token_usage")
+        tool_calls = result.get("tool_calls")  # Get tool_calls instead of response_object
+        print(f"DEBUG: tool_calls from result: {tool_calls}")
+        print(f"DEBUG: tool_calls type: {type(tool_calls)}")
 
         # Check for SQL errors in the response
         if (
@@ -92,12 +100,12 @@ def run_test_case(query: str, llm_model_id: str, test_no: Optional[str] = None) 
         ):
             error_message = f"SQL or processing error detected: {full_response}"
             logger.error(error_message)
-            return error_message, full_response, False, token_usage
+            return error_message, full_response, False, token_usage, tool_calls
 
         if agent_response is None:
             error_message = f"Error: No 'content' key found in the result for query: {query}"
             logger.error(error_message)
-            return error_message, full_response, False, token_usage
+            return error_message, full_response, False, token_usage, tool_calls
 
         # Format contexts including SQL queries and full response
         contexts = []
@@ -105,12 +113,13 @@ def run_test_case(query: str, llm_model_id: str, test_no: Optional[str] = None) 
             contexts.append(f"SQL Query: {sql}")
         contexts.append(f"Agent Reasoning and Response: {full_response}")
 
-        return agent_response, contexts, True, token_usage
+        print(f"DEBUG: Returning from run_test_case with tool_calls: {tool_calls}")
+        return agent_response, contexts, True, token_usage, tool_calls
 
     except Exception as e:
         error_message = f"Error processing query for test: {query}: {e}"
         logger.error(error_message)
-        return error_message, str(e), False, None
+        return error_message, str(e), False, None, None
 
 
 def load_synthetic_test_cases():
@@ -289,7 +298,7 @@ def run_synthetic_evaluation(
         logger.info(f"Processing test case {test_case['test_no']}: {query[:50]}...")
 
         # Run the API call
-        response, context, api_call_success, token_usage = run_test_case(
+        response, context, api_call_success, token_usage, tool_calls = run_test_case(
             query, llm_model_id, test_case.get("test_no")
         )
         logger.info(f"API call success: {api_call_success}")
@@ -314,6 +323,7 @@ def run_synthetic_evaluation(
                 "reference_contexts": test_case["reference_contexts"],
                 "api_call_success": True,
                 "token_usage": token_usage,
+                "tool_calls": tool_calls,
             }
 
             if ragas_success:
@@ -345,6 +355,7 @@ def run_synthetic_evaluation(
                     "saved_path": filepath,
                     "api_call_success": False,
                     "ragas_evaluated": False,
+                    "tool_calls": tool_calls,
                 }
             )
 

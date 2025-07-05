@@ -22,6 +22,7 @@ def save_query_to_db(
     llm_model_id: str,
     sql_queries: Optional[List[str]] = None,
     token_usage: Optional[Dict[str, int]] = None,
+    test_no: Optional[int] = None,
 ) -> int:
     """Save the query and response to the database.
     
@@ -37,11 +38,11 @@ def save_query_to_db(
         try:
             cursor.execute(
                 """
-                INSERT INTO query_result (query, direct_response, full_response, llm_model_id, sql_queries)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO query_result (query, direct_response, full_response, llm_model_id, sql_queries, test_no)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
-                (query, direct_response, full_response, model_id, sql_queries),
+                (query, direct_response, full_response, model_id, sql_queries, test_no),
             )
             
             # Get the ID of the inserted record
@@ -74,6 +75,8 @@ def create_query_result_for_eval(
     full_response: str,
     llm_model_id: str,
     sql_queries: Optional[List[str]] = None,
+    test_no: Optional[int] = None,
+    tool_calls: Optional[str] = None,
 ) -> int:
     """Create a query_result record for evaluation purposes.
     
@@ -90,11 +93,11 @@ def create_query_result_for_eval(
         try:
             cursor.execute(
                 """
-                INSERT INTO query_result (query, direct_response, full_response, llm_model_id, sql_queries)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO query_result (query, direct_response, full_response, llm_model_id, sql_queries, test_no, tool_calls)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
-                (query, direct_response, full_response, model_id, sql_queries_json),
+                (query, direct_response, full_response, model_id, sql_queries_json, test_no, tool_calls),
             )
             
             # Get the ID of the inserted record
@@ -114,7 +117,9 @@ def save_query_with_eval_to_db(
     evaluation_results: Dict[str, Union[str, float, int, bool, None]],
     sql_queries: Optional[List[str]] = None,
     token_usage: Optional[Dict[str, int]] = None,
-    existing_query_result_id: Optional[int] = None
+    existing_query_result_id: Optional[int] = None,
+    test_no: Optional[int] = None,
+    tool_calls: Optional[str] = None,
 ) -> int:
     """Save the query evaluation results to the database.
     
@@ -169,7 +174,7 @@ def save_query_with_eval_to_db(
     query_result_id = existing_query_result_id
     if query_result_id is None:
         query_result_id = create_query_result_for_eval(
-            query, direct_response, full_response, llm_model_id, sql_queries
+            query, direct_response, full_response, llm_model_id, sql_queries, test_no, tool_calls
         )
 
     with get_cursor() as cursor:

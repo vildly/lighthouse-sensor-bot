@@ -27,6 +27,7 @@ def initialize_agent(data_dir, llm_model_id, tools):
         print("Error: Could not load semantic model. Exiting.")
         exit()
 
+
     semantic_instructions = utils.duck.get_default_instructions(semantic_model_data)
 
     standard_system_message = utils.duck.get_system_message(
@@ -40,7 +41,7 @@ def initialize_agent(data_dir, llm_model_id, tools):
         instructions=semantic_instructions,
         system_message=standard_system_message,
         tools=tools,
-        show_tool_calls=False,
+        show_tool_calls=True,
         model=OpenRouter(
             base_url=BASE_URL, api_key=API_KEY, id=llm_model_id
         ),

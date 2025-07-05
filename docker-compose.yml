@@ -46,6 +46,7 @@ services:
     networks:
       - lighthouse
     environment:
+      - DATA_DIR=/app/data
       - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=${DB_HOST}
       - DB_NAME=${POSTGRES_DB}

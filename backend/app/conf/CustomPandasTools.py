@@ -10,10 +10,14 @@ class CustomPandasTools(PandasTools):
         self.data_dir = data_dir
         self.source_file = source_file
         self.semantic_model_data = semantic_model_data
+        self.file_path = None
         
         # Pre-load the main data file if source_file is provided
-        if self.source_file:
+        print(f"Pre-loading source file: {self.source_file}")
+        if self.source_file:    
             self._preload_source_file()
+        else:
+            print("No source file provided")
     
     def _preload_source_file(self):
         """Pre-load the source file as the main dataframe"""
@@ -23,7 +27,7 @@ class CustomPandasTools(PandasTools):
             if self.data_dir and not os.path.isabs(self.source_file):
                 # If source_file is relative and we have data_dir, resolve it
                 file_path = os.path.join(self.data_dir, self.source_file)
-            
+                self.file_path = file_path
             # Check if the file exists
             if not os.path.exists(file_path):
                 logger.error(f"File not found: {file_path}")
@@ -45,6 +49,7 @@ class CustomPandasTools(PandasTools):
                 return
             
             logger.info(f"Attempting to load file: {file_path}")
+            print(f"Attempting to load file: {file_path}")
             
             # Create the main dataframe
             result = self.create_pandas_dataframe(
@@ -57,6 +62,7 @@ class CustomPandasTools(PandasTools):
                 logger.info(f"Successfully created main dataframe 'data' from {file_path}")
             else:
                 logger.error(f"Failed to create dataframe: {result}")
+                print(f"Failed to create dataframe: {result}")
                 return
             
             # Also create with the semantic model name if available
@@ -72,3 +78,39 @@ class CustomPandasTools(PandasTools):
             
         except Exception as e:
             logger.error(f"Error pre-loading source file {self.source_file}: {e}") 
+
+    def run_dataframe_operation(self, dataframe_name: str, operation: str, operation_parameters: dict = None) -> str:
+        if operation_parameters is None:
+            operation_parameters = {}
+        
+        # Get the dataframe
+        dataframe = self.dataframes.get(dataframe_name)
+        if dataframe is None:
+            return f"Dataframe '{dataframe_name}' not found"
+        
+        # Check dataframe size and provide helpful guidance
+        if len(dataframe) > 1000:
+            return f"Dataframe '{dataframe_name}' is large ({len(dataframe)} rows, {len(dataframe.columns)} columns). " \
+                   f"Use head(), tail(), describe(), or info() to explore the data safely. " \
+                   f"Current operation '{operation}' would send too much data to the AI."
+        
+        # For safe operations, proceed normally
+        if operation in ["head", "tail", "describe", "info"]:
+            return super().run_dataframe_operation(dataframe_name, operation, operation_parameters)
+        
+        # For other operations, check if they would be too large
+        if len(dataframe) > 100:  # stricter limit for other operations
+            return f"Operation '{operation}' on dataframe '{dataframe_name}' would send too much data. " \
+                   f"Try using head(), tail(), or describe() first to explore the data."
+        
+        return super().run_dataframe_operation(dataframe_name, operation, operation_parameters)
+
+    def create_pandas_dataframe(
+        self, dataframe_name: str, create_using_function: str, function_parameters: Dict[str, Any]
+    ) -> str:
+        if self.file_path:
+            dataframe_name = self.file_path
+            print(f"Creating dataframe from file: {dataframe_name}")
+            df = super().create_pandas_dataframe(dataframe_name, create_using_function, function_parameters)
+            print(f"Created dataframe: {df}")
+            return df

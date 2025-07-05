@@ -132,6 +132,7 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
     Returns:
         Dict with query results
     """
+    print("DEBUG: Entered process_query_internal")
     try:
         # Set up to capture SQL queries
         sql_queries = []
@@ -162,6 +163,28 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
         # Extract token usage
         token_usage = extract_token_usage(response)
         
+        # Extract tool calls as a list of tool names
+        print(f"DEBUG: response type: {type(response)}")
+        print(f"DEBUG: response: {response}")
+        tool_calls_list = None
+        print(f"DEBUG: Has a tools attribute: {hasattr(response, 'tools')}")
+        print(f"DEBUG: Tools: {response.tools}")
+        
+        # Extract tool names from the tools attribute
+        if hasattr(response, "tools") and response.tools:
+            print(f"DEBUG: response.tools: {response.tools}")
+            tool_calls_list = []
+            for tool_call in response.tools:
+                print(f"DEBUG: Processing tool call: {tool_call}")
+                if isinstance(tool_call, dict) and "tool_name" in tool_call:
+                    tool_calls_list.append(tool_call["tool_name"])
+                elif hasattr(tool_call, "tool_name"):
+                    tool_calls_list.append(tool_call.tool_name)
+                else:
+                    print(f"DEBUG: Could not extract tool name from: {tool_call}")
+        
+        print(f"DEBUG: Final tool_calls_list: {tool_calls_list}")
+        
         # Remove the log handlers
         agno_logger.removeHandler(log_handler)
         agno_logger.removeHandler(websocket_handler)
@@ -189,7 +212,7 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
             sql_queries.append(current_query.strip())
 
         # Print the extracted queries for debugging
-        # print(f"Extracted SQL queries: {sql_queries}")
+        print(f"Extracted SQL queries: {sql_queries}")
 
         # Remove duplicates while preserving order
         unique_queries = []
@@ -235,7 +258,8 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
             "full_response": fullResponse,
             "sql_queries": sql_queries,
             "token_usage": token_usage,
-            "query_result_id": query_result_id
+            "query_result_id": query_result_id,
+            "tool_calls": tool_calls_list,
         }
         
     except Exception as e:

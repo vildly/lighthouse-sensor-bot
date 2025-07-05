@@ -5,7 +5,8 @@ from app.helpers.load_json_from_file import load_json_from_file
 from app.conf.CustomDuckDbTools import CustomDuckDbTools
 from app.conf.CustomPandasTools import CustomPandasTools
 from app.services.agent import initialize_agent
-
+from agno.tools.python import PythonTools
+from agno.tools.file import FileTools
 logger = logging.getLogger(__name__)
 
 def get_data_analyst(source_file, llm_model_id=None):
@@ -39,29 +40,18 @@ def get_data_analyst(source_file, llm_model_id=None):
         )
 
         # Initialize additional tools with source file knowledge
-        from agno.tools.python import PythonTools
         
-        pandas_tools = CustomPandasTools(
+        
+        """pandas_tools = CustomPandasTools(
             data_dir=str(data_dir),
             source_file=source_file,
             semantic_model_data=semantic_model_data
-        )
-        python_tools = PythonTools()
-
+        )"""
+        python_tools = PythonTools(base_dir=data_dir)
+        file_tools = FileTools(base_dir=data_dir)
         # Initialize agent with all tools
-        data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools, pandas_tools, python_tools])
+        data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools, python_tools, file_tools])
 
-        # Add source file specific instructions
-        additional_instructions = [
-            f"IMPORTANT: Use the file '{source_file}' as your primary data source.",
-            f"The main data is already loaded in a pandas dataframe called 'data'.",
-            f"When you need to create a table, use 'data' as the table name and it will automatically use the file '{source_file}'.",
-            "You can perform operations on the pre-loaded 'data' dataframe using pandas tools.",
-            "Combine SQL querying with Python/Pandas analysis for comprehensive insights.",
-            "When using pandas operations, make sure to include operation_parameters even if empty (e.g., operation_parameters={})."
-        ]
-        data_analyst.instructions = data_analyst.instructions + additional_instructions
-        
         return data_analyst
         
     except Exception as e:

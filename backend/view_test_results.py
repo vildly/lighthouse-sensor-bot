@@ -59,9 +59,11 @@ def get_recent_results(limit=20):
     with get_db_cursor() as cursor:
         cursor.execute("""
             SELECT 
+                qr.test_no,
                 qr.id as query_id,
                 m.name as model_name,
                 qr.timestamp::date || ' ' || qr.timestamp::time::varchar(5) as timestamp,
+                qr.tool_calls,
                 em.factual_correctness,
                 em.semantic_similarity,
                 em.context_recall,
@@ -122,11 +124,13 @@ def get_detailed_results(limit=10):
     with get_db_cursor() as cursor:
         cursor.execute("""
             SELECT 
+                qr.test_no,
                 qr.id as query_id,
                 m.name as model_name,
                 qr.timestamp,
                 qr.query as query_text,
                 qr.direct_response as response_text,
+                qr.tool_calls,
                 em.factual_correctness,
                 em.semantic_similarity,
                 em.context_recall,
@@ -157,9 +161,11 @@ def get_model_results(model_name, limit=20):
     with get_db_cursor() as cursor:
         cursor.execute("""
             SELECT 
+                qr.test_no,
                 qr.id as query_id,
                 m.name as model_name,
                 qr.timestamp::date || ' ' || qr.timestamp::time::varchar(5) as timestamp,
+                qr.tool_calls,
                 em.factual_correctness,
                 em.semantic_similarity,
                 em.context_recall,
@@ -235,9 +241,13 @@ def display_results_table(df, title="Results"):
     # Format numeric columns to 3 decimal places
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
     for col in numeric_cols:
-        if col not in ['query_id', 'total_tokens', 'prompt_tokens', 'completion_tokens']:
+        if col not in ['query_id', 'test_no', 'total_tokens', 'prompt_tokens', 'completion_tokens']:
             df[col] = df[col].round(3)
     
+    # Reorder columns to show test_no first if present
+    if 'test_no' in df.columns:
+        cols = ['test_no'] + [c for c in df.columns if c != 'test_no']
+        df = df[cols]
     print(tabulate(df, headers='keys', tablefmt='grid', showindex=False))
 
 def display_detailed_results(df):
@@ -250,10 +260,17 @@ def display_detailed_results(df):
     print("=" * 80)
     
     for _, row in df.iterrows():
-        print(f"\n🔍 Query ID: {row['query_id']} | Model: {row['model_name']}")
+        test_no_str = f" | Test No: {row['test_no']}" if 'test_no' in row and pd.notna(row['test_no']) else ""
+        print(f"\n🔍 Query ID: {row['query_id']} | Model: {row['model_name']}{test_no_str}")
         print(f"⏰ Timestamp: {row['timestamp']}")
         print(f"\n📝 Query: {row['query_text'][:200]}{'...' if len(str(row['query_text'])) > 200 else ''}")
         print(f"\n💬 Response: {row['response_text'][:300]}{'...' if len(str(row['response_text'])) > 300 else ''}")
+        
+        # Display tool calls if available
+        if 'tool_calls' in row and pd.notna(row['tool_calls']) and row['tool_calls']:
+            print(f"\n🔧 Tools Used: {row['tool_calls']}")
+        else:
+            print(f"\n🔧 Tools Used: None")
         
         print(f"\n📊 Metrics:")
         print(f"   • Factual Correctness: {row['factual_correctness']:.3f}" if pd.notna(row['factual_correctness']) else "   • Factual Correctness: N/A")

@@ -460,9 +460,16 @@ def execute_test_runs(model_id: str, number_of_runs,
             
             # Run the test case
             query = test_case["query"]
-            response, context, api_call_success, token_usage = run_test_case(
+            response, context, api_call_success, token_usage, tool_calls = run_test_case(
                 query, model_id, test_case.get("test_no")
             )
+
+            # --- Extract tool calls ---
+            tool_calls_str = tool_calls  # Use tool_calls directly since it's already a string
+            print(f"DEBUG - Tool calls from run_test_case: {tool_calls_str}")
+            print(f"DEBUG - Tool calls type: {type(tool_calls_str)}")
+            print(f"DEBUG - Tool calls length: {len(str(tool_calls_str)) if tool_calls_str else 0}")
+            # ---
             
             if not api_call_success:
                 # API call failed - just mark as failed and log in history
@@ -479,7 +486,8 @@ def execute_test_runs(model_id: str, number_of_runs,
                     "response": str(response) if response else "API call failed",
                     "api_call_success": False,
                     "ragas_evaluated": False,
-                    "token_usage": token_usage
+                    "token_usage": token_usage,
+                    "tool_calls": tool_calls_str
                 }
                 all_test_results.append(test_result)
                 continue
@@ -511,7 +519,8 @@ def execute_test_runs(model_id: str, number_of_runs,
                     "api_call_success": True,
                     "ragas_evaluated": False,
                     "ragas_error": ragas_error,
-                    "token_usage": token_usage
+                    "token_usage": token_usage,
+                    "tool_calls": tool_calls_str
                 }
                 all_test_results.append(test_result)
                 continue
@@ -555,7 +564,9 @@ def execute_test_runs(model_id: str, number_of_runs,
                             llm_model_id=model_id,
                             evaluation_results=evaluation_data,
                             sql_queries=[],  # We can add SQL extraction if needed
-                            token_usage=token_usage
+                            token_usage=token_usage,
+                            test_no=test_case.get("test_no"),
+                            tool_calls=tool_calls_str
                         )
                         
                         # Mark the test as successful
@@ -589,6 +600,7 @@ def execute_test_runs(model_id: str, number_of_runs,
                     "ragas_evaluated": ragas_success,
                     "token_usage": token_usage,
                     "query_evaluation_id": query_eval_id,  # Now we include this since we saved to DB
+                    "tool_calls": tool_calls_str,
                     
                     # Include all individual metrics for reporting
                     "factual_correctness": evaluation_data.get("factual_correctness"),
