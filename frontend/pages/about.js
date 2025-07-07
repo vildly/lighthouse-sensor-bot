@@ -57,6 +57,153 @@ export default function About() {
             </div>
           </div>
 
+          {/* Database Information Section */}
+          <div className="bg-white bg-opacity-95 rounded-xl p-6 shadow-lg border border-gray-100 mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">📊 Ferry Database Overview</h2>
+            
+            <div className="mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-medium text-blue-800">🚢 Ferry Fleet Data</h3>
+                  <a 
+                    href="https://github.com/RISE-Maritime/hack-a-fleet" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline text-sm"
+                  >
+                    🔗 View Source Data
+                  </a>
+                </div>
+                <p className="text-blue-700 text-sm">
+                  Our database contains real-world operational data from Färjerederiet's ferry fleet, 
+                  covering the period from <strong>March 2023 to February 2024</strong>.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Ferry Fleet */}
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-3">🚢 Available Ferries (5 Vessels)</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">Fragancia</span>
+                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                    </div>
+                    <div className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="font-mono text-sm bg-green-100 text-green-800 px-2 py-1 rounded mr-2">Jupiter</span>
+                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                    </div>
+                    <div className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="font-mono text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded mr-2">Merkurius</span>
+                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                    </div>
+                    <div className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="font-mono text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded mr-2">Nina</span>
+                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                    </div>
+                    <div className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="font-mono text-sm bg-red-100 text-red-800 px-2 py-1 rounded mr-2">Yxlan</span>
+                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Categories */}
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-3">📈 Available Data Categories</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start">
+                      <span className="text-blue-600 mr-2">🛳️</span>
+                      <div>
+                        <strong>Trip Operations:</strong> Departure/arrival times, routes, trip types (ordinary, extra, doubling)
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="text-green-600 mr-2">⛽</span>
+                      <div>
+                        <strong>Performance Metrics:</strong> Fuel consumption, distances, speed, efficiency
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="text-purple-600 mr-2">🚗</span>
+                      <div>
+                        <strong>Cargo & Passengers:</strong> Vehicle counts, passenger car equivalents, load statistics
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="text-orange-600 mr-2">📍</span>
+                      <div>
+                        <strong>Route Information:</strong> Terminal locations, route descriptions, schedules
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sample Questions */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-semibold text-green-800 mb-3">💡 Example Questions You Can Ask</h4>
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h5 className="font-medium text-green-700 mb-2">Performance Analysis:</h5>
+                  <ul className="space-y-1 text-green-700">
+                    <li>• "What is the average fuel consumption of ferry Jupiter?"</li>
+                    <li>• "Which ferry has the best fuel efficiency?"</li>
+                    <li>• "Compare the average speed of all ferries"</li>
+                    <li>• "Show me the longest trips by distance"</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5 className="font-medium text-green-700 mb-2">Operations & Traffic:</h5>
+                  <ul className="space-y-1 text-green-700">
+                    <li>• "What are the busiest routes by passenger volume?"</li>
+                    <li>• "How many extra trips were made in 2023?"</li>
+                    <li>• "Which ferry carries the most vehicles on average?"</li>
+                    <li>• "Show passenger patterns by month"</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Database Fields */}
+            <div className="mt-6">
+              <h4 className="font-semibold text-gray-800 mb-3">🗃️ Key Database Fields</h4>
+              <div className="bg-gray-50 rounded-lg p-4 text-xs">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <h5 className="font-medium text-gray-700 mb-2">Trip Information:</h5>
+                    <code className="block text-gray-600">
+                      time_departure<br/>
+                      trip_type<br/>
+                      tailored_trip<br/>
+                      start_time_outbound<br/>
+                      end_time_outbound
+                    </code>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-700 mb-2">Performance Data:</h5>
+                    <code className="block text-gray-600">
+                      distance_outbound_nm<br/>
+                      fuelcons_outbound_l<br/>
+                      distance_inbound_nm<br/>
+                      fuelcons_inbound_l
+                    </code>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-700 mb-2">Load & Capacity:</h5>
+                    <code className="block text-gray-600">
+                      passenger_car_equivalent_outbound<br/>
+                      passenger_car_equivalent_inbound<br/>
+                      vehicles_left_at_terminal_outbound<br/>
+                      vehicles_left_at_terminal_inbound
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* More Information Section */}
           <div className="bg-white bg-opacity-95 rounded-xl p-6 shadow-lg border border-gray-100 mb-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Learn More</h2>
@@ -74,6 +221,21 @@ export default function About() {
                   className="text-blue-600 hover:text-blue-800 underline text-sm"
                 >
                   🔗 GitHub Repository - vildly/lighthouse-sensor-bot
+                </a>
+              </div>
+
+              <div className="border-l-4 border-amber-500 pl-4">
+                <h3 className="font-medium text-gray-800 mb-1">🗃️ Raw Ferry Data Source</h3>
+                <p className="text-gray-700 text-sm mb-2">
+                  The ferry operational data used in this platform is part of the Hack-A-Fleet v2.0 dataset from RISE Maritime:
+                </p>
+                <a 
+                  href="https://github.com/RISE-Maritime/hack-a-fleet" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-amber-600 hover:text-amber-800 underline text-sm"
+                >
+                  🔗 RISE Maritime - Hack-A-Fleet Dataset (ferry_trips_data.csv)
                 </a>
               </div>
 
