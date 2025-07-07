@@ -15,6 +15,7 @@ SELECT
     qr.direct_response,
     qr.full_response,
     qr.sql_queries,
+    qr.test_no
     qr."timestamp" AS query_timestamp,
     em.id AS evaluation_metric_id,
     em.factual_correctness,

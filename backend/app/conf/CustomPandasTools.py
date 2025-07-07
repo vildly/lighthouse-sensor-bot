@@ -82,28 +82,9 @@ class CustomPandasTools(PandasTools):
     def run_dataframe_operation(self, dataframe_name: str, operation: str, operation_parameters: dict = None) -> str:
         if operation_parameters is None:
             operation_parameters = {}
-        
-        # Get the dataframe
-        dataframe = self.dataframes.get(dataframe_name)
-        if dataframe is None:
-            return f"Dataframe '{dataframe_name}' not found"
-        
-        # Check dataframe size and provide helpful guidance
-        if len(dataframe) > 1000:
-            return f"Dataframe '{dataframe_name}' is large ({len(dataframe)} rows, {len(dataframe.columns)} columns). " \
-                   f"Use head(), tail(), describe(), or info() to explore the data safely. " \
-                   f"Current operation '{operation}' would send too much data to the AI."
-        
-        # For safe operations, proceed normally
-        if operation in ["head", "tail", "describe", "info"]:
-            return super().run_dataframe_operation(dataframe_name, operation, operation_parameters)
-        
-        # For other operations, check if they would be too large
-        if len(dataframe) > 100:  # stricter limit for other operations
-            return f"Operation '{operation}' on dataframe '{dataframe_name}' would send too much data. " \
-                   f"Try using head(), tail(), or describe() first to explore the data."
-        
-        return super().run_dataframe_operation(dataframe_name, operation, operation_parameters)
+        if self.file_path:
+            dataframe_name = self.file_path
+        return super().run_dataframe_operation(dataframe_name, operation, operation_parameters) 
 
     def create_pandas_dataframe(
         self, dataframe_name: str, create_using_function: str, function_parameters: Dict[str, Any]

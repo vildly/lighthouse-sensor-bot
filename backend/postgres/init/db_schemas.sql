@@ -179,6 +179,8 @@ CREATE TABLE public.query_result (
     direct_response text,
     full_response text,
     sql_queries text,
+    test_no integer, 
+    tool_calls text,
     "timestamp" timestamp without time zone DEFAULT now() NOT NULL
 );
 
@@ -212,6 +214,7 @@ CREATE MATERIALIZED VIEW public.full_query_data AS
     qr.direct_response,
     qr.full_response,
     qr.sql_queries,
+    qr.tool_calls,
     qr."timestamp" AS query_timestamp,
     em.id AS evaluation_metric_id,
     em.factual_correctness,
