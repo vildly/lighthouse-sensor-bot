@@ -725,8 +725,8 @@ export default function QuestionForm() {
       <main className="mx-auto py-6 flex justify-start px-8 lg:px-10">
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full max-w-full h-[calc(100vh-6rem)] max-h-[700px]">
           <div className="w-full lg:w-[520px] xl:w-[560px] min-w-0 flex-shrink-0">
-                          <div className="sidebar-container rounded-xl p-4 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full overflow-hidden flex flex-col">
-                              <div className="flex items-center mb-3">
+            <div className="sidebar-container rounded-xl p-4 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full overflow-hidden flex flex-col">
+              <div className="flex items-center mb-3">
                 <div className="p-1.5 bg-blue-600 rounded text-white mr-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17l4-4m0 0l4-4m-4 4H3m4 4h10" />
@@ -765,32 +765,6 @@ export default function QuestionForm() {
                 </div>
               </div> */}
 
-
-
-              {/* How to Use Instructions */}
-              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div>
-                    <h3 className="text-sm font-semibold text-blue-800 mb-2">How to Use</h3>
-                    <div className="text-xs text-blue-700 space-y-1">
-                      <div>1. Select a model (Proprietary or Open Source)</div>
-                      <div>2. Enter your question about ferry data</div>
-                      <div>3. Click "Query" to get AI analysis</div>
-                      <div>4. View results in Live Tool Calls & Full Response tabs</div>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-2">
-                      <strong>Need an OpenRouter API key?</strong> Get it at{' '}
-                      <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">
-                        openrouter.ai
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* How to Use Instructions */}
               <div className="mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-start">
@@ -800,10 +774,11 @@ export default function QuestionForm() {
                   <div>
                     <h3 className="text-xs font-semibold text-blue-800 mb-1.5">How to Use</h3>
                     <div className="text-xs text-blue-700 space-y-0.5">
-                      <div>1. Select a model (Proprietary or Open Source)</div>
-                      <div>2. Enter your question about ferry data</div>
-                      <div>3. Click "Query" to get AI analysis</div>
-                      <div>4. View results in Live Tool Calls & Full Response tabs</div>
+                      <div>1. Submit your OpenRouter API key</div>
+                      <div>2. Select a model (Proprietary or Open Source)</div>
+                      <div>3. Enter your question about ferry data</div>
+                      <div>4. Click "Query" to get AI analysis</div>
+                      <div>5. View results in Live Tool Calls & Full Response tabs</div>
                     </div>
                   </div>
                 </div>
@@ -812,10 +787,11 @@ export default function QuestionForm() {
               {/* API Key Manager */}
               <ApiKeyManager onApiKeyChange={(key) => setUserApiKey(key)} />
 
-              <div className="space-y-3 flex-1 flex flex-col">
-                <div>
+              <div className="flex-1 overflow-y-auto px-1">
+                <div className="space-y-2.5">
+                  <div className="pt-3">
 
-                  <div className="mb-2 mt-2">
+                  <div className="mb-2">
 
                     <div className="flex rounded-lg overflow-hidden border border-gray-200">
                       <button
@@ -833,8 +809,8 @@ export default function QuestionForm() {
                     </div>
                   </div>
 
-                  <div className="mb-3">
-                    <label className="text-xs font-medium text-gray-700 block mb-1">Model</label>
+                  <div className="mb-2">
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Model</label>
                     <div className="relative">
                       <select
                         className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -872,16 +848,29 @@ export default function QuestionForm() {
                     Ferry Trips Data (CSV)
                   </div>
                   <div className="mt-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-xs text-gray-600 mb-1.5 font-medium">Available Data:</p>
-                    <div className="grid grid-cols-1 gap-0.5 text-xs text-gray-600">
-                      <div>• Ferry information, routes, vessel types</div>
-                      <div>• Trip details, times, distances, performance</div>
-                      <div>• Passenger load statistics, traffic patterns</div>
-                      <div>• Environmental impact, operational costs</div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-gray-600 font-medium">Ferry Fleet Data Available:</p>
+                      <a 
+                        href="/about" 
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        View Details
+                      </a>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1.5 italic">
-                      Ask about ferry operations, routes, performance metrics, or comparisons.
-                    </p>
+                    <div className="grid grid-cols-1 gap-0.5 text-xs text-gray-600 mb-2">
+                      <div>• <strong>5 Ferries:</strong> Fragancia, Jupiter, Merkurius, Nina, Yxlan</div>
+                      <div>• <strong>Time Period:</strong> March 2023 - February 2024</div>
+                      <div>• <strong>Trip Data:</strong> Routes, times, distances, fuel consumption</div>
+                      <div>• <strong>Load Data:</strong> Passenger cars, vehicles, cargo capacity</div>
+                    </div>
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      <p className="font-medium">Example Questions:</p>
+                      <div className="ml-2 space-y-0.5">
+                        <div>• "What's the fuel efficiency of ferry Jupiter?"</div>
+                        <div>• "Compare passenger loads between routes"</div>
+                        <div>• "Which ferry has the highest average speed?"</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -890,7 +879,7 @@ export default function QuestionForm() {
                     <div>
                       <label className="text-sm font-medium text-gray-700 block mb-1.5">Your Analysis Query</label>
                       <textarea
-                        className="w-full h-24 px-2 py-1.5 text-gray-700 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                        className="w-full h-28 px-3 py-2.5 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder="E.g., What is the average speed of ferry Jupiter? How does fuel consumption correlate with passenger load?"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
@@ -1026,7 +1015,7 @@ export default function QuestionForm() {
 
           <div className="w-full lg:flex-1 min-w-0 max-w-4xl">
             <div className="transparent-card rounded-xl p-5 lg:p-6 shadow-xl border border-gray-600 border-opacity-30 h-full flex flex-col">
-                              <div className="flex items-center mb-3">
+              <div className="flex items-center mb-3">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="white" />
@@ -1104,7 +1093,7 @@ export default function QuestionForm() {
                         <div id="sql-data-container" className="w-full flex-1 min-h-0 overflow-hidden">
                           {sqlQueries.length > 0 ? (
                             <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full w-full">
-                                                              <div
+                              <div
                                 ref={queriesContainerRef}
                                 className="space-y-2 overflow-y-auto h-full w-full px-2"
                               >
@@ -1252,6 +1241,7 @@ export default function QuestionForm() {
               </div>
             </div>
           </div>
+        </div>
       </main>
     </div>
   );
