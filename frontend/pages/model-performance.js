@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ModelPerformanceChart from '../components/ModelPerformanceChart';
 import React from 'react';
+import GDPRBanner from '../components/GDPRBanner';
 
 export default function ModelPerformancePage() {
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,7 @@ export default function ModelPerformancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+      <GDPRBanner />
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold text-white">LLM Model Performance Dashboard</h1>
