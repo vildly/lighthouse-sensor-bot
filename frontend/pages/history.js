@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import ReactMarkdown from 'react-markdown';
+import GDPRBanner from '../components/GDPRBanner';
 
 export default function HistoryPage() {
   const [queryHistory, setQueryHistory] = useState([]);
@@ -196,6 +197,7 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+      <GDPRBanner />
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold text-white">Query History</h1>

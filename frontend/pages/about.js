@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import GDPRBanner from '../components/GDPRBanner';
 
 export default function About() {
   return (
     <div className="bg-ferry-image min-h-screen">
+      <GDPRBanner />
       <main className="container mx-auto py-6 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}

@@ -1005,7 +1005,7 @@ export default function QuestionForm() {
                 )}
                 
                   <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-xs break-words overflow-wrap-anywhere">
-                    <p className="break-words overflow-wrap-anywhere hyphens-auto">Lighthouse Bot can make mistakes. Please consider the answers carefully.</p>
+                    <p className="break-words overflow-wrap-anywhere hyphens-auto">Lighthouse Bot may make mistakes. Please review the answers carefully. If you're not satisfied with the answers, try other models or submit a new question.</p>
                   </div>
   
                 </div>
@@ -1235,7 +1235,7 @@ export default function QuestionForm() {
                     <svg className="w-24 h-24 text-white text-opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
                     </svg>
-                    <h3 className="mt-4 text-white text-opacity-80 text-lg font-medium">Test an query to see results</h3>
+                    <h3 className="mt-4 text-white text-opacity-80 text-lg font-medium text-center">Test an query to see results</h3>
                   </div>
                 )}
               </div>
