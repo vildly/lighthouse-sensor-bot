@@ -27,7 +27,7 @@ services:
     networks:
       - lighthouse
     ports:
-      - "8081:80"
+      - "8082:80"  # Ändrad från 8081 till 8082 för att vara säker på att det inte krockar med andra tjänster (Nginx cotainer kör redan på port 80 i production)
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
@@ -41,8 +41,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: lighthouse-backend
+    restart: always
     ports:
-      - 5001:5001
+      - "5001:5001"
     networks:
       - lighthouse
     environment:
@@ -63,18 +65,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: lighthouse-frontend
+    restart: always
     ports:
-      - "3000:3000"  
+      - "3000:3000"
     networks:
       - lighthouse
     environment:
-      - DEV_MODE=true
       - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
     depends_on:
       - backend
 
 networks:
   lighthouse:
-    driver: bridge
-  paadmin:
     driver: bridge
