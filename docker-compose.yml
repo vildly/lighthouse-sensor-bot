@@ -58,16 +58,12 @@ services:
     restart: always
     networks:
       - lighthouse
-      - nginx-proxy
     expose:
       - "80"
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
       - MAX_LOGIN_ATTEMPTS=0
-      - VIRTUAL_HOST=pgadmin.103.177.249.100
-      - VIRTUAL_PORT=80
-      - LETSENCRYPT_HOST=pgadmin.103.177.249.100
     depends_on:
       - postgres
     volumes:
@@ -93,9 +89,10 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_PORT=${DB_PORT}
       - SERVER_URL=${SERVER_URL}
-      - VIRTUAL_HOST=api.103.177.249.100
+      - VIRTUAL_HOST=lighthouse.dongzhutan.com
+      - VIRTUAL_PATH=/api
       - VIRTUAL_PORT=5001
-      - LETSENCRYPT_HOST=api.103.177.249.100
+      - LETSENCRYPT_HOST=lighthouse.dongzhutan.com
     volumes:
       - ./backend/app/ragas/test_cases:/app/app/ragas/test_cases
     depends_on:
@@ -114,9 +111,9 @@ services:
       - "3000"
     environment:
       - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
-      - VIRTUAL_HOST=103.177.249.100
+      - VIRTUAL_HOST=lighthouse.dongzhutan.com
       - VIRTUAL_PORT=3000
-      - LETSENCRYPT_HOST=103.177.249.100
+      - LETSENCRYPT_HOST=lighthouse.dongzhutan.com
     depends_on:
       - backend
 
