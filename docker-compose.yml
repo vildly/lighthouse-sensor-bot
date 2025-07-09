@@ -1,14 +1,47 @@
 version: '3.8'
+
 services:
-  
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ~/nginx-proxy/certs:/etc/nginx/certs
+      - ~/nginx-proxy/vhost.d:/etc/nginx/vhost.d
+      - ~/nginx-proxy/html:/usr/share/nginx/html
+      - ~/nginx-proxy/conf.d:/etc/nginx/conf.d
+    networks:
+      - nginx-proxy
+      - lighthouse
+    restart: always
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ~/nginx-proxy/acme:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=din_email@exempel.com
+    networks:
+      - nginx-proxy
+    depends_on:
+      - nginx-proxy
+    restart: always
+
   postgres:
     image: postgres:latest
-    container_name: postgres-container-lighthouse
+    container_name: lh-postgres-1
     restart: always
     networks:
       - lighthouse
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -18,19 +51,23 @@ services:
       - ./backend/postgres/init/db_schemas.sql:/docker-entrypoint-initdb.d/db_schemas.sql
       - ./backend/postgres/init/01-init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
       - ./backend/postgres/init/insert_models.sql:/docker-entrypoint-initdb.d/insert_models.sql
-      
+
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin-container-lighthouse
+    container_name: lh-pgadmin-1
     restart: always
     networks:
       - lighthouse
-    ports:
-      - "8082:80"  # Ändrad från 8081 till 8082 för att vara säker på att det inte krockar med andra tjänster (Nginx cotainer kör redan på port 80 i production)
+      - nginx-proxy
+    expose:
+      - "80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-      MAX_LOGIN_ATTEMPTS: 0
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - MAX_LOGIN_ATTEMPTS=0
+      - VIRTUAL_HOST=pgadmin.103.177.249.100
+      - VIRTUAL_PORT=80
+      - LETSENCRYPT_HOST=pgadmin.103.177.249.100
     depends_on:
       - postgres
     volumes:
@@ -40,12 +77,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: lighthouse-backend
+    container_name: lh-backend-1
     restart: always
-    ports:
-      - "5001:5001"
     networks:
       - lighthouse
+      - nginx-proxy
+    expose:
+      - "5001"
     environment:
       - DATA_DIR=/app/data
       - FRONTEND_URL=${FRONTEND_URL}
@@ -55,6 +93,9 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_PORT=${DB_PORT}
       - SERVER_URL=${SERVER_URL}
+      - VIRTUAL_HOST=api.103.177.249.100
+      - VIRTUAL_PORT=5001
+      - LETSENCRYPT_HOST=api.103.177.249.100
     volumes:
       - ./backend/app/ragas/test_cases:/app/app/ragas/test_cases
     depends_on:
@@ -64,17 +105,23 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: lighthouse-frontend
+    container_name: lh-frontend-1
     restart: always
-    ports:
-      - "3000:3000"
     networks:
       - lighthouse
+      - nginx-proxy
+    expose:
+      - "3000"
     environment:
       - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
+      - VIRTUAL_HOST=103.177.249.100
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=103.177.249.100
     depends_on:
       - backend
 
 networks:
+  nginx-proxy:
+    external: true
   lighthouse:
     driver: bridge
