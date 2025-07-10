@@ -28,9 +28,8 @@ CORS(app, resources={r"/*": {"origins": [FRONTEND_URL, "http://localhost:3000"]}
 init_socketio(app, [FRONTEND_URL, "http://localhost:3000"])
 
 # --- Configuration ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable not set.")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Get OpenAI API Key (optional, only for evaluations)
+# Note: OPENAI_API_KEY is only required for RAGAS evaluations, not for basic queries
 
   
 # Set up directory paths
