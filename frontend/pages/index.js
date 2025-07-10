@@ -1060,7 +1060,7 @@ export default function QuestionForm() {
 
               <div
                 className="bg-white bg-opacity-20 rounded-xl p-3 overflow-hidden flex-1 min-h-0"
-                style={{ maxHeight: 'calc(100% - 120px)' }}
+                style={{ maxHeight: 'calc(100% - 120px)', minHeight: '300px' }}
               >
                 {isLoading ? (
                   <div id="tab-content" className="h-full max-h-full overflow-hidden">
@@ -1071,10 +1071,10 @@ export default function QuestionForm() {
                         </div>
                         <div id="sql-data-container" className="w-full flex-1 min-h-0 overflow-hidden">
                           {sqlQueries.length > 0 ? (
-                            <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full w-full">
+                            <div className="bg-white bg-opacity-10 rounded-xl p-2 sm:p-4 h-full w-full">
                               <div
                                 ref={queriesContainerRef}
-                                className="space-y-2 overflow-y-auto h-full w-full px-2"
+                                className="space-y-1 sm:space-y-2 overflow-y-auto h-full w-full px-1 sm:px-2"
                               >
                                 {sqlQueries.map((query, index) => (
                                   <div key={index} className="rounded w-full">
@@ -1084,8 +1084,8 @@ export default function QuestionForm() {
                                       customStyle={{
                                         margin: 0,
                                         borderRadius: '0.25rem',
-                                        fontSize: '0.875rem',
-                                        padding: '0.5rem',
+                                        fontSize: '0.75rem',
+                                        padding: '0.25rem',
                                         width: '100%',
                                         maxWidth: '100%'
                                       }}
@@ -1097,8 +1097,8 @@ export default function QuestionForm() {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <p className="text-gray-300 text-center">No tool calls executed yet</p>
+                            <div className="flex items-center justify-center h-full min-h-[200px]">
+                              <p className="text-gray-300 text-center text-sm">No tool calls executed yet</p>
                             </div>
                           )}
                         </div>
@@ -1111,21 +1111,23 @@ export default function QuestionForm() {
                       <div className="h-full w-full flex flex-col">
                         <div id="sql-data-container" className="w-full flex-1 min-h-0 overflow-hidden">
                           {sqlQueries.length > 0 ? (
-                            <div className="bg-white bg-opacity-10 rounded-xl p-4 h-full">
+                            <div className="bg-white bg-opacity-10 rounded-xl p-2 sm:p-4 h-full w-full">
                               <div
                                 ref={queriesContainerRef}
-                                className="space-y-2 overflow-y-auto h-full px-2"
+                                className="space-y-1 sm:space-y-2 overflow-y-auto h-full w-full px-1 sm:px-2"
                               >
                                 {sqlQueries.map((query, index) => (
-                                  <div key={index} className="rounded">
+                                  <div key={index} className="rounded w-full">
                                     <SyntaxHighlighter
                                       language="sql"
                                       style={vscDarkPlus}
                                       customStyle={{
                                         margin: 0,
                                         borderRadius: '0.25rem',
-                                        fontSize: '0.875rem',
-                                        padding: '0.5rem'
+                                        fontSize: '0.75rem',
+                                        padding: '0.25rem',
+                                        width: '100%',
+                                        maxWidth: '100%'
                                       }}
                                     >
                                       {query}
@@ -1135,8 +1137,8 @@ export default function QuestionForm() {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <p className="text-gray-300 text-center">No tool calls executed yet</p>
+                            <div className="flex items-center justify-center h-full min-h-[200px]">
+                              <p className="text-gray-300 text-center text-sm">No tool calls executed yet</p>
                             </div>
                           )}
                         </div>

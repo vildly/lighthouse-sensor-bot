@@ -21,7 +21,14 @@ export const WebSocketProvider = ({ children }) => {
     // For WebSocket connection, remove /api suffix if present
     const WEBSOCKET_URL = SERVER_URL.replace(/\/api$/, '');
     
-    console.log('Connecting to WebSocket server at:', WEBSOCKET_URL);
+    // Detect mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    console.log('WebSocket Setup:', {
+      isMobile,
+      WEBSOCKET_URL,
+      userAgent: navigator.userAgent.substring(0, 50) + '...'
+    });
     
     // Initialize socket connection
     const socketInstance = io(`${WEBSOCKET_URL}/query`, {
@@ -29,7 +36,9 @@ export const WebSocketProvider = ({ children }) => {
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      timeout: 10000, // 10 second timeout for mobile
+      forceNew: true  // Force new connection on mobile
     });
 
     // Set up event listeners
@@ -44,7 +53,9 @@ export const WebSocketProvider = ({ children }) => {
     });
 
     socketInstance.on('log_message', (data) => {
+      console.log('WebSocket log_message received:', data);
       if (data.type === 'sql_query') {
+        console.log('Adding SQL query to state:', data.content);
         setSqlQueries(prev => [...prev, data.content]);
       }
     });
