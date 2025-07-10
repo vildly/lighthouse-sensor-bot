@@ -18,10 +18,13 @@ export const WebSocketProvider = ({ children }) => {
       SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5001';
     }
     
-    console.log('Connecting to WebSocket server at:', SERVER_URL);
+    // For WebSocket connection, remove /api suffix if present
+    const WEBSOCKET_URL = SERVER_URL.replace(/\/api$/, '');
+    
+    console.log('Connecting to WebSocket server at:', WEBSOCKET_URL);
     
     // Initialize socket connection
-    const socketInstance = io(`${SERVER_URL}/query`, {
+    const socketInstance = io(`${WEBSOCKET_URL}/query`, {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
