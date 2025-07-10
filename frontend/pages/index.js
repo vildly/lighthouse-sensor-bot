@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { marked } from 'marked';
 import io from 'socket.io-client';
 import GDPRBanner from '../components/GDPRBanner';
-// import ApiKeyManager from '../components/ApiKeyManager';
+import ApiKeyManager from '../components/ApiKeyManager';
 
 export default function QuestionForm() {
   const [question, setQuestion] = useState("");
@@ -22,7 +22,7 @@ export default function QuestionForm() {
   const [fullResponse, setFullResponse] = useState(null);
   const { sqlQueries, queryStatus, resetQueries, evaluationProgress } = useWebSocket();
   const [controlMode, setControlMode] = useState("query"); // "query" or "evaluation"
-  // const [userApiKey, setUserApiKey] = useState('');
+  const [userApiKey, setUserApiKey] = useState('');
   // COMMENTED OUT - Evaluation Mode functionality
   // const [testCases, setTestCases] = useState(null);
   // const [numberOfRuns, setNumberOfRuns] = useState(1);
@@ -231,11 +231,11 @@ export default function QuestionForm() {
     }
 
     // Check if API key is available
-    // if (!userApiKey.trim()) {
-    //   alert('Please provide your OpenRouter API key to use this application.');
-    //   setIsLoading(false);
-    //   return;
-    // }
+    if (!userApiKey.trim()) {
+      alert('Please provide your OpenRouter API key to use this application.');
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setContent(null);
@@ -250,7 +250,7 @@ export default function QuestionForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // "X-API-Key": userApiKey, // Pass the API key to backend
+          "X-API-Key": userApiKey, // Pass the API key to backend
         },
         body: JSON.stringify({
           question,
@@ -350,19 +350,9 @@ export default function QuestionForm() {
     }
   };
 
-  const loadPrompt = async () => {
-    try {
-      const response = await fetch("/api/load-prompt");
-      const data = await response.json();
-
-      if (data.content) {
-        setQuestion(data.content);
-      } else {
-        alert("Failed to load prompt: No content");
-      }
-    } catch (error) {
-      alert(`Failed to load prompt: ${error.message}`);
-    }
+  const loadPrompt = () => {
+    // Set example question directly without API call
+    setQuestion("What is the average speed of ferry Jupiter?");
   };
 
   const handleCategoryChange = (category) => {
@@ -785,7 +775,7 @@ export default function QuestionForm() {
               </div>
 
               {/* API Key Manager */}
-              {/* <ApiKeyManager onApiKeyChange={(key) => setUserApiKey(key)} /> */}
+              <ApiKeyManager onApiKeyChange={(key) => setUserApiKey(key)} />
 
               <div className="flex-1 overflow-y-auto px-1">
                 <div className="space-y-2.5">

@@ -11,13 +11,14 @@ import os
 load_dotenv()
 
 
-def initialize_agent(data_dir, llm_model_id, tools):
+def initialize_agent(data_dir, llm_model_id, tools, user_api_key=None):
     """Initialize the agent with the necessary tools and configuration
 
     Args:
         data_dir: Path to the data directory
         llm_model_id: model ID to use for the OpenRouter model
         tools: The list of tools to use (DuckDB, Python, Pandas, etc.)
+        user_api_key: OpenRouter API key from user (optional, falls back to env var)
 
     Returns:
         The initialized agent
@@ -35,7 +36,11 @@ def initialize_agent(data_dir, llm_model_id, tools):
     )
 
     BASE_URL = os.getenv("OPENROUTER_BASE_URL")
-    API_KEY = os.getenv("OPENROUTER_API_KEY")
+    # Use user-provided API key if available, otherwise fall back to env var
+    API_KEY = user_api_key or os.getenv("OPENROUTER_API_KEY")
+    
+    if not API_KEY:
+        raise ValueError("OpenRouter API key is required (either from user or environment)")
 
     data_analyst = Agent(
         instructions=semantic_instructions,

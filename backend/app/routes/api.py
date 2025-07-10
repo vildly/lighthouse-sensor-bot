@@ -37,6 +37,11 @@ def query_endpoint():
     if not llm_model_id:
         return jsonify({"error": "LLM Model ID is required"}), 400
 
+    # Get API key from request header
+    user_api_key = request.headers.get("X-API-Key")
+    if not user_api_key:
+        return jsonify({"error": "OpenRouter API key is required"}), 400
+
     # Create a new instance of CustomDuckDbTools
     duck_tools = CustomDuckDbTools(
         data_dir=str(data_dir),
@@ -48,7 +53,7 @@ def query_endpoint():
     python_tools = PythonTools()
 
 
-    data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools, python_tools, pandas_tools])
+    data_analyst = initialize_agent(data_dir, llm_model_id, [duck_tools, python_tools, pandas_tools], user_api_key)
     
     # Call the query service
     return query(data=data, data_dir=data_dir, data_analyst=data_analyst)
