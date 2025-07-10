@@ -136,27 +136,15 @@ export default function QuestionForm() {
 
   useEffect(() => {
     // Set Live Tool Calls as the default tab when component mounts
-    const timer = setTimeout(() => {
-      const toolCallsTab = document.querySelector('.tab-button[data-tab="live-tool-calls"]');
-      if (toolCallsTab) {
-        toolCallsTab.classList.add('active');
-      }
+    // Only do this when we actually have content/loading state
+    if (isLoading || content) {
+      const timer = setTimeout(() => {
+        switchTab('live-tool-calls');
+      }, 100);
 
-      const toolCallsContent = document.getElementById('live-tool-calls-content');
-      if (toolCallsContent) {
-        toolCallsContent.classList.remove('hidden');
-        toolCallsContent.classList.add('active');
-      }
-
-      const evalContent = document.getElementById('evaluation-content');
-      if (evalContent) {
-        evalContent.classList.add('hidden');
-        evalContent.classList.remove('active');
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, content]);
 
   useEffect(() => {
     // Save current state when switching modes
@@ -187,7 +175,7 @@ export default function QuestionForm() {
       Promise.resolve().then(() => {
         if (queryModeState.fullResponse) {
           switchTab('full-response');
-        } else {
+        } else if (isLoading || content) {
           switchTab('live-tool-calls');
         }
       });
@@ -217,7 +205,7 @@ export default function QuestionForm() {
           switchTab('evaluation');
         } else if (evaluationModeState.fullResponse) {
           switchTab('full-response');
-        } else {
+        } else if (isLoading || content) {
           switchTab('live-tool-calls');
         }
       });
@@ -242,8 +230,7 @@ export default function QuestionForm() {
     setActiveQuery(true);
     resetQueries(); // Reset SQL queries for new question
 
-    // Switch to Live Tool Calls tab to show progress
-    switchTab('live-tool-calls');
+    // Switch to Live Tool Calls tab to show progress (will be set automatically by useEffect)
 
     try {
       const response = await fetch("/api/query", {
@@ -288,7 +275,9 @@ export default function QuestionForm() {
       // Use React's state batching to our advantage
       // This will run after the state updates are applied
       Promise.resolve().then(() => {
-        switchTab('full-response');
+        if (content) {
+          switchTab('full-response');
+        }
       });
     } catch (error) {
       console.error("Error asking question:", error);
