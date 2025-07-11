@@ -14,6 +14,11 @@ def get_default_instructions(semantic_model) -> List[str]:
         if semantic_model is not None:
             instructions += [
                 "Using the `semantic_model` below, find which tables and columns you need to accomplish the task.",
+                "**CRITICAL DATA SOURCE SELECTION FOR FERRY QUESTIONS:**",
+                "- For questions about 'how many ferries exist in database' or counting ferries with operational data → use **ferry-trips-data** (5 ferries)",
+                "- For questions about technical specs, fleet inventory, or 'what ferries have technical specs' → use **ferries-info** (11 ferries)",
+                "- For operational questions (fuel, trips, performance, efficiency, passenger loads) → use **ferry-trips-data**",
+                "- For vessel specifications (dimensions, power, engines, machinery) → use **ferries-info**",
             ]
 
         instructions += [

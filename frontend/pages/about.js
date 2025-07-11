@@ -85,28 +85,35 @@ export default function About() {
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Ferry Fleet */}
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">🚢 Available Ferries (5 Vessels)</h4>
+                  <h4 className="font-semibold text-gray-800 mb-3">🚢 Available Ferries with Trip Data (5 Vessels)</h4>
                   <div className="space-y-2">
                     <div className="flex items-center bg-gray-50 p-2 rounded">
                       <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">Fragancia</span>
-                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                      <span className="text-gray-600 text-sm">Trip records & routes</span>
                     </div>
                     <div className="flex items-center bg-gray-50 p-2 rounded">
                       <span className="font-mono text-sm bg-green-100 text-green-800 px-2 py-1 rounded mr-2">Jupiter</span>
-                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                      <span className="text-gray-600 text-sm">Trip records & routes</span>
                     </div>
                     <div className="flex items-center bg-gray-50 p-2 rounded">
                       <span className="font-mono text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded mr-2">Merkurius</span>
-                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                      <span className="text-gray-600 text-sm">Trip records & routes</span>
                     </div>
                     <div className="flex items-center bg-gray-50 p-2 rounded">
                       <span className="font-mono text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded mr-2">Nina</span>
-                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                      <span className="text-gray-600 text-sm">Trip records & routes</span>
                     </div>
                     <div className="flex items-center bg-gray-50 p-2 rounded">
                       <span className="font-mono text-sm bg-red-100 text-red-800 px-2 py-1 rounded mr-2">Yxlan</span>
-                      <span className="text-gray-600 text-sm">Ferry operations & routes</span>
+                      <span className="text-gray-600 text-sm">Trip records & routes</span>
                     </div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-xs text-blue-700">
+                      <strong>Note:</strong> Additional ferry specifications are available for 6 more vessels 
+                      (Skidbladner, Marie, Capella, Linda, Sedna, Ebba Brahe) but without trip data.
+                    </p>
                   </div>
                 </div>
 

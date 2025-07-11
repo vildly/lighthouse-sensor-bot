@@ -10,12 +10,14 @@ def extract_answer_for_evaluation(response):
     # First, try to find the VERY LAST sentence that looks like a final answer
     # This handles cases where the answer is just the last line after thinking blocks
     last_sentence_patterns = [
-        # Look for final sentences with "is approximately", "is about", etc.
-        r".*(?:is approximately|is about|equals?|totals?|average[^.]*is)\s+([^.]+)\.\s*$",
-        # Look for sentences ending with units (nautical miles, knots, etc.)
-        r".*(\d+(?:\.\d+)?\s*(?:nautical miles?|knots?|km/h|mph|hours?|minutes?)[^.]*)\.\s*$",
-        # Look for any final sentence with numbers
-        r".*(\d+(?:\.\d+)?[^.]*)\.\s*$",
+        # Look for complete sentences with counting/quantity answers
+        r"(There are \d+[^.]*)\.\s*$",
+        # Look for complete sentences with "is approximately", "is about", etc.
+        r"([^.]*(?:is approximately|is about|equals?|totals?|average[^.]*is)[^.]*)\.\s*$",
+        # Look for complete sentences ending with units (nautical miles, knots, etc.)
+        r"([^.]*\d+(?:\.\d+)?\s*(?:nautical miles?|knots?|km/h|mph|hours?|minutes?)[^.]*)\.\s*$",
+        # Look for any complete final sentence with numbers
+        r"([^.]*\d+(?:\.\d+)?[^.]*)\.\s*$",
     ]
     
     for pattern in last_sentence_patterns:
@@ -147,7 +149,8 @@ def is_ferry_related_question(question: str) -> bool:
     # Ferry/Maritime related keywords - if found, question is likely relevant
     ferry_keywords = [
         'ferry', 'ferries', 'vessel', 'ship', 'boat', 'maritime', 'marine',
-        'fragancia', 'jupiter', 'merkurius', 'nina', 'yxlan',  # Ferry names
+        'fragancia', 'jupiter', 'merkurius', 'nina', 'yxlan',  # Original 5 ferries
+        'skidbladner', 'marie', 'capella', 'linda', 'sedna', 'ebba brahe',  # Additional 6 ferries
         'fuel', 'consumption', 'efficiency', 'speed', 'route', 'trip', 'voyage',
         'passenger', 'vehicle', 'cargo', 'load', 'capacity', 'terminal',
         'nautical', 'knots', 'distance', 'outbound', 'inbound', 'departure',

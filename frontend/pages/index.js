@@ -804,7 +804,7 @@ export default function QuestionForm() {
                       </a>
                     </div>
                     <div className="grid grid-cols-1 gap-0.5 text-xs text-gray-600 mb-2">
-                      <div>• <strong>5 Ferries:</strong> Fragancia, Jupiter, Merkurius, Nina, Yxlan</div>
+                      <div>• <strong>5 Ferries with Trip Data:</strong> Fragancia, Jupiter, Merkurius, Nina, Yxlan</div>
                       <div>• <strong>Time Period:</strong> March 2023 - February 2024</div>
                       <div>• <strong>Trip Data:</strong> Routes, times, distances, fuel consumption</div>
                       <div>• <strong>Load Data:</strong> Passenger cars, vehicles, cargo capacity</div>
