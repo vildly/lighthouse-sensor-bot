@@ -27,12 +27,13 @@ def extract_answer_for_evaluation(response):
     cleaned_response = re.sub(r'\d+\s*,\s*\\text\{[^}]*\}\s*\]', '', cleaned_response)
     cleaned_response = re.sub(r'^\d+\s*,\s*[^a-zA-Z]*$', '', cleaned_response, flags=re.MULTILINE)
     
-    # Look for conclusion patterns - prioritize "In conclusion" statements
+    # Look for conclusion patterns - prioritize "In conclusion" and "Based on" statements
+    # Updated patterns to properly capture decimal numbers
     conclusion_patterns = [
-        r"In conclusion,\s*([^.]*\.)",
-        r"Therefore,\s*([^.]*\.)",
-        r"The (?:answer|result) is\s*([^.]*\.)",
-        r"Based on (?:the )?(?:analysis|data|calculations?),\s*([^.]*\.)",
+        r"In conclusion,\s*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",  # Updated to not stop at decimal points
+        r"Based on (?:the )?(?:analysis|data|calculations?),\s*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+        r"Therefore,\s*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+        r"The (?:answer|result) is\s*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
     ]
     
     for pattern in conclusion_patterns:
@@ -43,12 +44,19 @@ def extract_answer_for_evaluation(response):
             final_answer = re.sub(r'^\s*[,\]\}\)]+\s*', '', final_answer)  # Remove leading punctuation
             final_answer = re.sub(r'\s+', ' ', final_answer)  # Normalize whitespace
             if len(final_answer) > 10 and any(char.isdigit() for char in final_answer):
-                return f"In conclusion, {final_answer}"
+                # Determine which conclusion phrase was matched
+                if "In conclusion" in cleaned_response and "In conclusion" in pattern:
+                    return f"In conclusion, {final_answer}."
+                elif "Based on" in cleaned_response and "Based on" in pattern:
+                    return f"Based on the analysis, {final_answer}."
+                else:
+                    return f"{final_answer}."
     
-    # Look for sentences that end with specific units or values
+    # Look for sentences that end with specific units or decimal values
     value_patterns = [
-        r"([^.]*(?:\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:SEK|EUR|USD|liters?|nautical miles?|knots?|km/h|mph|hours?|minutes?|ferries?|vessels?)[^.]*)\.\s*$",
-        r"([^.]*is\s*(?:\d+(?:,\d{3})*(?:\.\d+)?)[^.]*)\.\s*$",
+        r"([^.]*?(?:\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:SEK|EUR|USD|liters?|nautical miles?|knots?|km/h|mph|hours?|minutes?|ferries?|vessels?)[^.]*?)\.(?!\d)",
+        r"([^.]*?is\s*(?:approximately\s*)?(?:\d+(?:,\d{3})*(?:\.\d+)?)[^.]*?)\.(?!\d)",
+        r"([^.]*?(?:approximately|about)\s*(?:\d+(?:,\d{3})*(?:\.\d+)?)[^.]*?)\.(?!\d)",
     ]
     
     for pattern in value_patterns:
@@ -59,7 +67,7 @@ def extract_answer_for_evaluation(response):
             final_answer = re.sub(r'^\s*[,\]\}\)]+\s*', '', final_answer)
             final_answer = re.sub(r'\s+', ' ', final_answer)
             if len(final_answer) > 10:
-                return final_answer
+                return f"{final_answer}."
     
     # Try structured section patterns (for well-formatted responses)
     patterns = [
@@ -90,8 +98,8 @@ def extract_answer_for_evaluation(response):
                 return clean_answer.strip()
     
     # Extract the LAST meaningful sentence from the response
-    # Split into sentences and work backwards
-    sentences = re.split(r'[.!?]+', cleaned_response)
+    # Split into sentences more carefully to preserve decimal numbers
+    sentences = re.split(r'\.(?!\d)(?:\s|$)', cleaned_response)  # Don't split on decimal points
     
     for sentence in reversed(sentences):
         sentence = sentence.strip()
@@ -111,6 +119,9 @@ def extract_answer_for_evaluation(response):
         # If we find a sentence with meaningful content, return it
         if (any(char.isdigit() for char in sentence) or 
             any(word in sentence.lower() for word in ['total', 'average', 'approximately', 'about', 'conclusion', 'result'])):
+            # Ensure it ends with a period if it doesn't already
+            if not sentence.endswith('.'):
+                sentence += '.'
             return sentence.strip()
     
     # If all extraction fails, return empty string to differentiate from full response

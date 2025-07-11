@@ -123,7 +123,7 @@
       "Fuel Efficiency Analysis (liters per nautical mile):Lower values indicate better fuel efficiency\nMerkurius: 6.08 L/NM\nNina: 8.37 L/NM\nYxlan: 10.82 L/NM\nFragancia: 11.92 L/NM\nJupiter: 12.30 L/NM"
     ],
     "ground_truth": "The most fuel-efficient ferry is Merkurius with a consumption of 6.08 L/NM",
-    "extracted_true_value": " 6.08",
+    "extracted_true_value": "6.08",
     "synthesizer_name": "single_hop_specifc_query_synthesizer",
     "query_complexity": "Simple",
     "maritime_domain_category": "Fuel Efficiency",
