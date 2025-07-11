@@ -5,8 +5,8 @@ def extract_answer_for_evaluation(response):
     
     # Remove any "Agent Reasoning and Response:" prefix first
     if "Agent Reasoning and Response:" in response:
-        response = response.split("Agent Reasoning and Response:")[1].strip()
-    
+            response = response.split("Agent Reasoning and Response:")[1].strip()
+        
     # Clean up the response by removing LaTeX formatting and artifacts
     cleaned_response = response
     
@@ -27,35 +27,77 @@ def extract_answer_for_evaluation(response):
     cleaned_response = re.sub(r'\d+\s*,\s*\\text\{[^}]*\}\s*\]', '', cleaned_response)
     cleaned_response = re.sub(r'^\d+\s*,\s*[^a-zA-Z]*$', '', cleaned_response, flags=re.MULTILINE)
     
-    # PRIORITY: If there's a "RESPONSE" section, extract the final conclusion from that section
+    # PRIORITY 1: Extract entire content from CONCLUSION section
+    conclusion_match = re.search(r'\bCONCLUSION\b\s*(.*?)(?=\n\s*\n|\n\s*[A-Z]{2,}|\Z)', cleaned_response, re.DOTALL | re.IGNORECASE)
+    if conclusion_match:
+        conclusion_content = conclusion_match.group(1).strip()
+        if conclusion_content and len(conclusion_content) > 20:
+            # Clean up the content
+            conclusion_content = re.sub(r'\s+', ' ', conclusion_content)
+            # Remove any leading/trailing punctuation artifacts
+            conclusion_content = re.sub(r'^\s*[,\]\}\)]+\s*', '', conclusion_content)
+            conclusion_content = re.sub(r'\s*[,\[\{\(]+\s*$', '', conclusion_content)
+            if not conclusion_content.endswith('.'):
+                conclusion_content += '.'
+            return conclusion_content
+    
+    # PRIORITY 2: Extract entire content from RESPONSE section
     if "RESPONSE" in cleaned_response:
-        # Find the RESPONSE section and extract content after it
+        # Find the RESPONSE section and extract all content after it
         response_split = re.split(r'\b(?:RESPONSE|Response)\b', cleaned_response, flags=re.IGNORECASE)
         if len(response_split) > 1:
             response_section = response_split[-1].strip()  # Get the last RESPONSE section
             
+            # First try to find a CONCLUSION subsection within RESPONSE
+            conclusion_in_response = re.search(r'\bCONCLUSION\b\s*(.*?)(?=\n\s*\n|\n\s*[A-Z]{2,}|\Z)', response_section, re.DOTALL | re.IGNORECASE)
+            if conclusion_in_response:
+                conclusion_content = conclusion_in_response.group(1).strip()
+                if conclusion_content and len(conclusion_content) > 20:
+                    conclusion_content = re.sub(r'\s+', ' ', conclusion_content)
+                    conclusion_content = re.sub(r'^\s*[,\]\}\)]+\s*', '', conclusion_content)
+                    if not conclusion_content.endswith('.'):
+                        conclusion_content += '.'
+                    return conclusion_content
+            
             # Look for final conclusion patterns within the RESPONSE section
             conclusion_in_response_patterns = [
-                r"In conclusion[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
-                r"Based on (?:the )?(?:analysis|data|calculations?)[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
-                r"Therefore[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
-                r"The (?:answer|result) is[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
-                r"(?:Final answer|Summary)[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+                r"(In conclusion[:\s]*[^.]*?(?:\d+(?:\.\d+)?)?[^.]*?)\.(?!\d)",
+                r"(Based on (?:the )?(?:analysis|data|calculations?)[:\s]*[^.]*?(?:\d+(?:\.\d+)?)?[^.]*?)\.(?!\d)",
+                r"(Therefore[:\s]*[^.]*?(?:\d+(?:\.\d+)?)?[^.]*?)\.(?!\d)",
+                r"(The (?:answer|result) is[:\s]*[^.]*?(?:\d+(?:\.\d+)?)?[^.]*?)\.(?!\d)",
             ]
             
+            # Try to find complete conclusion paragraphs instead of just sentences
             for pattern in conclusion_in_response_patterns:
                 matches = re.findall(pattern, response_section, re.DOTALL | re.IGNORECASE)
                 if matches:
-                    final_answer = matches[-1].strip()
-                    final_answer = re.sub(r'^\s*[,\]\}\)]+\s*', '', final_answer)
-                    final_answer = re.sub(r'\s+', ' ', final_answer)
-                    if len(final_answer) > 10 and any(char.isdigit() for char in final_answer):
-                        if "In conclusion" in pattern:
-                            return f"In conclusion: {final_answer}."
-                        elif "Based on" in pattern:
-                            return f"Based on the analysis: {final_answer}."
-                        else:
-                            return f"{final_answer}."
+                    # Look for the pattern that leads to the largest/most complete match
+                    for match in reversed(matches):  # Start from the last match
+                        conclusion_text = match.strip()
+                        
+                        # Try to extend backwards to get full paragraph context
+                        # Find the position of this conclusion in the response_section
+                        match_pos = response_section.rfind(conclusion_text)
+                        if match_pos > 0:
+                            # Look backwards to find the start of the paragraph
+                            before_text = response_section[:match_pos].rstrip()
+                            
+                            # Find sentences that lead into this conclusion
+                            sentences_before = re.findall(r'([^.!?]*[.!?])\s*$', before_text)
+                            if sentences_before:
+                                prev_sentence = sentences_before[-1].strip()
+                                # If the previous sentence is substantial and related, include it
+                                if (len(prev_sentence) > 20 and 
+                                    any(word in prev_sentence.lower() for word in ['analysis', 'data', 'available', 'no', 'query', 'table', 'route'])):
+                                    full_conclusion = f"{prev_sentence} {conclusion_text}."
+                                    full_conclusion = re.sub(r'\s+', ' ', full_conclusion)
+                                    return full_conclusion
+                        
+                        # If no good context found, return the conclusion with proper ending
+                        conclusion_text = re.sub(r'\s+', ' ', conclusion_text)
+                        if not conclusion_text.endswith('.'):
+                            conclusion_text += '.'
+                        return conclusion_text
             
             # If no conclusion patterns found, extract the LAST substantial paragraph from RESPONSE section
             # Split by double newlines to get paragraphs
@@ -65,8 +107,7 @@ def extract_answer_for_evaluation(response):
                 # Skip empty paragraphs and ones that are just numbered lists without conclusions
                 if (len(paragraph) > 50 and 
                     not re.match(r'^\d+\.\s', paragraph) and  # Skip numbered list items
-                    any(char.isdigit() for char in paragraph) and
-                    any(word in paragraph.lower() for word in ['conclusion', 'final', 'average', 'total', 'highest', 'was', 'is'])):
+                    any(word in paragraph.lower() for word in ['conclusion', 'analysis', 'data', 'therefore', 'based', 'result'])):
                     # Clean up the paragraph
                     paragraph = re.sub(r'\s+', ' ', paragraph)
                     if not paragraph.endswith('.'):
@@ -95,7 +136,7 @@ def extract_answer_for_evaluation(response):
                     return f"In conclusion, {final_answer}."
                 elif "Based on" in cleaned_response and "Based on" in pattern:
                     return f"Based on the analysis, {final_answer}."
-                else:
+        else:
                     return f"{final_answer}."
     
     # Look for sentences that end with specific units or decimal values
