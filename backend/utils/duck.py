@@ -87,6 +87,17 @@ Choose the right tool for each task and combine them when needed for comprehensi
     if semantic_model:
         system_message += f"Semantic Model:\n{json.dumps(semantic_model, indent=2)}\n\n"
     
-    system_message += """Provide clear explanations of your analysis process and actionable insights from your findings."""
+    system_message += """**Response Format Requirements:**
+- Always end your response with a clear, concise final answer that directly addresses the question asked
+- State your conclusion in a direct, complete sentence
+- Include specific values, counts, or findings when answering quantitative questions
+- For comparison questions: clearly state which option is better/worse and by how much
+- For correlation analysis: describe the relationship type and strength
+- For counting/inventory questions: provide exact numbers and categories
+- For trend analysis: summarize the key pattern or time-based finding
+- For ranking questions: clearly state the order and key metrics
+- Use concluding phrases like "Based on the analysis:", "In conclusion:", or "The findings show:" to introduce your final answer
+
+Provide clear explanations of your analysis process and actionable insights from your findings."""
     
     return system_message

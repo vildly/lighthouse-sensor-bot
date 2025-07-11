@@ -235,6 +235,23 @@ def process_query_internal(question: str, source_file: Optional[str] = None, llm
         # Extract clean answer
         clean_answer = extract_answer_for_evaluation(response.content)
         
+        # If extraction failed (empty string), create a basic fallback answer
+        if not clean_answer:
+            # Try to get the first substantial paragraph from the response
+            lines = response.content.strip().split('\n')
+            first_paragraph = ""
+            for line in lines:
+                line = line.strip()
+                if line and len(line) > 20 and not line.startswith('#'):
+                    first_paragraph = line
+                    break
+            
+            # If we found a good first paragraph, use it; otherwise use first 200 chars
+            if first_paragraph:
+                clean_answer = first_paragraph
+            else:
+                clean_answer = response.content[:200].strip() + "..." if len(response.content) > 200 else response.content.strip()
+        
         # Save the query and response to the database if requested
         query_result_id = None
         if save_to_db and llm_model_id:

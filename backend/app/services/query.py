@@ -123,6 +123,23 @@ def query(data, data_dir=None, data_analyst=None, source_file=None):
         # Extract clean answer
         clean_answer = extract_answer_for_evaluation(response.content)
         
+        # If extraction failed (empty string), create a basic fallback answer
+        if not clean_answer:
+            # Try to get the first substantial paragraph from the response
+            lines = response.content.strip().split('\n')
+            first_paragraph = ""
+            for line in lines:
+                line = line.strip()
+                if line and len(line) > 20 and not line.startswith('#'):
+                    first_paragraph = line
+                    break
+            
+            # If we found a good first paragraph, use it; otherwise use first 200 chars
+            if first_paragraph:
+                clean_answer = first_paragraph
+            else:
+                clean_answer = response.content[:200].strip() + "..." if len(response.content) > 200 else response.content.strip()
+        
         # Save the query and response to the database if model ID is provided
         if llm_model_id:
             try:
