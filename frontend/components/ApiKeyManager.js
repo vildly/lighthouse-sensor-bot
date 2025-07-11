@@ -4,6 +4,8 @@ export default function ApiKeyManager({ onApiKeyChange }) {
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
+  const [validationStatus, setValidationStatus] = useState(null); // null, 'valid', 'invalid'
+  const [validationMessage, setValidationMessage] = useState('');
 
   useEffect(() => {
     // Check if API key exists in session storage (not localStorage for GDPR compliance)
@@ -14,8 +16,40 @@ export default function ApiKeyManager({ onApiKeyChange }) {
       if (onApiKeyChange) {
         onApiKeyChange(savedApiKey);
       }
+      // Validate the saved key
+      validateApiKeyFormat(savedApiKey);
     }
   }, [onApiKeyChange]);
+
+  // Simple format validation
+  const validateApiKeyFormat = (keyToValidate) => {
+    if (!keyToValidate || keyToValidate.trim().length === 0) {
+      setValidationStatus(null);
+      setValidationMessage('');
+      return;
+    }
+
+    const key = keyToValidate.trim();
+    
+    // Check OpenRouter API key format
+    if (!key.startsWith('sk-or-v1-')) {
+      setValidationStatus('invalid');
+      setValidationMessage('Should start with "sk-or-v1-"');
+      return;
+    }
+    
+    if (key.length < 70 || key.length > 80) {
+      setValidationStatus('invalid');
+      setValidationMessage(`Invalid length: ${key.length} chars (expected ~71)`);
+      return;
+    }
+    
+    // Format looks good
+    setValidationStatus('valid');
+    setValidationMessage('✅ Format is valid');
+  };
+
+
 
   const handleApiKeyChange = (e) => {
     const newApiKey = e.target.value;
@@ -25,10 +59,14 @@ export default function ApiKeyManager({ onApiKeyChange }) {
       // Store in session storage only (automatically deleted when browser closes)
       sessionStorage.setItem('openrouter-api-key', newApiKey);
       setIsConfigured(true);
+      // Validate format as user types
+      validateApiKeyFormat(newApiKey);
     } else {
       // Remove from session storage if empty
       sessionStorage.removeItem('openrouter-api-key');
       setIsConfigured(false);
+      setValidationStatus(null);
+      setValidationMessage('');
     }
     
     if (onApiKeyChange) {
@@ -39,9 +77,38 @@ export default function ApiKeyManager({ onApiKeyChange }) {
   const clearApiKey = () => {
     setApiKey('');
     setIsConfigured(false);
+    setValidationStatus(null);
+    setValidationMessage('');
     sessionStorage.removeItem('openrouter-api-key');
     if (onApiKeyChange) {
       onApiKeyChange('');
+    }
+  };
+
+  const getValidationIcon = () => {
+    switch (validationStatus) {
+      case 'valid':
+        return (
+          <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'invalid':
+        return (
+          <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getValidationColor = () => {
+    switch (validationStatus) {
+      case 'valid': return 'text-green-700';
+      case 'invalid': return 'text-red-700';
+      default: return 'text-gray-700';
     }
   };
 
@@ -67,7 +134,7 @@ export default function ApiKeyManager({ onApiKeyChange }) {
                   type={showApiKey ? "text" : "password"}
                   value={apiKey}
                   onChange={handleApiKeyChange}
-                  placeholder="Enter OpenRouter API key..."
+                  placeholder="Enter OpenRouter API key (sk-or-v1-...)..."
                   className="w-full px-2 py-1.5 border border-blue-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                 />
                 <button
@@ -88,6 +155,14 @@ export default function ApiKeyManager({ onApiKeyChange }) {
                 </button>
               </div>
               
+              {/* Validation Status */}
+              {validationStatus && (
+                <div className={`flex items-center space-x-1 text-xs ${getValidationColor()}`}>
+                  {getValidationIcon()}
+                  <span>{validationMessage}</span>
+                </div>
+              )}
+
               {isConfigured && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1 text-green-700 text-xs">
@@ -96,6 +171,7 @@ export default function ApiKeyManager({ onApiKeyChange }) {
                     </svg>
                     <span>Configured</span>
                   </div>
+                  
                   <button
                     onClick={clearApiKey}
                     className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
