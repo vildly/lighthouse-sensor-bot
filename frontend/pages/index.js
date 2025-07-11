@@ -77,48 +77,7 @@ export default function QuestionForm() {
     }
   };
 
-  // Function to extract simple answer from full response
-  // Based on the backend extract_answer_for_evaluation function
-  const extractSimpleAnswer = (fullResponse) => {
-    if (!fullResponse) return '';
-    
-    let cleanAnswer = '';
-    
-    // Extract the answer section using regex - get the LAST answer section
-    const answerSections = fullResponse.match(/## Answer\s*(.*?)(?=\s*##|$)/gs);
-    if (answerSections && answerSections.length > 0) {
-      // Use the last answer section and remove the "## Answer" header
-      cleanAnswer = answerSections[answerSections.length - 1].replace(/## Answer\s*/g, '').trim();
-    } else {
-      // Check if there's an "Agent Reasoning and Response:" prefix
-      if (fullResponse.includes("Agent Reasoning and Response:")) {
-        const parts = fullResponse.split("Agent Reasoning and Response:");
-        if (parts.length > 1) {
-          fullResponse = parts[1].trim();
-        }
-      }
-      
-      // Try to find any section that looks like an answer
-      const answerMatch = fullResponse.match(/(?:###|##)\s*(?:Answer|Key Details.*?)\s*(.*?)(?=\s*(?:###|##)|$)/s);
-      if (answerMatch) {
-        cleanAnswer = answerMatch[1].trim();
-      } else {
-        // Fallback: Split on the Analysis section header to get just the answer
-        const parts = fullResponse.split("## Analysis");
-        cleanAnswer = parts.length > 1 ? parts[parts.length - 1].trim() : fullResponse.trim();
-      }
-    }
-    
-    // Remove any remaining markdown headers
-    cleanAnswer = cleanAnswer.replace(/^###\s*.*?\n/gm, '');
-    
-    // If we still don't have a clean answer, return a fallback message
-    if (!cleanAnswer || cleanAnswer.trim() === '') {
-      cleanAnswer = 'Answer calculated - see Full Response tab for details';
-    }
-    
-    return cleanAnswer;
-  };
+
 
   // Reference to the SQL queries container for auto-scrolling
   const queriesContainerRef = useRef(null);
@@ -252,8 +211,8 @@ export default function QuestionForm() {
 
       const data = await response.json();
 
-      // Extract simple answer for the response area
-      const simpleAnswer = extractSimpleAnswer(data.full_response || data.content);
+      // Use the backend's already-clean content
+      const simpleAnswer = data.content || 'No answer available';
 
       // First update all state values
       setContent(simpleAnswer);
