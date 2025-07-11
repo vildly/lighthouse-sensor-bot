@@ -27,6 +27,52 @@ def extract_answer_for_evaluation(response):
     cleaned_response = re.sub(r'\d+\s*,\s*\\text\{[^}]*\}\s*\]', '', cleaned_response)
     cleaned_response = re.sub(r'^\d+\s*,\s*[^a-zA-Z]*$', '', cleaned_response, flags=re.MULTILINE)
     
+    # PRIORITY: If there's a "RESPONSE" section, extract the final conclusion from that section
+    if "RESPONSE" in cleaned_response:
+        # Find the RESPONSE section and extract content after it
+        response_split = re.split(r'\b(?:RESPONSE|Response)\b', cleaned_response, flags=re.IGNORECASE)
+        if len(response_split) > 1:
+            response_section = response_split[-1].strip()  # Get the last RESPONSE section
+            
+            # Look for final conclusion patterns within the RESPONSE section
+            conclusion_in_response_patterns = [
+                r"In conclusion[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+                r"Based on (?:the )?(?:analysis|data|calculations?)[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+                r"Therefore[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+                r"The (?:answer|result) is[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+                r"(?:Final answer|Summary)[:\s]*([^.]*?(?:\d+(?:\.\d+)?)[^.]*?)\.(?!\d)",
+            ]
+            
+            for pattern in conclusion_in_response_patterns:
+                matches = re.findall(pattern, response_section, re.DOTALL | re.IGNORECASE)
+                if matches:
+                    final_answer = matches[-1].strip()
+                    final_answer = re.sub(r'^\s*[,\]\}\)]+\s*', '', final_answer)
+                    final_answer = re.sub(r'\s+', ' ', final_answer)
+                    if len(final_answer) > 10 and any(char.isdigit() for char in final_answer):
+                        if "In conclusion" in pattern:
+                            return f"In conclusion: {final_answer}."
+                        elif "Based on" in pattern:
+                            return f"Based on the analysis: {final_answer}."
+                        else:
+                            return f"{final_answer}."
+            
+            # If no conclusion patterns found, extract the LAST substantial paragraph from RESPONSE section
+            # Split by double newlines to get paragraphs
+            paragraphs = re.split(r'\n\s*\n', response_section)
+            for paragraph in reversed(paragraphs):
+                paragraph = paragraph.strip()
+                # Skip empty paragraphs and ones that are just numbered lists without conclusions
+                if (len(paragraph) > 50 and 
+                    not re.match(r'^\d+\.\s', paragraph) and  # Skip numbered list items
+                    any(char.isdigit() for char in paragraph) and
+                    any(word in paragraph.lower() for word in ['conclusion', 'final', 'average', 'total', 'highest', 'was', 'is'])):
+                    # Clean up the paragraph
+                    paragraph = re.sub(r'\s+', ' ', paragraph)
+                    if not paragraph.endswith('.'):
+                        paragraph += '.'
+                    return paragraph
+    
     # Look for conclusion patterns - prioritize "In conclusion" and "Based on" statements
     # Updated patterns to properly capture decimal numbers
     conclusion_patterns = [
