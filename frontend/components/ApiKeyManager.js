@@ -56,6 +56,9 @@ export default function ApiKeyManager({ onApiKeyChange }) {
         
         <div className="flex-1 min-w-0">
           <h3 className="text-blue-800 font-medium mb-2 text-sm">OpenRouter API Key Required</h3>
+          <p className="text-blue-700 text-xs mb-3 bg-blue-100 px-2 py-1 rounded">
+            API key only used when queries relate to ferry trips data. Questions like "how big is a fish" may not pass validation.
+          </p>
           
           <div className="space-y-2">
             <div className="flex flex-col gap-2">

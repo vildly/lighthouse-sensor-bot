@@ -206,6 +206,14 @@ export default function QuestionForm() {
       });
 
       if (!response.ok) {
+        // Handle specific validation errors for off-topic questions
+        if (response.status === 400) {
+          const errorData = await response.json();
+          if (errorData.error === "Question not related to ferry data") {
+            setContent(errorData.content + (errorData.suggestion ? "\n\n" + errorData.suggestion : ""));
+            return;
+          }
+        }
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 

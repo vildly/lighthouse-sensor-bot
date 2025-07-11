@@ -127,3 +127,69 @@ def extract_answer_for_evaluation(response):
     
     # If all extraction fails, return empty string to differentiate from full response
     return ""
+
+
+def is_ferry_related_question(question: str) -> bool:
+    """
+    Validate if a question is related to ferry/maritime operations data.
+    
+    Args:
+        question: The user's question
+        
+    Returns:
+        bool: True if question appears to be ferry-related, False otherwise
+    """
+    if not question or len(question.strip()) < 3:
+        return False
+    
+    question_lower = question.lower().strip()
+    
+    # Ferry/Maritime related keywords - if found, question is likely relevant
+    ferry_keywords = [
+        'ferry', 'ferries', 'vessel', 'ship', 'boat', 'maritime', 'marine',
+        'fragancia', 'jupiter', 'merkurius', 'nina', 'yxlan',  # Ferry names
+        'fuel', 'consumption', 'efficiency', 'speed', 'route', 'trip', 'voyage',
+        'passenger', 'vehicle', 'cargo', 'load', 'capacity', 'terminal',
+        'nautical', 'knots', 'distance', 'outbound', 'inbound', 'departure',
+        'arrival', 'schedule', 'timetable', 'operations', 'traffic',
+        'ljusteröleden', 'furusundsleden', 'blidoleden', 'vaxholm',  # Route names
+        'färjerederiet', 'pontos'  # Company/system names
+    ]
+    
+    # Check if question contains ferry-related keywords
+    if any(keyword in question_lower for keyword in ferry_keywords):
+        return True
+    
+    # Data analysis keywords that might be relevant in context
+    data_keywords = [
+        'analyze', 'analysis', 'compare', 'comparison', 'average', 'total',
+        'count', 'how many', 'which', 'what', 'when', 'where', 'trend',
+        'pattern', 'correlation', 'efficiency', 'performance', 'statistics',
+        'data', 'database', 'table', 'record', 'metric'
+    ]
+    
+    # If question has data analysis terms, it might be relevant - be more permissive
+    if any(keyword in question_lower for keyword in data_keywords):
+        # But exclude obvious off-topic questions
+        off_topic_indicators = [
+            'weather', 'temperature', 'rain', 'snow', 'wind',
+            'fish', 'animal', 'bird', 'plant', 'tree',
+            'time', 'clock', 'date', 'calendar', 'today', 'tomorrow', 'yesterday',
+            'food', 'recipe', 'cooking', 'restaurant',
+            'movie', 'music', 'game', 'sport', 'football', 'soccer',
+            'politics', 'government', 'election', 'president',
+            'health', 'medicine', 'doctor', 'hospital',
+            'school', 'university', 'education', 'student',
+            'programming', 'software', 'computer', 'internet', 'website',
+            'finance', 'money', 'bank', 'stock', 'investment',
+            'car', 'automobile', 'truck', 'plane', 'airplane', 'train',
+            'space', 'planet', 'star', 'universe', 'astronomy'
+        ]
+        
+        if any(indicator in question_lower for indicator in off_topic_indicators):
+            return False
+        
+        return True
+    
+    # If no ferry keywords and no data analysis context, likely off-topic
+    return False

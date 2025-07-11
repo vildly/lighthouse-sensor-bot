@@ -1,5 +1,6 @@
 import json
 from flask import Blueprint, request, jsonify, current_app, Response
+from flask_cors import CORS
 from app.helpers.load_json_from_file import load_json_from_file
 from dotenv import load_dotenv
 from app.services.query import query
@@ -14,9 +15,14 @@ import logging
 from pathlib import Path
 from collections import OrderedDict
 
+from app.helpers.extract_answer import is_ferry_related_question  # Import validation function
+
 load_dotenv()
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 logger = logging.getLogger(__name__)
+
+# Apply CORS to the blueprint  
+CORS(api_bp)
 
 
 @api_bp.route("/")
@@ -28,6 +34,17 @@ def hello_world():
 def query_endpoint():
     data = request.get_json()
 
+    # Get the question from the request FIRST - validate before any expensive operations
+    question = data.get("question", "")
+    
+    # Validate if the question is related to ferry operations BEFORE using API credits
+    if not is_ferry_related_question(question):
+        return jsonify({
+            "error": "Question not related to ferry data",
+            "content": "Please submit a question related to ferry operations and maritime data. You can find information about available data and example questions on the 'About' page.",
+            "suggestion": "Try asking about ferry performance, fuel consumption, routes, schedules, or operational statistics."
+        }), 400
+
     # Get the necessary objects from app config
     data_dir = current_app.config["DATA_DIR"]
     
@@ -37,7 +54,7 @@ def query_endpoint():
     if not llm_model_id:
         return jsonify({"error": "LLM Model ID is required"}), 400
 
-    # Get API key from request header
+    # Get API key from request header - only after validating the question
     user_api_key = request.headers.get("X-API-Key")
     if not user_api_key:
         return jsonify({"error": "OpenRouter API key is required"}), 400
