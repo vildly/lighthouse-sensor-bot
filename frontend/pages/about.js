@@ -10,16 +10,16 @@ export default function About() {
           {/* Page Header */}
           <div className="bg-white bg-opacity-95 rounded-xl p-6 shadow-lg border border-gray-100 mb-6">
             <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">About Lighthouse Sensor Bot</h1>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">About Lighthouse Bot</h1>
               <p className="text-gray-600">AI-Powered Maritime Data Analysis Platform</p>
             </div>
           </div>
 
           {/* Introduction Section */}
           <div className="bg-white bg-opacity-95 rounded-xl p-6 shadow-lg border border-gray-100 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">What is Lighthouse Sensor Bot?</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">What is Lighthouse Bot?</h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              Lighthouse Sensor Bot is a data analysis application that uses natural language queries to analyze 
+              Lighthouse Bot is a data analysis application that uses natural language queries to analyze 
               maritime ferry data using agentic Retrieval-Augmented Generation (RAG). The platform allows users 
               to ask questions about ferry operations, routes, passenger traffic, and performance metrics in plain English, 
               and receive detailed analytical responses backed by real data.

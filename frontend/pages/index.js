@@ -669,9 +669,9 @@ export default function QuestionForm() {
     <div className="bg-ferry-image min-h-screen">
       <GDPRBanner />
       <main className="mx-auto py-6 flex justify-start px-8 lg:px-10">
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full max-w-full h-[calc(100vh-6rem)] max-h-[700px]">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full max-w-full h-[calc(100vh-8rem)]">
           <div className="w-full lg:w-[520px] xl:w-[560px] min-w-0 flex-shrink-0">
-            <div className="sidebar-container rounded-xl p-4 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full overflow-hidden flex flex-col">
+            <div className="sidebar-container rounded-xl p-4 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full overflow-visible flex flex-col">
               <div className="flex items-center mb-3">
                 <div className="p-1.5 bg-blue-600 rounded text-white mr-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -733,7 +733,7 @@ export default function QuestionForm() {
               {/* API Key Manager */}
               <ApiKeyManager onApiKeyChange={(key) => setUserApiKey(key)} />
 
-              <div className="flex-1 overflow-y-auto px-1">
+              <div className="flex-1 overflow-visible px-1">
                 <div className="space-y-2.5">
                   <div className="pt-3">
 
@@ -972,7 +972,7 @@ export default function QuestionForm() {
               </div>
 
               <div className="mb-3">
-                <div className="response-container rounded-lg py-3 px-5 max-h-48 overflow-y-auto border border-gray-300 bg-white bg-opacity-10">
+                <div className="response-container rounded-lg py-3 px-5 max-h-64 overflow-y-auto border border-gray-300 bg-white bg-opacity-10">
                   {/* COMMENTED OUT - Evaluation Mode functionality */}
                   {/* controlMode === "evaluation" && activeQuery ? (
                  
@@ -1026,8 +1026,8 @@ export default function QuestionForm() {
               </div>
 
               <div
-                className="bg-white bg-opacity-20 rounded-xl p-3 overflow-hidden flex-1 min-h-0"
-                style={{ maxHeight: 'calc(100% - 120px)', minHeight: '300px' }}
+                className="bg-white bg-opacity-20 rounded-xl p-3 overflow-auto flex-1 min-h-0"
+                style={{ minHeight: '400px' }}
               >
                 {isLoading ? (
                   <div id="tab-content" className="h-full max-h-full overflow-hidden">
