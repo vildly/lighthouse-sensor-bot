@@ -113,29 +113,30 @@ export default function ApiKeyManager({ onApiKeyChange }) {
   };
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-      <div className="flex items-start space-x-2">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2 overflow-hidden min-w-0">
+      <div className="flex items-start space-x-2 min-w-0">
         <div className="flex-shrink-0">
           <svg className="w-4 h-4 text-blue-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.029 5.912c-.563-.097-1.159-.026-1.669.189L10.5 16.5l-1.414-1.414L12 12.5V9a3 3 0 116 0z" />
           </svg>
         </div>
         
-        <div className="flex-1 min-w-0">
-          <h3 className="text-blue-800 font-medium mb-2 text-sm">OpenRouter API Key Required</h3>
-          <p className="text-blue-700 text-xs mb-3 bg-blue-100 px-2 py-1 rounded">
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <h3 className="text-blue-800 font-medium mb-1 text-sm">OpenRouter API Key Required</h3>
+          <p className="text-blue-700 text-xs mb-2 bg-blue-100 px-2 py-1 rounded">
             API key only used when queries relate to ferry trips data. Questions like "how big is a fish" may not pass validation.
           </p>
           
-          <div className="space-y-2">
-            <div className="flex flex-col gap-2">
+          <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <div className="relative">
                 <input
                   type={showApiKey ? "text" : "password"}
                   value={apiKey}
                   onChange={handleApiKeyChange}
                   placeholder="Enter OpenRouter API key (sk-or-v1-...)..."
-                  className="w-full px-2 py-1.5 border border-blue-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-1.5 border border-blue-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent overflow-hidden text-ellipsis"
+                  style={{ minWidth: 0 }}
                 />
                 <button
                   type="button"
@@ -182,8 +183,8 @@ export default function ApiKeyManager({ onApiKeyChange }) {
               )}
             </div>
             
-            <div className="bg-white border border-blue-200 rounded p-2">
-              <p className="text-xs text-blue-800 font-medium mb-1">🔒 Session-only storage</p>
+            <div className="bg-white border border-blue-200 rounded p-1.5">
+              <p className="text-xs text-blue-800 font-medium mb-0.5">🔒 Session-only storage</p>
               <p className="text-xs text-blue-600">
                 Need a key? <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">Get from OpenRouter</a>
               </p>

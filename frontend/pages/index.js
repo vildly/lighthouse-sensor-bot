@@ -669,9 +669,9 @@ export default function QuestionForm() {
     <div className="bg-ferry-image min-h-screen">
       <GDPRBanner />
       <main className="mx-auto py-6 flex justify-start px-8 lg:px-10">
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full max-w-full h-[calc(100vh-8rem)]">
+        <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 lg:gap-4 w-full max-w-full">
           <div className="w-full lg:w-[520px] xl:w-[560px] min-w-0 flex-shrink-0">
-            <div className="sidebar-container rounded-xl p-4 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 h-full overflow-visible flex flex-col">
+            <div className="sidebar-container rounded-xl p-4 lg:p-5 bg-white bg-opacity-95 shadow-lg border border-gray-100 overflow-hidden min-w-0 h-full">
               <div className="flex items-center mb-3">
                 <div className="p-1.5 bg-blue-600 rounded text-white mr-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -712,13 +712,13 @@ export default function QuestionForm() {
               </div> */}
 
               {/* How to Use Instructions */}
-              <div className="mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <h3 className="text-xs font-semibold text-blue-800 mb-1.5">How to Use</h3>
+                    <h3 className="text-xs font-semibold text-blue-800 mb-1">How to Use</h3>
                     <div className="text-xs text-blue-700 space-y-0.5">
                       <div>1. Submit your OpenRouter API key</div>
                       <div>2. Select a model (Proprietary or Open Source)</div>
@@ -733,21 +733,21 @@ export default function QuestionForm() {
               {/* API Key Manager */}
               <ApiKeyManager onApiKeyChange={(key) => setUserApiKey(key)} />
 
-              <div className="flex-1 overflow-visible px-1">
-                <div className="space-y-2.5">
+              <div className="overflow-hidden px-1">
+                <div className="space-y-2">
                   <div className="pt-3">
 
-                  <div className="mb-2">
+                  <div className="mb-1.5">
 
                     <div className="flex rounded-lg overflow-hidden border border-gray-200">
                       <button
-                        className={`flex-1 py-1.5 px-6 pt-2.5 text-center transition-colors text-sm ${modelCategory === "proprietary" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                        className={`flex-1 py-1 px-4 text-center transition-colors text-sm ${modelCategory === "proprietary" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
                         onClick={() => handleCategoryChange("proprietary")}
                       >
                         Proprietary
                       </button>
                       <button
-                        className={`flex-1 py-1.5 px-6 pt-2.5 text-center transition-colors text-sm ${modelCategory === "open-source" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
+                        className={`flex-1 py-1 px-4 text-center transition-colors text-sm ${modelCategory === "open-source" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
                         onClick={() => handleCategoryChange("open-source")}
                       >
                         Open Source
@@ -755,8 +755,8 @@ export default function QuestionForm() {
                     </div>
                   </div>
 
-                  <div className="mb-2">
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Model</label>
+                  <div className="mb-1.5">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Model</label>
                     <div className="relative">
                       <select
                         className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -789,32 +789,30 @@ export default function QuestionForm() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Data Source</label>
-                  <div className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 bg-gray-50 text-sm">
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Data Source</label>
+                  <div className="block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-700 bg-gray-50 text-sm">
                     Ferry Trips Data (CSV)
                   </div>
-                  <div className="mt-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-1.5">
+                  <div className="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex items-center justify-between mb-1">
                       <p className="text-xs text-gray-600 font-medium">Ferry Fleet Data Available:</p>
                       <a 
                         href="/about" 
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        className="text-xs text-blue-600 hover:text-blue-800 underline flex-shrink-0"
                       >
                         View Details
                       </a>
                     </div>
-                    <div className="grid grid-cols-1 gap-0.5 text-xs text-gray-600 mb-2">
-                      <div>• <strong>5 Ferries with Trip Data:</strong> Fragancia, Jupiter, Merkurius, Nina, Yxlan</div>
-                      <div>• <strong>Time Period:</strong> March 2023 - February 2024</div>
-                      <div>• <strong>Trip Data:</strong> Routes, times, distances, fuel consumption</div>
-                      <div>• <strong>Load Data:</strong> Passenger cars, vehicles, cargo capacity</div>
+                    <div className="grid grid-cols-1 gap-0.5 text-xs text-gray-600 mb-1.5 break-words">
+                      <div className="break-words">• <strong>5 Ferries:</strong> Fragancia, Jupiter, Merkurius, Nina, Yxlan</div>
+                      <div className="break-words">• <strong>Period:</strong> March 2023 - February 2024</div>
+                      <div className="break-words">• <strong>Data:</strong> Routes, times, fuel consumption, loads</div>
                     </div>
                     <div className="text-xs text-gray-500 space-y-0.5">
                       <p className="font-medium">Example Questions:</p>
-                      <div className="ml-2 space-y-0.5">
-                        <div>• "What's the fuel efficiency of ferry Jupiter?"</div>
-                        <div>• "Compare passenger loads between routes"</div>
-                        <div>• "Which ferry has the highest average speed?"</div>
+                      <div className="ml-2 space-y-0.5 break-words">
+                        <div className="break-words">• "What's the fuel efficiency of ferry Jupiter?"</div>
+                        <div className="break-words">• "Compare passenger loads between routes"</div>
                       </div>
                     </div>
                   </div>
@@ -823,16 +821,17 @@ export default function QuestionForm() {
                 {controlMode === "query" ? (
                   <>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1.5">Your Analysis Query</label>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">Your Analysis Query</label>
                       <textarea
-                        className="w-full h-28 px-3 py-2.5 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full h-20 px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none overflow-hidden"
                         placeholder="E.g., What is the average speed of ferry Jupiter? How does fuel consumption correlate with passenger load?"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
+                        style={{ minWidth: 0 }}
                       ></textarea>
                     </div>
 
-                    <div className="flex space-x-2 pt-1.5">
+                    <div className="flex space-x-2 pt-1">
                       <div className="relative group">
                         <button
                           className="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -950,7 +949,7 @@ export default function QuestionForm() {
                   // </>
                 )}
                 
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-xs break-words overflow-wrap-anywhere">
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-xs break-words overflow-hidden">
                     <p className="break-words overflow-wrap-anywhere hyphens-auto">Lighthouse Bot may make mistakes. Please review the answers carefully. If you're not satisfied with the answers, try other models or submit a new question.</p>
                   </div>
   
@@ -961,7 +960,7 @@ export default function QuestionForm() {
 
           <div className="w-full lg:flex-1 min-w-0 max-w-4xl">
             <div className="transparent-card rounded-xl p-5 lg:p-6 shadow-xl border border-gray-600 border-opacity-30 h-full flex flex-col">
-              <div className="flex items-center mb-3">
+              <div className="flex items-center mb-3 flex-shrink-0">
                 <div className="p-2 bg-blue-600 rounded text-white mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="white" />
@@ -971,8 +970,8 @@ export default function QuestionForm() {
                 <h2 className="text-lg sm:text-xl font-bold truncate">Response & Analysis Results</h2>
               </div>
 
-              <div className="mb-3">
-                <div className="response-container rounded-lg py-3 px-5 max-h-64 overflow-y-auto border border-gray-300 bg-white bg-opacity-10">
+              <div className="mb-3 flex-shrink-0">
+                <div className="response-container rounded-lg py-3 px-5 min-h-32 max-h-48 overflow-y-auto border border-gray-300 bg-white bg-opacity-10">
                   {/* COMMENTED OUT - Evaluation Mode functionality */}
                   {/* controlMode === "evaluation" && activeQuery ? (
                  
@@ -996,7 +995,7 @@ export default function QuestionForm() {
                 </div>
               </div>
 
-              <div className="mb-3 border-b border-white border-opacity-20">
+              <div className="mb-3 border-b border-white border-opacity-20 flex-shrink-0">
                 <div className="flex space-x-1 sm:space-x-2 border-b border-white border-opacity-20 overflow-x-auto">
                   <button
                     className="tab-button px-2 sm:px-4 py-2 text-sm sm:text-base whitespace-nowrap"
@@ -1025,10 +1024,7 @@ export default function QuestionForm() {
                 </div>
               </div>
 
-              <div
-                className="bg-white bg-opacity-20 rounded-xl p-3 overflow-auto flex-1 min-h-0"
-                style={{ minHeight: '400px' }}
-              >
+              <div className="bg-white bg-opacity-20 rounded-xl p-3 flex-1 min-h-0 overflow-hidden">
                 {isLoading ? (
                   <div id="tab-content" className="h-full max-h-full overflow-hidden">
                     <div id="live-tool-calls-content" className="tab-pane active h-full">
